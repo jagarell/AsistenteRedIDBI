@@ -105,7 +105,7 @@
     <!-- ── Minuta técnica (4 tabs) ──────────────────────────── -->
     <fragment
         android:id="@+id/minutaFragment"
-        android:name="com.idbi.networkassistant.presentation.minuta.MinutaFragment"
+        android:name="com.upc.asistenteredidbi.presentation.minuta.MinutaFragment"
         android:label="Minuta técnica"
         tools:layout="@layout/fragment_minuta">
         <argument
@@ -116,7 +116,7 @@
     <!-- ── Historial de evaluaciones ────────────────────────── -->
     <fragment
         android:id="@+id/historialFragment"
-        android:name="com.idbi.networkassistant.presentation.historial.HistorialFragment"
+        android:name="com.upc.asistenteredidbi.presentation.historial.HistorialFragment"
         android:label="Historial"
         tools:layout="@layout/fragment_historial">
         <action
@@ -127,14 +127,14 @@
     <!-- ── Perfil ────────────────────────────────────────────── -->
     <fragment
         android:id="@+id/perfilFragment"
-        android:name="com.idbi.networkassistant.presentation.perfil.PerfilFragment"
+        android:name="com.upc.asistenteredidbi.presentation.perfil.PerfilFragment"
         android:label="Mi perfil"
         tools:layout="@layout/fragment_perfil"/>
 
     <!-- ── Configuración ────────────────────────────────────── -->
     <fragment
         android:id="@+id/configuracionFragment"
-        android:name="com.idbi.networkassistant.presentation.configuracion.ConfiguracionFragment"
+        android:name="com.upc.asistenteredidbi.presentation.configuration.ConfiguracionFragment"
         android:label="Configuración"
         tools:layout="@layout/fragment_configuracion"/>
 

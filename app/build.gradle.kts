@@ -7,9 +7,9 @@ plugins {
 
 android {
     namespace = "com.upc.asistenteredidbi"
-
+    compileSdk = 35
     compileSdk {
-        version = release(36)
+        version = release(35)
     }
 
     buildFeatures {
@@ -19,7 +19,7 @@ android {
     defaultConfig {
         applicationId = "com.upc.asistenteredidbi"
         minSdk = 24
-        targetSdk = 36
+        targetSdk = 35
         versionCode = 1
         versionName = "1.0"
 
@@ -48,6 +48,7 @@ android {
 
 kapt {
     correctErrorTypes = true
+    useBuildCache = false
 }
 
 dependencies {
@@ -77,8 +78,8 @@ dependencies {
 
     implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
 
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.0")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
 
     implementation("com.github.bumptech.glide:glide:4.16.0")
     // kapt("com.github.bumptech.glide:compiler:4.16.0")

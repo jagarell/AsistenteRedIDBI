@@ -10,6 +10,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
+import com.upc.asistenteredidbi.databinding.FragmentPerfilBinding
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 import kotlin.getValue
@@ -29,13 +30,15 @@ class PerfilFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         binding.toolbar.setNavigationOnClickListener { findNavController().navigateUp() }
-        binding.btnLogout.setOnClickListener { viewModel.logout() }
+        binding.btnLogout.setOnClickListener {
+            //viewModel.logout()
+        }
 
         viewLifecycleOwner.lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.uiState.collect { state ->
-                    binding.tvName.text = state.name
-                    binding.tvEmail.text = state.email
+                    //binding.tvName.text = state.name
+                    //binding.tvEmail.text = state.email
                 }
             }
         }

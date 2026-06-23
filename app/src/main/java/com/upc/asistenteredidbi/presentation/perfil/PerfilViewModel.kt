@@ -3,6 +3,14 @@ package com.upc.asistenteredidbi.presentation.perfil
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.upc.asistenteredidbi.domain.model.BrandAsset
+import com.upc.asistenteredidbi.domain.model.ProfileStats
+import com.upc.asistenteredidbi.domain.model.User
+import com.upc.asistenteredidbi.domain.usecase.GetBrandUseCase
+import com.upc.asistenteredidbi.domain.usecase.GetProfileStatusUseCase
+import com.upc.asistenteredidbi.domain.usecase.GetProfileUseCase
+import com.upc.asistenteredidbi.domain.usecase.UpdateBrandUseCase
+import com.upc.asistenteredidbi.domain.usecase.UpdateProfileUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -28,7 +36,7 @@ data class PerfilUiState(
 class PerfilViewModel @Inject constructor(
     private val getProfileUseCase: GetProfileUseCase,
     private val updateProfileUseCase: UpdateProfileUseCase,
-    private val getProfileStatsUseCase: GetProfileStatsUseCase,
+    private val getProfileStatusUseCase: GetProfileStatusUseCase,
     private val getBrandUseCase: GetBrandUseCase,
     private val updateBrandUseCase: UpdateBrandUseCase
 ) : ViewModel() {
@@ -50,7 +58,7 @@ class PerfilViewModel @Inject constructor(
                 }
                 .onFailure { error -> _uiState.update { it.copy(isLoading = false, errorMessage = error.message) } }
 
-            getProfileStatsUseCase().onSuccess { stats -> _uiState.update { it.copy(stats = stats) } }
+            getProfileStatusUseCase().onSuccess { stats -> _uiState.update { it.copy(stats = stats) } }
             getBrandUseCase().onSuccess { brand -> _uiState.update { it.copy(brand = brand) } }
         }
     }

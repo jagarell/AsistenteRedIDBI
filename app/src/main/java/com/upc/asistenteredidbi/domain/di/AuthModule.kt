@@ -36,7 +36,8 @@ import javax.inject.Singleton
  * (no vuelve a crear uno propio) para evitar dos clientes HTTP
  * distintos con configuraciones divergentes.
  */
-private const val BASE_URL = "https://api.networkassistant.idbi.pe/" // configurar por flavor (dev/staging/prod)
+private const val BASE_URL =
+    "https://api.networkassistant.idbi.pe/" // configurar por flavor (dev/staging/prod)
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -78,23 +79,28 @@ object AuthModule {
 
     @Provides
     @Singleton
-    fun provideAuthApiService(retrofit: Retrofit): AuthApiService = retrofit.create(AuthApiService::class.java)
+    fun provideAuthApiService(retrofit: Retrofit): AuthApiService =
+        retrofit.create(AuthApiService::class.java)
 
     @Provides
     @Singleton
-    fun provideEvaluationApiService(retrofit: Retrofit): EvaluationApiService = retrofit.create(EvaluationApiService::class.java)
+    fun provideEvaluationApiService(retrofit: Retrofit): EvaluationApiService =
+        retrofit.create(EvaluationApiService::class.java)
 
     @Provides
     @Singleton
-    fun provideChatApiService(retrofit: Retrofit): ChatApiService = retrofit.create(ChatApiService::class.java)
+    fun provideChatApiService(retrofit: Retrofit): ChatApiService =
+        retrofit.create(ChatApiService::class.java)
 
     @Provides
     @Singleton
-    fun provideEvidenceApiService(retrofit: Retrofit): EvidenceApiService = retrofit.create(EvidenceApiService::class.java)
+    fun provideEvidenceApiService(retrofit: Retrofit): EvidenceApiService =
+        retrofit.create(EvidenceApiService::class.java)
 
     @Provides
     @Singleton
-    fun provideProfileApiService(retrofit: Retrofit): ProfileApiService = retrofit.create(ProfileApiService::class.java)
+    fun provideProfileApiService(retrofit: Retrofit): ProfileApiService =
+        retrofit.create(ProfileApiService::class.java)
 }
 
 @Module

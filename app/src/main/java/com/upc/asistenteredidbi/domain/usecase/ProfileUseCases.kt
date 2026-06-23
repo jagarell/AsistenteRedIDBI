@@ -16,7 +16,7 @@ class UpdateProfileUseCase @Inject constructor(private val repository: ProfileRe
         repository.updateProfile(fullName, phone, company, city)
 }
 
-class GetProfileStatsUseCase @Inject constructor(private val repository: ProfileRepository) {
+class GetProfileStatusUseCase @Inject constructor(private val repository: ProfileRepository) {
     suspend operator fun invoke(): Result<ProfileStats> = repository.getStats()
 }
 

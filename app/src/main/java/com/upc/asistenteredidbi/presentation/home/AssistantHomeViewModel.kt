@@ -5,7 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.upc.asistenteredidbi.domain.model.EvaluationSummaryItem
 import com.upc.asistenteredidbi.domain.model.ProfileStats
 import com.upc.asistenteredidbi.domain.usecase.GetCurrentUserUseCase
-import com.upc.asistenteredidbi.domain.usecase.GetProfileStatsUseCase
+import com.upc.asistenteredidbi.domain.usecase.GetProfileStatusUseCase
 import com.upc.asistenteredidbi.domain.usecase.ListEvaluationsUseCase
 import com.upc.asistenteredidbi.domain.usecase.StartEvaluationUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -30,7 +30,7 @@ data class AssistantHomeUiState(
 @HiltViewModel
 class AssistantHomeViewModel @Inject constructor(
     private val getCurrentUserUseCase: GetCurrentUserUseCase,
-    private val getProfileStatsUseCase: GetProfileStatsUseCase,
+    private val getProfileStatusUseCase: GetProfileStatusUseCase,
     private val listEvaluationsUseCase: ListEvaluationsUseCase,
     private val startEvaluationUseCase: StartEvaluationUseCase
 ) : ViewModel() {
@@ -46,7 +46,7 @@ class AssistantHomeViewModel @Inject constructor(
                 _uiState.update { it.copy(userFirstName = user.fullName.substringBefore(" "), userCompany = user.company.orEmpty()) }
             }
 
-            getProfileStatsUseCase().onSuccess { stats -> _uiState.update { it.copy(stats = stats) } }
+            getProfileStatusUseCase().onSuccess { stats -> _uiState.update { it.copy(stats = stats) } }
 
             listEvaluationsUseCase()
                 .onSuccess { evaluations ->
