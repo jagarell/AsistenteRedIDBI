@@ -1,0 +1,32 @@
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <LinearLayout
+        android:orientation="vertical"
+        android:padding="20dp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <TextView
+            android:text="Información Técnica"
+            android:textSize="22sp"
+            android:textStyle="bold"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"/>
+
+        <EditText android:id="@+id/etInternetProvider" android:hint="Proveedor de internet" style="@style/FormEditText"/>
+        <EditText android:id="@+id/etConnectionType" android:hint="Tipo de conexión" style="@style/FormEditText"/>
+        <EditText android:id="@+id/etNetworkSegment" android:hint="Segmento de red" style="@style/FormEditText"/>
+        <EditText android:id="@+id/etRepeaters" android:hint="Cantidad de repetidores" android:inputType="number" style="@style/FormEditText"/>
+        <EditText android:id="@+id/etPrinters" android:hint="Cantidad de impresoras" android:inputType="number" style="@style/FormEditText"/>
+        <EditText android:id="@+id/etObservations" android:hint="Observaciones" android:minLines="3" style="@style/FormEditText"/>
+
+        <Button
+            android:id="@+id/btnContinue"
+            android:text="Ver resumen"
+            android:layout_marginTop="24dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"/>
+    </LinearLayout>
+</ScrollView>

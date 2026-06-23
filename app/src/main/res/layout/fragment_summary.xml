@@ -1,0 +1,118 @@
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#F5F7FA">
+
+    <LinearLayout
+        android:orientation="vertical"
+        android:padding="20dp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <TextView
+            android:text="Resumen de Evaluación Técnica"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            android:textColor="#1F2937"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
+        <TextView
+            android:text="Resultado preliminar generado por el asistente técnico de red"
+            android:textSize="14sp"
+            android:textColor="#6B7280"
+            android:layout_marginTop="6dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
+        <LinearLayout
+            android:orientation="vertical"
+            android:background="@drawable/bg_card_summary"
+            android:padding="18dp"
+            android:layout_marginTop="20dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <TextView
+                android:text="Datos del local"
+                android:textStyle="bold"
+                android:textSize="18sp"
+                android:textColor="#111827"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
+
+            <TextView
+                android:id="@+id/tvLocalInfo"
+                android:text="Local: Restaurante Demo\nÁrea: 120 m²\nPisos: 1\nZona principal: Caja y salón"
+                android:textSize="15sp"
+                android:textColor="#374151"
+                android:lineSpacingExtra="4dp"
+                android:layout_marginTop="10dp"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:orientation="vertical"
+            android:background="@drawable/bg_card_summary"
+            android:padding="18dp"
+            android:layout_marginTop="14dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <TextView
+                android:text="Diagnóstico de red"
+                android:textStyle="bold"
+                android:textSize="18sp"
+                android:textColor="#111827"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
+
+            <TextView
+                android:id="@+id/tvNetworkStatus"
+                android:text="Estado: Requiere mejora\nSe identificó posible mala ubicación del router y falta de puntos de red dedicados para caja e impresoras."
+                android:textSize="15sp"
+                android:textColor="#374151"
+                android:lineSpacingExtra="4dp"
+                android:layout_marginTop="10dp"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:orientation="vertical"
+            android:background="@drawable/bg_card_recommendation"
+            android:padding="18dp"
+            android:layout_marginTop="14dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <TextView
+                android:text="Recomendaciones"
+                android:textStyle="bold"
+                android:textSize="18sp"
+                android:textColor="#065F46"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
+
+            <TextView
+                android:id="@+id/tvRecommendations"
+                android:text="• Instalar punto de red dedicado para caja.\n• Ubicar el router en una zona central.\n• Evitar extensores WiFi para equipos críticos.\n• Considerar UPS para router y POS."
+                android:textSize="15sp"
+                android:textColor="#064E3B"
+                android:lineSpacingExtra="5dp"
+                android:layout_marginTop="10dp"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
+        </LinearLayout>
+
+        <Button
+            android:id="@+id/btnSave"
+            android:text="Guardar evaluación"
+            android:textAllCaps="false"
+            android:layout_marginTop="24dp"
+            android:layout_width="match_parent"
+            android:layout_height="52dp" />
+
+    </LinearLayout>
+</ScrollView>

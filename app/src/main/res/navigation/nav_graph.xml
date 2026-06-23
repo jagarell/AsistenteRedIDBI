@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/nav_graph"
+    app:startDestination="@id/loginFragment">
+
+    <!-- ── Autenticación ────────────────────────────────────── -->
+    <fragment
+        android:id="@+id/loginFragment"
+        android:name="com.upc.asistenteredidbi.presentation.auth.LoginFragment"
+        android:label="Iniciar sesión"
+        tools:layout="@layout/fragment_login">
+        <action
+            android:id="@+id/action_login_to_home"
+            app:destination="@id/assistantHomeFragment"
+            app:popUpTo="@id/loginFragment"
+            app:popUpToInclusive="true"/>
+        <action
+            android:id="@+id/action_login_to_register"
+            app:destination="@id/registerFragment"/>
+        <action
+            android:id="@+id/action_login_to_forgot"
+            app:destination="@id/forgotPasswordFragment"/>
+    </fragment>
+
+    <fragment
+        android:id="@+id/registerFragment"
+        android:name="com.upc.asistenteredidbi.presentation.auth.RegisterFragment"
+        android:label="Registro"
+        tools:layout="@layout/fragment_register">
+        <action
+            android:id="@+id/action_register_to_login"
+            app:destination="@id/loginFragment"
+            app:popUpTo="@id/loginFragment"
+            app:popUpToInclusive="true"/>
+    </fragment>
+
+    <fragment
+        android:id="@+id/forgotPasswordFragment"
+        android:name="com.upc.asistenteredidbi.presentation.auth.ForgotPasswordFragment"
+        android:label="Recuperar contraseña"
+        tools:layout="@layout/fragment_forgot_password">
+        <action
+            android:id="@+id/action_forgot_to_login"
+            app:destination="@id/loginFragment"
+            app:popUpTo="@id/loginFragment"
+            app:popUpToInclusive="true"/>
+    </fragment>
+
+    <!-- ── Home del asistente ───────────────────────────────── -->
+    <fragment
+        android:id="@+id/assistantHomeFragment"
+        android:name="com.upc.asistenteredidbi.presentation.home.AssistantHomeFragment"
+        android:label="Inicio"
+        tools:layout="@layout/fragment_assistant_home">
+        <action
+            android:id="@+id/action_home_to_chat"
+            app:destination="@id/technicalChatFragment"/>
+        <action
+            android:id="@+id/action_home_to_historial"
+            app:destination="@id/historialFragment"/>
+        <action
+            android:id="@+id/action_home_to_perfil"
+            app:destination="@id/perfilFragment"/>
+        <action
+            android:id="@+id/action_home_to_config"
+            app:destination="@id/configuracionFragment"/>
+        <action
+            android:id="@+id/action_home_to_logout"
+            app:destination="@id/loginFragment"
+            app:popUpTo="@id/nav_graph"
+            app:popUpToInclusive="true"/>
+    </fragment>
+
+    <!-- ── Chat conversacional (evaluación técnica) ─────────── -->
+    <fragment
+        android:id="@+id/technicalChatFragment"
+        android:name="com.upc.asistenteredidbi.presentation.chat.TechnicalChatFragment"
+        android:label="Evaluación técnica"
+        tools:layout="@layout/fragment_technical_chat">
+        <argument
+            android:name="evaluationId"
+            app:argType="string"
+            android:defaultValue="new"/>
+        <action
+            android:id="@+id/action_chat_to_minuta"
+            app:destination="@id/minutaFragment"/>
+        <action
+            android:id="@+id/action_chat_to_evidence"
+            app:destination="@id/evidenceFragment"/>
+    </fragment>
+
+    <!-- ── Captura de evidencias ────────────────────────────── -->
+    <fragment
+        android:id="@+id/evidenceFragment"
+        android:name="com.upc.asistenteredidbi.presentation.evidence.EvidenceFragment"
+        android:label="Evidencias"
+        tools:layout="@layout/fragment_evidence">
+        <argument
+            android:name="evaluationId"
+            app:argType="string"/>
+    </fragment>
+
+    <!-- ── Minuta técnica (4 tabs) ──────────────────────────── -->
+    <fragment
+        android:id="@+id/minutaFragment"
+        android:name="com.idbi.networkassistant.presentation.minuta.MinutaFragment"
+        android:label="Minuta técnica"
+        tools:layout="@layout/fragment_minuta">
+        <argument
+            android:name="evaluationId"
+            app:argType="string"/>
+    </fragment>
+
+    <!-- ── Historial de evaluaciones ────────────────────────── -->
+    <fragment
+        android:id="@+id/historialFragment"
+        android:name="com.idbi.networkassistant.presentation.historial.HistorialFragment"
+        android:label="Historial"
+        tools:layout="@layout/fragment_historial">
+        <action
+            android:id="@+id/action_historial_to_minuta"
+            app:destination="@id/minutaFragment"/>
+    </fragment>
+
+    <!-- ── Perfil ────────────────────────────────────────────── -->
+    <fragment
+        android:id="@+id/perfilFragment"
+        android:name="com.idbi.networkassistant.presentation.perfil.PerfilFragment"
+        android:label="Mi perfil"
+        tools:layout="@layout/fragment_perfil"/>
+
+    <!-- ── Configuración ────────────────────────────────────── -->
+    <fragment
+        android:id="@+id/configuracionFragment"
+        android:name="com.idbi.networkassistant.presentation.configuracion.ConfiguracionFragment"
+        android:label="Configuración"
+        tools:layout="@layout/fragment_configuracion"/>
+
+</navigation>

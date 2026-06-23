@@ -1,0 +1,25 @@
+<resources>
+
+    <string name="app_name">Asistente Red IDBI</string>
+    <string name="login_title">Iniciar sesión</string>
+    <string name="email_hint">Correo electrónico</string>
+    <string name="password_hint">Contraseña</string>
+    <string name="btn_login">Ingresar</string>
+    <string name="btn_register">Crear cuenta</string>
+    <string name="btn_continue">Continuar</string>
+    <string name="btn_send">Enviar</string>
+    <string name="btn_cancel">Cancelar</string>
+    <string name="btn_save">Guardar</string>
+    <string name="btn_generate_pdf">Generar PDF</string>
+    <string name="error_generic">Ocurrió un error. Intenta de nuevo.</string>
+    <string name="loading">Cargando…</string>
+    <string name="chat_title">Evaluación técnica</string>
+    <string name="minuta_title">Minuta técnica</string>
+    <string name="proposal_title">Propuesta técnica</string>
+    <string name="topology_edit_title">Editar topología de red</string>
+    <string name="tab_analysis_ai">Análisis IA</string>
+    <string name="tab_equipment">Equipamiento</string>
+    <string name="tab_risks">Riesgos</string>
+    <string name="tab_proposal">Propuesta</string>
+    <string name="tab_topology">Topología</string>
+</resources>

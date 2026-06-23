@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/background">
+
+    <androidx.appcompat.widget.Toolbar
+        android:id="@+id/toolbar"
+        style="@style/Widget.NA.Toolbar"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:title="Evaluación técnica"
+        android:elevation="2dp"
+        app:navigationIcon="@drawable/ic_arrow_back"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"/>
+
+    <!-- Lista de mensajes del chat -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rv_messages"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:clipToPadding="false"
+        android:paddingHorizontal="16dp"
+        android:paddingTop="12dp"
+        android:paddingBottom="8dp"
+        app:layout_constraintTop_toBottomOf="@id/toolbar"
+        app:layout_constraintBottom_toTopOf="@id/divider_input"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"/>
+
+    <View
+        android:id="@+id/divider_input"
+        android:layout_width="0dp"
+        android:layout_height="1dp"
+        android:background="@color/divider"
+        app:layout_constraintBottom_toTopOf="@id/input_container"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"/>
+
+    <!-- Contenedor del input dinámico (se intercambia según el tipo de nodo) -->
+    <ScrollView
+        android:id="@+id/input_container"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:maxHeight="280dp"
+        android:background="@color/surface"
+        android:padding="16dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <!-- INPUT TEXT (tipo: text / number) -->
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/til_text_input"
+                style="@style/Widget.NA.TextInput"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:visibility="gone"
+                android:hint="Escribe tu respuesta">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/et_text_input"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:imeOptions="actionSend"/>
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <!-- SINGLE SELECT: lista de chips/botones generados dinámicamente -->
+            <com.google.android.material.chip.ChipGroup
+                android:id="@+id/chip_group_single"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                app:singleSelection="true"
+                android:visibility="gone"/>
+
+            <!-- MULTI SELECT: ChipGroup multi-selección -->
+            <com.google.android.material.chip.ChipGroup
+                android:id="@+id/chip_group_multi"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:visibility="gone"/>
+
+            <!-- CONNECTION MAP: lista de items con spinner, generada dinámicamente -->
+            <LinearLayout
+                android:id="@+id/container_connection_map"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone"/>
+
+            <!-- Botón de cámara (tipo: image_capture) -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_camera"
+                style="@style/Widget.NA.Button.Outline"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:text="Abrir cámara"
+                android:visibility="gone"/>
+
+            <!-- Imagen capturada preview -->
+            <ImageView
+                android:id="@+id/img_capture_preview"
+                android:layout_width="match_parent"
+                android:layout_height="160dp"
+                android:layout_marginBottom="8dp"
+                android:scaleType="centerCrop"
+                android:visibility="gone"/>
+
+            <!-- Botón Continuar (presente en casi todos los tipos) -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_submit"
+                style="@style/Widget.NA.Button.Primary"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/btn_continue"
+                android:visibility="gone"/>
+
+            <!-- Loading -->
+            <ProgressBar
+                android:id="@+id/progress"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:visibility="gone"/>
+
+            <!-- Error -->
+            <TextView
+                android:id="@+id/tv_error"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="@color/risk_alto"
+                android:textSize="13sp"
+                android:visibility="gone"/>
+
+        </LinearLayout>
+    </ScrollView>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

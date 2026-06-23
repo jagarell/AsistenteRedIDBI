@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+
+    <!-- Colores primarios IDBI (equivalentes a DesignTokens.kt) -->
+    <color name="primary_blue">#1565C0</color>
+    <color name="primary_blue_dark">#0D47A1</color>
+    <color name="primary_blue_light">#E3F2FD</color>
+    <color name="accent_teal">#00838F</color>
+
+    <!-- Fondos -->
+    <color name="background">#F7F8FA</color>
+    <color name="surface">#FFFFFF</color>
+    <color name="surface_variant">#F0F4FF</color>
+
+    <!-- Texto -->
+    <color name="text_primary">#1A1C1E</color>
+    <color name="text_secondary">#6B7280</color>
+    <color name="text_disabled">#BDBDBD</color>
+    <color name="text_on_primary">#FFFFFF</color>
+
+    <!-- Riesgos -->
+    <color name="risk_alto">#D32F2F</color>
+    <color name="risk_medio">#F9A825</color>
+    <color name="risk_bajo">#2E7D32</color>
+
+    <!-- Estados de propuesta -->
+    <color name="status_generada">#E8F5E9</color>
+    <color name="status_generada_text">#2E7D32</color>
+    <color name="status_borrador">#FFF8E1</color>
+    <color name="status_borrador_text">#F9A825</color>
+    <color name="status_enviada">#E3F2FD</color>
+    <color name="status_enviada_text">#1565C0</color>
+
+    <!-- Divisor -->
+    <color name="divider">#E5E7EB</color>
+
+    <!-- Paleta topología -->
+    <color name="topology_blue">#1565C0</color>
+    <color name="topology_green">#2E7D32</color>
+    <color name="topology_orange">#E65100</color>
+    <color name="topology_purple">#6A1B9A</color>
+    <color name="topology_red">#D32F2F</color>
+    <color name="topology_teal">#00838F</color>
+
+</resources>
