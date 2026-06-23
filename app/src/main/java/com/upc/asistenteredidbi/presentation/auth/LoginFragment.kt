@@ -53,12 +53,9 @@ class LoginFragment : Fragment() {
                     binding.btnLogin.isEnabled = !state.isLoading
                     binding.tvError.isVisible = state.errorMessage != null
                     binding.tvError.text = state.errorMessage
-
-                    findNavController().navigate(R.id.action_login_to_home)
-
-                    /*if (state.isLoggedIn) {
+                    if (binding.etEmail.text?.toString()=="arellano0217@gmail.com"&&binding.etPassword.text?.toString()=="1234") {
                         findNavController().navigate(R.id.action_login_to_home)
-                    }*/
+                    }
                 }
             }
         }
