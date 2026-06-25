@@ -1,12 +1,14 @@
 package com.upc.asistenteredidbi.presentation.auth
 
 import android.os.Bundle
+import android.util.Patterns
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
+import com.upc.asistenteredidbi.R
 import com.upc.asistenteredidbi.databinding.FragmentForgotPasswordBinding
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -22,11 +24,27 @@ class ForgotPasswordFragment : Fragment() {
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
-        binding.toolbar.setNavigationOnClickListener { findNavController().navigateUp() }
-        binding.btnSend.setOnClickListener {
-            Toast.makeText(requireContext(), "Enlace enviado a ${binding.etEmail.text}", Toast.LENGTH_SHORT).show()
+        binding.btnBack.setOnClickListener {
             findNavController().navigateUp()
+        }
+
+        binding.btnSend.setOnClickListener {
+            val email = binding.etEmail.text?.toString().orEmpty().trim()
+
+            binding.tilEmail.error = null
+
+            if (email.isEmpty() || !Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+                binding.tilEmail.error = "Ingresa un correo válido"
+                return@setOnClickListener
+            }
+
+            Toast.makeText(
+                requireContext(),
+                "Enlace enviado a $email",
+                Toast.LENGTH_SHORT
+            ).show()
+
+            findNavController().navigate(R.id.action_forgot_to_login)
         }
     }
 

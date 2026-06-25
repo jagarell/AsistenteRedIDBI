@@ -24,8 +24,6 @@ import org.json.JSONObject
 import javax.inject.Inject
 import kotlin.collections.plus
 
-/** Un mensaje en la conversación (asistente o usuario), para renderizar las burbujas de chat. */
-data class ChatMessage(val text: String, val isFromUser: Boolean)
 
 data class TechnicalChatUiState(
     val isLoading: Boolean = false,

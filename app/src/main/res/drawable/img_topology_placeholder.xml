@@ -1,0 +1,78 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="600dp"
+    android:height="320dp"
+    android:viewportWidth="600"
+    android:viewportHeight="320">
+
+    <!-- INTERNET -->
+    <path
+        android:fillColor="#E3F2FD"
+        android:strokeColor="#1565C0"
+        android:strokeWidth="3"
+        android:pathData="M220,20 h160 a40,40 0 0 1 40,40 a40,40 0 0 1 -40,40 h-160 a40,40 0 0 1 -40,-40 a40,40 0 0 1 40,-40" />
+
+    <!-- Router -->
+    <path
+        android:fillColor="#1565C0"
+        android:pathData="M240,120 h120 a12,12 0 0 1 12,12 v36 a12,12 0 0 1 -12,12 h-120 a12,12 0 0 1 -12,-12 v-36 a12,12 0 0 1 12,-12" />
+
+    <!-- Switch -->
+    <path
+        android:fillColor="#1565C0"
+        android:pathData="M240,210 h120 a12,12 0 0 1 12,12 v36 a12,12 0 0 1 -12,12 h-120 a12,12 0 0 1 -12,-12 v-36 a12,12 0 0 1 12,-12" />
+
+    <!-- Líneas -->
+    <path
+        android:strokeColor="#1565C0"
+        android:strokeWidth="4"
+        android:pathData="M300,100 L300,120" />
+
+    <path
+        android:strokeColor="#1565C0"
+        android:strokeWidth="4"
+        android:pathData="M300,192 L300,210" />
+
+    <path
+        android:strokeColor="#42A5F5"
+        android:strokeWidth="3"
+        android:pathData="M300,246 L120,300" />
+
+    <path
+        android:strokeColor="#42A5F5"
+        android:strokeWidth="3"
+        android:pathData="M300,246 L300,300" />
+
+    <path
+        android:strokeColor="#42A5F5"
+        android:strokeWidth="3"
+        android:pathData="M300,246 L480,300" />
+
+    <!-- POS -->
+    <path
+        android:strokeColor="#90CAF9"
+        android:strokeWidth="2"
+        android:strokeLineCap="round"
+        android:pathData="M300,230 L510,180" />
+
+    <path
+        android:fillColor="#E3F2FD"
+        android:strokeColor="#1565C0"
+        android:strokeWidth="2"
+        android:pathData="M500,150 h60 a10,10 0 0 1 10,10 v30 a10,10 0 0 1 -10,10 h-60 a10,10 0 0 1 -10,-10 v-30 a10,10 0 0 1 10,-10" />
+
+    <!-- AP1 -->
+    <path
+        android:fillColor="#42A5F5"
+        android:pathData="M120,300 m-32,0 a32,32 0 1,1 64,0 a32,32 0 1,1 -64,0" />
+
+    <!-- AP2 -->
+    <path
+        android:fillColor="#42A5F5"
+        android:pathData="M300,300 m-32,0 a32,32 0 1,1 64,0 a32,32 0 1,1 -64,0" />
+
+    <!-- AP3 -->
+    <path
+        android:fillColor="#42A5F5"
+        android:pathData="M480,300 m-32,0 a32,32 0 1,1 64,0 a32,32 0 1,1 -64,0" />
+
+</vector>

@@ -1,13 +1,15 @@
 package com.upc.asistenteredidbi.presentation.minuta
 
+import android.animation.ObjectAnimator
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.animation.DecelerateInterpolator
+import android.widget.ProgressBar
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
-import androidx.viewpager2.adapter.FragmentStateAdapter
-import com.google.android.material.tabs.TabLayoutMediator
+import com.upc.asistenteredidbi.R
 import com.upc.asistenteredidbi.databinding.FragmentMinutaBinding
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -17,47 +19,56 @@ class MinutaFragment : Fragment() {
     private var _binding: FragmentMinutaBinding? = null
     private val binding get() = _binding!!
 
-    // evaluationId llega como argumento del NavGraph
     private val evaluationId: String by lazy {
-        arguments?.getString("evaluationId") ?: ""
+        arguments?.getString("evaluationId") ?: "demo-evaluation-001"
     }
 
-    private val tabs = listOf("Análisis IA", "Equipamiento", "Riesgos", "Propuesta")
-
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
+    override fun onCreateView(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View {
         _binding = FragmentMinutaBinding.inflate(inflater, container, false)
         return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
-
-        binding.toolbar.setNavigationOnClickListener { findNavController().navigateUp() }
-
-        binding.viewPager.adapter = MinutaPagerAdapter(this, evaluationId)
-
-        TabLayoutMediator(binding.tabLayout, binding.viewPager) { tab, pos ->
-            tab.text = tabs[pos]
-        }.attach()
-
-        binding.fabPdf.setOnClickListener {
-            // Acción: generar PDF (puede navegar a PdfPreview en Sprint 2 o mostrar snackbar aquí)
+        binding.btnBack.setOnClickListener {
+            findNavController().navigateUp()
         }
+
+        binding.btnTechnicalProposal.setOnClickListener {
+            findNavController().navigate(
+                R.id.action_minutaFragment_to_minutaProposalFragment,
+                Bundle().apply {
+                    putString("evaluationId", evaluationId)
+                }
+            )
+        }
+
+        animateProgressBar(binding.progressGlobal, 72, 1400L)
+        animateProgressBar(binding.layoutConnectivity.progressBar, 78, 1000L)
+        animateProgressBar(binding.layoutAnalysisPhysical.progressBar, 62, 1000L)
+        animateProgressBar(binding.layoutAnalysisEquipment.progressBar, 85, 1000L)
+        animateProgressBar(binding.layoutAnalysisWifi.progressBar, 55, 1000L)
     }
 
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
     }
-}
 
-class MinutaPagerAdapter(fragment: Fragment, private val evaluationId: String) : FragmentStateAdapter(fragment) {
-    override fun getItemCount() = 4
-    override fun createFragment(position: Int): Fragment = when (position) {
-        0 -> MinutaAnalysisTabFragment.newInstance(evaluationId)
-        1 -> MinutaEquipmentTabFragment.newInstance(evaluationId)
-        2 -> MinutaRisksTabFragment.newInstance(evaluationId)
-        3 -> MinutaProposalTabFragment.newInstance(evaluationId)
-        else -> MinutaAnalysisTabFragment.newInstance(evaluationId)
+    private fun animateProgressBar(
+        progressBar: ProgressBar,
+        targetProgress: Int,
+        duration: Long = 1200L
+    ) {
+        progressBar.progress = 0
+
+        ObjectAnimator.ofInt(progressBar, "progress", 0, targetProgress).apply {
+            this.duration = duration
+            interpolator = DecelerateInterpolator()
+            start()
+        }
     }
 }

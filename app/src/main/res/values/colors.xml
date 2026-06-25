@@ -44,4 +44,14 @@
     <color name="topology_red">#D32F2F</color>
     <color name="topology_teal">#00838F</color>
 
+    <color name="status_completed_text">#2E7D32</color>
+    <color name="status_draft_text">#EF6C00</color>
+    <color name="status_sent_text">#1565C0</color>
+
+    <color name="success_green">#2E7D32</color>
+
+    <color name="orange_status">#EF6C00</color>
+    <color name="purple_status">#6A1B9A</color>
+
+
 </resources>

@@ -1,42 +1,235 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/background">
+    android:background="#F5F7FB">
 
-    <androidx.appcompat.widget.Toolbar
-        android:id="@+id/toolbar"
-        style="@style/Widget.NA.Toolbar"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:title="Historial"
-        android:elevation="2dp"
-        app:navigationIcon="@drawable/ic_arrow_back"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"/>
+    <LinearLayout
+        android:id="@+id/header"
+        android:layout_width="match_parent"
+        android:layout_height="190dp"
+        android:background="#1976D2"
+        android:orientation="vertical"
+        android:paddingStart="22dp"
+        android:paddingEnd="22dp"
+        android:paddingTop="30dp">
 
-    <ProgressBar
-        android:id="@+id/progress"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:visibility="gone"
-        app:layout_constraintTop_toBottomOf="@id/toolbar"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"/>
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="54dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
 
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/rv_evaluations"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        android:padding="16dp"
-        android:clipToPadding="false"
-        app:layout_constraintTop_toBottomOf="@id/toolbar"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"/>
+            <ImageButton
+                android:id="@+id/btnBack"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:padding="10dp"
+                app:srcCompat="@drawable/ic_arrow_back"
+                app:tint="@android:color/white" />
 
-</androidx.constraintlayout.widget.ConstraintLayout>
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="12dp"
+                android:layout_weight="1"
+                android:text="Historial"
+                android:textColor="@android:color/white"
+                android:textSize="24sp"
+                android:textStyle="bold" />
+
+            <ImageButton
+                android:id="@+id/btnFilter"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:padding="10dp"
+                app:srcCompat="@drawable/ic_filter"
+                app:tint="@android:color/white" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginTop="18dp"
+            android:background="@drawable/bg_search_history"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp">
+
+            <ImageView
+                android:layout_width="22dp"
+                android:layout_height="22dp"
+                app:srcCompat="@drawable/ic_search"
+                app:tint="#D6E8FF" />
+
+            <EditText
+                android:id="@+id/etSearch"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_marginStart="10dp"
+                android:layout_weight="1"
+                android:background="@android:color/transparent"
+                android:hint="Buscar evaluaciones..."
+                android:singleLine="true"
+                android:textColor="@android:color/white"
+                android:textColorHint="#D6E8FF"
+                android:textSize="15sp" />
+        </LinearLayout>    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/content"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:paddingTop="190dp">
+
+        <HorizontalScrollView
+            android:layout_width="match_parent"
+            android:layout_height="72dp"
+            android:background="@android:color/white"
+            android:scrollbars="none">
+
+            <com.google.android.material.chip.ChipGroup
+                android:id="@+id/chipGroup"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:gravity="center_vertical"
+                android:paddingStart="22dp"
+                android:paddingEnd="22dp"
+                app:singleSelection="true">
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chipAll"
+                    style="@style/Widget.MaterialComponents.Chip.Choice"
+                    android:layout_width="wrap_content"
+                    android:layout_height="42dp"
+                    android:text="Todos"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/chip_text_selector"
+                    app:chipBackgroundColor="@color/chip_selector_blue"
+                    app:chipStrokeWidth="0dp"
+                    app:checkedIconVisible="false"
+                    app:chipCornerRadius="21dp" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chipCompleted"
+                    style="@style/Widget.MaterialComponents.Chip.Choice"
+                    android:layout_width="wrap_content"
+                    android:layout_height="42dp"
+                    android:text="Completados"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/chip_text_selector"
+                    app:chipBackgroundColor="@color/chip_selector_blue"
+                    app:chipStrokeWidth="0dp"
+                    app:checkedIconVisible="false"
+                    app:chipCornerRadius="21dp" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chipDrafts"
+                    style="@style/Widget.MaterialComponents.Chip.Choice"
+                    android:layout_width="wrap_content"
+                    android:layout_height="42dp"
+                    android:text="Borradores"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/chip_text_selector"
+                    app:chipBackgroundColor="@color/chip_selector_blue"
+                    app:chipStrokeWidth="0dp"
+                    app:checkedIconVisible="false"
+                    app:chipCornerRadius="21dp" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chipSent"
+                    style="@style/Widget.MaterialComponents.Chip.Choice"
+                    android:layout_width="wrap_content"
+                    android:layout_height="42dp"
+                    android:text="Enviados"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/chip_text_selector"
+                    app:chipBackgroundColor="@color/chip_selector_blue"
+                    app:chipStrokeWidth="0dp"
+                    app:checkedIconVisible="false"
+                    app:chipCornerRadius="21dp" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chipAnalysis"
+                    style="@style/Widget.MaterialComponents.Chip.Choice"
+                    android:layout_width="wrap_content"
+                    android:layout_height="42dp"
+                    android:text="En Análisis"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/chip_text_selector"
+                    app:chipBackgroundColor="@color/chip_selector_blue"
+                    app:chipStrokeWidth="0dp"
+                    app:checkedIconVisible="false"
+                    app:chipCornerRadius="21dp" />
+
+            </com.google.android.material.chip.ChipGroup>
+        </HorizontalScrollView>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="104dp"
+            android:gravity="center"
+            android:orientation="horizontal"
+            android:paddingStart="22dp"
+            android:paddingEnd="22dp">
+
+            <include
+                android:id="@+id/cardTotal"
+                layout="@layout/item_history_stat_total" />
+
+            <Space
+                android:layout_width="12dp"
+                android:layout_height="1dp" />
+
+            <include
+                android:id="@+id/cardCompleted"
+                layout="@layout/item_history_stat_completed" />
+
+            <Space
+                android:layout_width="12dp"
+                android:layout_height="1dp" />
+
+            <include
+                android:id="@+id/cardPending"
+                layout="@layout/item_history_stat_pending" />
+        </LinearLayout>
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rvHistory"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:clipToPadding="false"
+            android:paddingStart="22dp"
+            android:paddingTop="4dp"
+            android:paddingEnd="22dp"
+            android:paddingBottom="120dp" />
+    </LinearLayout>
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fabNewEvaluation"
+        android:layout_width="58dp"
+        android:layout_height="58dp"
+        android:layout_gravity="bottom|end"
+        android:layout_marginEnd="28dp"
+        android:layout_marginBottom="88dp"
+        android:scaleType="center"
+        app:backgroundTint="#1976D2"
+        app:borderWidth="0dp"
+        app:elevation="8dp"
+        app:fabCustomSize="58dp"
+        app:maxImageSize="28dp"
+        app:shapeAppearanceOverlay="@style/Circle"
+        app:srcCompat="@drawable/ic_add"
+        app:tint="@android:color/white" />
+</FrameLayout>

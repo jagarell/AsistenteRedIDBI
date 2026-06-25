@@ -97,20 +97,53 @@
         android:name="com.upc.asistenteredidbi.presentation.evidence.EvidenceFragment"
         android:label="Evidencias"
         tools:layout="@layout/fragment_evidence">
+
         <argument
             android:name="evaluationId"
-            app:argType="string"/>
+            app:argType="string" />
+
+        <action
+            android:id="@+id/action_evidenceFragment_to_minutaFragment"
+            app:destination="@id/minutaFragment" />
+
     </fragment>
 
     <!-- ── Minuta técnica (4 tabs) ──────────────────────────── -->
     <fragment
         android:id="@+id/minutaFragment"
-        android:name="com.upc.asistenteredidbi.presentation.minuta.MinutaFragment"
-        android:label="Minuta técnica"
-        tools:layout="@layout/fragment_minuta">
-        <argument
-            android:name="evaluationId"
-            app:argType="string"/>
+        android:name="com.upc.asistenteredidbi.presentation.minuta.MinutaFragment">
+
+        <action
+            android:id="@+id/action_minutaFragment_to_minutaProposalFragment"
+            app:destination="@id/minutaProposalFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/minutaProposalFragment"
+        android:name="com.upc.asistenteredidbi.presentation.minuta.MinutaProposalFragment"
+        android:label="Propuesta Técnica">
+        <action
+            android:id="@+id/action_minutaProposalFragment_to_editProposalFragment"
+            app:destination="@id/editProposalFragment" />
+        <action
+            android:id="@+id/action_minutaProposalFragment_to_sendDraftFragment"
+            app:destination="@id/sendDraftFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/editProposalFragment"
+        android:name="com.upc.asistenteredidbi.presentation.minuta.EditProposalFragment"
+        android:label="Editar Propuesta" />
+
+    <fragment
+        android:id="@+id/sendDraftFragment"
+        android:name="com.upc.asistenteredidbi.presentation.minuta.SendDraftFragment"
+        android:label="Enviar Borrador">
+        <action
+            android:id="@+id/action_sendDraftFragment_to_historialFragment"
+            app:destination="@id/historialFragment"
+            app:popUpTo="@id/assistantHomeFragment"
+            app:popUpToInclusive="false" />
     </fragment>
 
     <!-- ── Historial de evaluaciones ────────────────────────── -->
@@ -122,6 +155,9 @@
         <action
             android:id="@+id/action_historial_to_minuta"
             app:destination="@id/minutaFragment"/>
+        <action
+            android:id="@+id/action_historial_to_chat"
+            app:destination="@id/technicalChatFragment" />
     </fragment>
 
     <!-- ── Perfil ────────────────────────────────────────────── -->
