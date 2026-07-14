@@ -33,3 +33,20 @@ data class EvaluationListItemDto(
     @Json(name = "overall_score") val overallScore: Float?,
     @Json(name = "created_at") val createdAt: String
 )
+
+data class AnalysisResponseDto(
+    val globalScore: Int,
+    val evaluatedAreas: Int,
+    val attentionRequired: Int,
+    val results: List<AnalysisItemDto>,
+    val summary: String,
+    val recommendations: List<String>
+)
+
+data class AnalysisItemDto(
+    val title: String,
+    val status: String,
+    val score: Int,
+    val description: String,
+    val color: String
+)

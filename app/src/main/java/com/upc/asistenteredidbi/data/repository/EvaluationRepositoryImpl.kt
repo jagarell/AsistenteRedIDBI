@@ -2,6 +2,7 @@ package com.upc.asistenteredidbi.data.repository
 
 import com.upc.asistenteredidbi.data.mapper.toDomain
 import com.upc.asistenteredidbi.data.remote.EvaluationApiService
+import com.upc.asistenteredidbi.data.remote.dto.AnalysisResponseDto
 import com.upc.asistenteredidbi.data.remote.dto.StartEvaluationRequestDto
 import com.upc.asistenteredidbi.domain.model.Evaluation
 import com.upc.asistenteredidbi.domain.model.EvaluationFilters
@@ -62,4 +63,11 @@ class EvaluationRepositoryImpl @Inject constructor(
             Result.failure(e)
         }
     }
+
+    override suspend fun analyzeEvaluation(
+        evaluationId: Long
+    ): Result<AnalysisResponseDto> = safeCall {
+        api.analyzeEvaluation(evaluationId)
+    }
+
 }

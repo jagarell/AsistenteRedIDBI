@@ -1,13 +1,16 @@
 package com.upc.asistenteredidbi.data.repository
 
 import com.upc.asistenteredidbi.data.mapper.toDomain
+import com.upc.asistenteredidbi.data.mapper.toRegisterResult
 import com.upc.asistenteredidbi.data.remote.AuthApiService
 import com.upc.asistenteredidbi.data.remote.dto.ForgotPasswordRequestDto
 import com.upc.asistenteredidbi.data.remote.dto.LoginRequestDto
 import com.upc.asistenteredidbi.data.remote.dto.RegisterRequestDto
+import com.upc.asistenteredidbi.data.remote.dto.RegisterResponseDto
 import com.upc.asistenteredidbi.data.remote.dto.ResetPasswordRequestDto
 import com.upc.asistenteredidbi.data.session.SessionManager
 import com.upc.asistenteredidbi.domain.model.AuthSession
+import com.upc.asistenteredidbi.domain.model.RegisterResult
 import com.upc.asistenteredidbi.domain.model.User
 import com.upc.asistenteredidbi.domain.repository.AuthRepository
 import kotlinx.coroutines.Dispatchers
@@ -18,6 +21,12 @@ class AuthRepositoryImpl @Inject constructor(
     private val api: AuthApiService,
     private val sessionManager: SessionManager
 ) : AuthRepository {
+    override suspend fun login(
+        email: String,
+        password: String
+    ): Result<AuthSession> {
+        TODO("Not yet implemented")
+    }
 
     override suspend fun register(
         fullName: String,
@@ -27,26 +36,18 @@ class AuthRepositoryImpl @Inject constructor(
         city: String,
         password: String,
         confirmPassword: String
-    ): Result<AuthSession> = safeCall {
-        val dto = api.register(
+    ): Result<RegisterResult> = safeCall {
+        api.register(
             RegisterRequestDto(
-                fullName,
-                email,
-                phone,
-                company,
-                city,
-                password,
-                confirmPassword
+                fullName = fullName,
+                email = email,
+                phone = phone,
+                company = company,
+                city = city,
+                password = password,
+                confirmPassword = confirmPassword
             )
-        )
-        sessionManager.saveAccessToken(dto.accessToken)
-        dto.toDomain()
-    }
-
-    override suspend fun login(email: String, password: String, rememberMe: Boolean): Result<AuthSession> = safeCall {
-        val dto = api.login(LoginRequestDto(email, password, rememberMe))
-        sessionManager.saveAccessToken(dto.accessToken)
-        dto.toDomain()
+        ).toRegisterResult()
     }
 
     override suspend fun getCurrentUser(): Result<User> = safeCall { api.getCurrentUser().toDomain() }

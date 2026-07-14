@@ -37,7 +37,7 @@ import javax.inject.Singleton
  * distintos con configuraciones divergentes.
  */
 private const val BASE_URL =
-    "https://api.networkassistant.idbi.pe/" // configurar por flavor (dev/staging/prod)
+    "http://10.0.2.2:8080/" // configurar por flavor (dev/staging/prod)
 
 @Module
 @InstallIn(SingletonComponent::class)

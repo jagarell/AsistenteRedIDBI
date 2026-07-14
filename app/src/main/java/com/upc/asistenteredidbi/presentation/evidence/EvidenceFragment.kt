@@ -4,7 +4,6 @@ import android.Manifest
 import android.app.AlertDialog
 import android.net.Uri
 import android.os.Bundle
-import android.provider.MediaStore
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -12,12 +11,19 @@ import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.FileProvider
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.GridLayoutManager
 import com.upc.asistenteredidbi.R
 import com.upc.asistenteredidbi.databinding.FragmentEvidenceBinding
+import com.upc.asistenteredidbi.domain.repository.EvaluationRepository
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.launch
 import java.io.File
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class EvidenceFragment : Fragment() {
@@ -28,6 +34,8 @@ class EvidenceFragment : Fragment() {
     private lateinit var adapter: EvidenceAdapter
     private var currentItem: EvidenceItem? = null
     private var photoUri: Uri? = null
+
+    private val viewModel: EvidenceViewModel by viewModels()
 
     private val items = mutableListOf(
         EvidenceItem("router", "Router/Modem", "Equipo principal", R.drawable.ic_router),
@@ -54,6 +62,13 @@ class EvidenceFragment : Fragment() {
             if (uri != null) markCurrentAsCaptured()
         }
 
+    private val pickPlan =
+        registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+            if (uri != null) {
+                Toast.makeText(requireContext(), "Plano seleccionado", Toast.LENGTH_SHORT).show()
+            }
+        }
+
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -67,6 +82,7 @@ class EvidenceFragment : Fragment() {
         setupRecycler()
         setupClicks()
         updateProgress()
+        observeViewModel()
     }
 
     private fun setupRecycler() {
@@ -90,29 +106,10 @@ class EvidenceFragment : Fragment() {
         }
 
         binding.btnAnalyze.setOnClickListener {
-            /*val captured = items.count { it.captured }
-
-            if (captured < 3) {
-                Toast.makeText(
-                    requireContext(),
-                    "Captura al menos 3 evidencias",
-                    Toast.LENGTH_SHORT
-                ).show()
-            } else {
-                findNavController().navigate(
-                    R.id.action_evidenceFragment_to_minutaFragment,
-                    Bundle().apply {
-                        putString("evaluationId", "demo-evaluation-001")
-                    }
-                )
-            }*/
-
-            findNavController().navigate(
-                R.id.action_evidenceFragment_to_minutaFragment,
-                Bundle().apply {
-                    putString("evaluationId", "demo-evaluation-001")
-                }
-            )
+            binding.btnAnalyze.setOnClickListener {
+                val evaluationId = arguments?.get("evaluationId")?.toString()?.toLongOrNull() ?: 1L
+                viewModel.analyzeEvaluation()
+            }
         }
 
         binding.btnUploadPlan.setOnClickListener {
@@ -124,12 +121,43 @@ class EvidenceFragment : Fragment() {
         }
     }
 
-    private val pickPlan =
-        registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
-            if (uri != null) {
-                Toast.makeText(requireContext(), "Plano seleccionado", Toast.LENGTH_SHORT).show()
+    private fun observeViewModel() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.uiState.collect { state ->
+
+                    binding.btnAnalyze.isEnabled = !state.isLoading
+
+                    if (state.isLoading) {
+                        binding.btnAnalyze.text = "Analizando..."
+                    } else {
+                        binding.btnAnalyze.text = "Analizar con IA"
+                    }
+
+                    state.analysis?.let { response ->
+                        val evaluationId = arguments?.get("evaluationId")?.toString()?.toLongOrNull() ?: 1L
+
+                        val bundle = Bundle().apply {
+                            putLong("evaluationId", evaluationId)
+                            putInt("globalScore", response.globalScore)
+                        }
+
+                        viewModel.clearResult()
+
+                        findNavController().navigate(
+                            R.id.action_evidenceFragment_to_minutaFragment,
+                            bundle
+                        )
+                    }
+
+                    state.errorMessage?.let {
+                        Toast.makeText(requireContext(), it, Toast.LENGTH_SHORT).show()
+                        viewModel.clearResult()
+                    }
+                }
             }
         }
+    }
 
     private fun showImageOptions() {
         AlertDialog.Builder(requireContext())
@@ -156,6 +184,7 @@ class EvidenceFragment : Fragment() {
     private fun markCurrentAsCaptured() {
         val selected = currentItem ?: return
         val index = items.indexOfFirst { it.id == selected.id }
+
         if (index != -1) {
             items[index] = items[index].copy(captured = true)
             adapter.submitList(items.toList())
@@ -172,7 +201,6 @@ class EvidenceFragment : Fragment() {
         binding.tvPercent.text = "$percent%"
         binding.progressEvidence.progress = percent
 
-        //binding.btnAnalyze.isEnabled = captured >= 3
         binding.btnAnalyze.isEnabled = true
         binding.btnAnalyze.alpha = if (captured >= 3) 1f else 0.45f
     }

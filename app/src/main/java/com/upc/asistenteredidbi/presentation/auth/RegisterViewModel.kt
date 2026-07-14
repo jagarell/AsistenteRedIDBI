@@ -12,17 +12,10 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 data class RegisterUiState(
-    val fullName: String = "",
-    val email: String = "",
-    val phone: String = "",
-    val company: String = "",
-    val city: String = "",
-    val password: String = "",
-    val confirmPassword: String = "",
-    val acceptedTerms: Boolean = false,
     val isLoading: Boolean = false,
-    val errorMessage: String? = null,
-    val registerSuccess: Boolean = false
+    val isRegistered: Boolean = false,
+    val successMessage: String? = null,
+    val errorMessage: String? = null
 )
 
 @HiltViewModel
@@ -33,27 +26,67 @@ class RegisterViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(RegisterUiState())
     val uiState: StateFlow<RegisterUiState> = _uiState.asStateFlow()
 
-    fun onFullNameChange(value: String) = _uiState.update { it.copy(fullName = value, errorMessage = null) }
-    fun onEmailChange(value: String) = _uiState.update { it.copy(email = value, errorMessage = null) }
-    fun onPhoneChange(value: String) = _uiState.update { it.copy(phone = value, errorMessage = null) }
-    fun onCompanyChange(value: String) = _uiState.update { it.copy(company = value, errorMessage = null) }
-    fun onCityChange(value: String) = _uiState.update { it.copy(city = value, errorMessage = null) }
-    fun onPasswordChange(value: String) = _uiState.update { it.copy(password = value, errorMessage = null) }
-    fun onConfirmPasswordChange(value: String) = _uiState.update { it.copy(confirmPassword = value, errorMessage = null) }
-    fun onToggleAcceptedTerms() = _uiState.update { it.copy(acceptedTerms = !it.acceptedTerms) }
+    fun register(
+        fullName: String,
+        email: String,
+        phone: String,
+        company: String,
+        city: String,
+        password: String,
+        confirmPassword: String
+    ) {
+        if (_uiState.value.isLoading) return
 
-    fun register() {
-        val state = _uiState.value
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+            _uiState.update {
+                it.copy(
+                    isLoading = true,
+                    isRegistered = false,
+                    successMessage = null,
+                    errorMessage = null
+                )
+            }
+
             registerUseCase(
-                state.fullName, state.email, state.phone, state.company, state.city,
-                state.password, state.confirmPassword, state.acceptedTerms
-            )
-                .onSuccess { _uiState.update { it.copy(isLoading = false, registerSuccess = true) } }
-                .onFailure { error ->
-                    _uiState.update { it.copy(isLoading = false, errorMessage = error.message ?: "No se pudo crear la cuenta") }
+                fullName = fullName,
+                email = email,
+                phone = phone,
+                company = company,
+                city = city,
+                password = password,
+                confirmPassword = confirmPassword
+            ).onSuccess { response ->
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        isRegistered = true,
+                        successMessage = response.message
+                    )
                 }
+            }.onFailure { error ->
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        errorMessage = error.message
+                            ?: "No se pudo registrar el usuario"
+                    )
+                }
+            }
+        }
+    }
+
+    fun consumeRegistration() {
+        _uiState.update {
+            it.copy(
+                isRegistered = false,
+                successMessage = null
+            )
+        }
+    }
+
+    fun clearError() {
+        _uiState.update {
+            it.copy(errorMessage = null)
         }
     }
 }

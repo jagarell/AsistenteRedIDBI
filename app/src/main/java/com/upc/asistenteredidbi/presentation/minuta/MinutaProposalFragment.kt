@@ -8,11 +8,16 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.upc.asistenteredidbi.R
 import com.upc.asistenteredidbi.databinding.FragmentMinutaProposalBinding
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
 class MinutaProposalFragment : Fragment() {
@@ -20,8 +25,14 @@ class MinutaProposalFragment : Fragment() {
     private var _binding: FragmentMinutaProposalBinding? = null
     private val binding get() = _binding!!
 
+    private val viewModel: MinutaViewModel by viewModels()
+
     private lateinit var equipmentAdapter: ProposalEquipmentAdapter
     private lateinit var recommendationAdapter: ProposalRecommendationAdapter
+
+    private val evaluationId: Long by lazy {
+        arguments?.get("evaluationId")?.toString()?.toLongOrNull() ?: 1L
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -35,7 +46,10 @@ class MinutaProposalFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         setupRecyclerViews()
         setupClicks()
-        loadMockData()
+        loadMockEquipment()
+        observeViewModel()
+
+        viewModel.loadAnalysis()
     }
 
     private fun setupRecyclerViews() {
@@ -62,9 +76,9 @@ class MinutaProposalFragment : Fragment() {
 
         binding.btnEdit.setOnClickListener {
             findNavController().navigate(
-                com.upc.asistenteredidbi.R.id.action_minutaProposalFragment_to_editProposalFragment,
+                R.id.action_minutaProposalFragment_to_editProposalFragment,
                 Bundle().apply {
-                    putString("evaluationId", "demo-evaluation-001")
+                    putLong("evaluationId", evaluationId)
                 }
             )
         }
@@ -73,7 +87,7 @@ class MinutaProposalFragment : Fragment() {
             findNavController().navigate(
                 R.id.action_minutaProposalFragment_to_sendDraftFragment,
                 Bundle().apply {
-                    putString("evaluationId", "demo-evaluation-001")
+                    putLong("evaluationId", evaluationId)
                 }
             )
         }
@@ -83,7 +97,33 @@ class MinutaProposalFragment : Fragment() {
         }
     }
 
-    private fun loadMockData() {
+    private fun observeViewModel() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.uiState.collect { state ->
+
+                    if (state.isAnalyzing) {
+                        Toast.makeText(requireContext(), "Cargando recomendaciones IA...", Toast.LENGTH_SHORT).show()
+                    }
+
+                    state.analysis?.let { analysis ->
+                        recommendationAdapter.submitList(
+                            analysis.recommendations.mapIndexed { index, text ->
+                                ProposalRecommendationItem(index + 1, text)
+                            }
+                        )
+                    }
+
+                    state.analysisErrorMessage?.let { message ->
+                        Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
+                        viewModel.clearAnalysisError()
+                    }
+                }
+            }
+        }
+    }
+
+    private fun loadMockEquipment() {
         equipmentAdapter.submitList(
             listOf(
                 ProposalEquipmentItem(
@@ -121,17 +161,6 @@ class MinutaProposalFragment : Fragment() {
                     "$320",
                     "Cant: 1"
                 )
-            )
-        )
-
-        recommendationAdapter.submitList(
-            listOf(
-                ProposalRecommendationItem(1, "Implementar segmentación VLAN: POS (VLAN 10), WiFi clientes (VLAN 20), Gestión (VLAN 99)"),
-                ProposalRecommendationItem(2, "Configurar QoS para priorizar tráfico crítico de punto de venta (máx latencia 5ms)"),
-                ProposalRecommendationItem(3, "Instalar 2 APs adicionales en zona de cocina para cobertura completa sin puntos ciegos"),
-                ProposalRecommendationItem(4, "Implementar redundancia de enlace con proveedor secundario (failover automático)"),
-                ProposalRecommendationItem(5, "Configurar portal cautivo para WiFi de clientes con control de ancho de banda"),
-                ProposalRecommendationItem(6, "Monitoreo proactivo con alertas 24/7 vía SNMP y syslog centralizado")
             )
         )
     }

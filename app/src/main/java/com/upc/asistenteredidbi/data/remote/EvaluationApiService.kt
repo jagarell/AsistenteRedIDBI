@@ -1,5 +1,6 @@
 package com.upc.asistenteredidbi.data.remote
 
+import com.upc.asistenteredidbi.data.remote.dto.AnalysisResponseDto
 import com.upc.asistenteredidbi.data.remote.dto.EvaluationDto
 import com.upc.asistenteredidbi.data.remote.dto.EvaluationListItemDto
 import com.upc.asistenteredidbi.data.remote.dto.StartEvaluationRequestDto
@@ -25,4 +26,10 @@ interface EvaluationApiService {
 
     @GET("api/v1/evaluations/{evaluationId}")
     suspend fun getEvaluation(@Path("evaluationId") evaluationId: String): EvaluationDto
+
+    @POST("api/evaluations/{evaluationId}/analysis")
+    suspend fun analyzeEvaluation(
+        @Path("evaluationId") evaluationId: Long
+    ): AnalysisResponseDto
+
 }

@@ -1,5 +1,6 @@
 package com.upc.asistenteredidbi.domain.repository
 
+import com.upc.asistenteredidbi.data.remote.dto.AnalysisResponseDto
 import com.upc.asistenteredidbi.domain.model.Evaluation
 import com.upc.asistenteredidbi.domain.model.EvaluationFilters
 import com.upc.asistenteredidbi.domain.model.EvaluationSummaryItem
@@ -26,4 +27,6 @@ interface EvaluationRepository {
     suspend fun listEvaluations(filters: EvaluationFilters = EvaluationFilters()): Result<List<EvaluationSummaryItem>>
 
     suspend fun getEvaluation(evaluationId: String): Result<Evaluation>
+
+    suspend fun analyzeEvaluation(evaluationId: Long): Result<AnalysisResponseDto>
 }
