@@ -3,10 +3,10 @@ package com.upc.asistenteredidbi.data.remote
 import com.upc.asistenteredidbi.data.remote.dto.ForgotPasswordRequestDto
 import com.upc.asistenteredidbi.data.remote.dto.GenericMessageDto
 import com.upc.asistenteredidbi.data.remote.dto.LoginRequestDto
+import com.upc.asistenteredidbi.data.remote.dto.LoginResponseDto
 import com.upc.asistenteredidbi.data.remote.dto.RegisterRequestDto
 import com.upc.asistenteredidbi.data.remote.dto.RegisterResponseDto
 import com.upc.asistenteredidbi.data.remote.dto.ResetPasswordRequestDto
-import com.upc.asistenteredidbi.data.remote.dto.TokenResponseDto
 import com.upc.asistenteredidbi.data.remote.dto.UserDto
 import retrofit2.http.Body
 import retrofit2.http.GET
@@ -20,8 +20,10 @@ interface AuthApiService {
         @Body request: RegisterRequestDto
     ): RegisterResponseDto
 
-    @POST("api/v1/auth/login")
-    suspend fun login(@Body request: LoginRequestDto): TokenResponseDto
+    @POST("api/auth/login")
+    suspend fun login(
+        @Body request: LoginRequestDto
+    ): LoginResponseDto
 
     @GET("api/v1/auth/me")
     suspend fun getCurrentUser(): UserDto

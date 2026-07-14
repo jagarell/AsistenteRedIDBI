@@ -3,18 +3,18 @@ package com.upc.asistenteredidbi.data.remote.dto
 import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
-@JsonClass(generateAdapter = true)
 data class LoginRequestDto(
-    @Json(name = "email") val email: String,
-    @Json(name = "password") val password: String,
-    @Json(name = "remember_me") val rememberMe: Boolean
+    val email: String,
+    val password: String
 )
 
-@JsonClass(generateAdapter = true)
-data class TokenResponseDto(
-    @Json(name = "access_token") val accessToken: String,
-    @Json(name = "token_type") val tokenType: String,
-    @Json(name = "expires_in_minutes") val expiresInMinutes: Int
+data class LoginResponseDto(
+    val accessToken: String,
+    val expiresInMinutes: Int,
+    val userId: Long,
+    val fullName: String,
+    val email: String,
+    val role: String
 )
 
 @JsonClass(generateAdapter = true)

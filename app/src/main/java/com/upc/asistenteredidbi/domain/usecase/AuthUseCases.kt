@@ -7,14 +7,14 @@ import com.upc.asistenteredidbi.domain.model.User
 import com.upc.asistenteredidbi.domain.repository.AuthRepository
 import javax.inject.Inject
 
-class LoginUseCase @Inject constructor(private val repository: AuthRepository) {
-    suspend operator fun invoke(email: String, password: String, rememberMe: Boolean): Result<AuthSession> {
-        if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
-            return Result.failure(IllegalArgumentException("Ingresa un correo electrónico válido"))
-        }
-        if (password.isBlank()) {
-            return Result.failure(IllegalArgumentException("Ingresa tu contraseña"))
-        }
+class LoginUseCase @Inject constructor(
+    private val repository: AuthRepository
+) {
+
+    suspend operator fun invoke(
+        email: String,
+        password: String
+    ): Result<AuthSession> {
         return repository.login(email, password)
     }
 }

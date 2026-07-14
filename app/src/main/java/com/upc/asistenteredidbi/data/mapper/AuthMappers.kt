@@ -1,9 +1,9 @@
 package com.upc.asistenteredidbi.data.mapper
 
 import com.upc.asistenteredidbi.data.remote.dto.BrandAssetDto
+import com.upc.asistenteredidbi.data.remote.dto.LoginResponseDto
 import com.upc.asistenteredidbi.data.remote.dto.ProfileStatsDto
 import com.upc.asistenteredidbi.data.remote.dto.RegisterResponseDto
-import com.upc.asistenteredidbi.data.remote.dto.TokenResponseDto
 import com.upc.asistenteredidbi.data.remote.dto.UserDto
 import com.upc.asistenteredidbi.domain.model.AuthSession
 import com.upc.asistenteredidbi.domain.model.BrandAsset
@@ -11,10 +11,6 @@ import com.upc.asistenteredidbi.domain.model.ProfileStats
 import com.upc.asistenteredidbi.domain.model.RegisterResult
 import com.upc.asistenteredidbi.domain.model.User
 
-fun TokenResponseDto.toDomain(): AuthSession = AuthSession(
-    accessToken = accessToken,
-    expiresInMinutes = expiresInMinutes
-)
 
 fun UserDto.toDomain(): User = User(
     id = id,
@@ -47,5 +43,12 @@ fun RegisterResponseDto.toRegisterResult(): RegisterResult {
         city = city,
         role = role,
         message = message
+    )
+}
+
+fun LoginResponseDto.toDomain(): AuthSession {
+    return AuthSession(
+        accessToken = accessToken,
+        expiresInMinutes = expiresInMinutes
     )
 }
