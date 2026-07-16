@@ -10,6 +10,30 @@ class ListMinutasUseCase @Inject constructor(
     suspend operator fun invoke(): Result<List<MinutaRecord>> = repository.listMinutas()
 }
 
+class GetMinutaRecordUseCase @Inject constructor(
+    private val repository: MinutaRecordRepository
+) {
+    suspend operator fun invoke(id: Long): Result<MinutaRecord> = repository.getMinuta(id)
+}
+
+class UpdateMinutaUseCase @Inject constructor(
+    private val repository: MinutaRecordRepository
+) {
+    suspend operator fun invoke(
+        id: Long,
+        clientName: String,
+        address: String?,
+        contactName: String?,
+        contactPhone: String?
+    ): Result<MinutaRecord> = repository.updateMinuta(
+        id = id,
+        clientName = clientName,
+        address = address,
+        contactName = contactName,
+        contactPhone = contactPhone
+    )
+}
+
 class CreateMinutaUseCase @Inject constructor(
     private val repository: MinutaRecordRepository
 ) {

@@ -184,6 +184,11 @@
             android:defaultValue="-1"
             app:argType="integer" />
 
+        <argument
+            android:name="minutaId"
+            android:defaultValue="-1L"
+            app:argType="long" />
+
         <action
             android:id="@+id/action_evidenceFragment_to_minutaFragment"
             app:destination="@id/minutaFragment" />
@@ -228,6 +233,11 @@
             android:name="score"
             android:defaultValue="-1"
             app:argType="integer" />
+
+        <argument
+            android:name="minutaId"
+            android:defaultValue="-1L"
+            app:argType="long" />
 
         <action
             android:id="@+id/action_minutaFragment_to_minutaProposalFragment"
@@ -275,6 +285,11 @@
             android:defaultValue="-1"
             app:argType="integer" />
 
+        <argument
+            android:name="minutaId"
+            android:defaultValue="-1L"
+            app:argType="long" />
+
         <action
             android:id="@+id/action_minutaProposalFragment_to_editProposalFragment"
             app:destination="@id/editProposalFragment" />
@@ -295,6 +310,11 @@
             android:defaultValue="1"
             app:argType="string" />
 
+        <argument
+            android:name="minutaId"
+            android:defaultValue="-1L"
+            app:argType="long" />
+
     </fragment>
 
     <fragment
@@ -309,6 +329,11 @@
 
         <argument
             android:name="pdfPath"
+            android:defaultValue=""
+            app:argType="string" />
+
+        <argument
+            android:name="proposalDataJson"
             android:defaultValue=""
             app:argType="string" />
 

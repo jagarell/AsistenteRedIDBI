@@ -17,6 +17,28 @@ class MinutaRecordRepositoryImpl @Inject constructor(
         api.listMinutas().map { it.toDomain() }
     }
 
+    override suspend fun getMinuta(id: Long): Result<MinutaRecord> = safeCall {
+        api.getMinuta(id).toDomain()
+    }
+
+    override suspend fun updateMinuta(
+        id: Long,
+        clientName: String,
+        address: String?,
+        contactName: String?,
+        contactPhone: String?
+    ): Result<MinutaRecord> = safeCall {
+        api.updateMinuta(
+            id,
+            MinutaRecordRequestDto(
+                clientName = clientName,
+                address = address,
+                contactName = contactName,
+                contactPhone = contactPhone
+            )
+        ).toDomain()
+    }
+
     override suspend fun createMinuta(
         evaluationId: Long?,
         clientName: String,

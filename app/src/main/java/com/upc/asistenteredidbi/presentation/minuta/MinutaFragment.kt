@@ -62,6 +62,7 @@ class MinutaFragment : Fragment() {
                     putString("equipmentJson", arguments?.getString("equipmentJson").orEmpty())
                     putString("topologyJson", arguments?.getString("topologyJson").orEmpty())
                     putInt("score", arguments?.getInt("score", -1) ?: -1)
+                    putLong("minutaId", arguments?.getLong("minutaId", -1L) ?: -1L)
                 }
             )
         }

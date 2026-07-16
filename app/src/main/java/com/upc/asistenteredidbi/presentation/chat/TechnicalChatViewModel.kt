@@ -33,6 +33,7 @@ data class TechnicalChatUiState(
     val answers: Map<String, String> = emptyMap(),
     val completed: Boolean = false,
     val proposal: TechnicalChatProposal? = null,
+    val minutaId: Long? = null,
     val errorMessage: String? = null
 )
 
@@ -239,10 +240,13 @@ class TechnicalChatViewModel @Inject constructor(
                 summary = proposal.summary,
                 topologyJson = topologyJson,
                 contentJson = contentJson
-            )
-            // Silencioso a propósito: si falla, el técnico puede completar la
-            // evaluación de todas formas; no hay nada que el usuario deba
-            // resolver aquí (no hay reintento automático en esta primera versión).
+            ).onSuccess { minuta ->
+                _uiState.update { it.copy(minutaId = minuta.id) }
+            }
+            // Si falla, se deja minutaId=null a propósito: el técnico puede
+            // completar la evaluación de todas formas; no hay reintento
+            // automático en esta primera versión (la minuta simplemente no
+            // quedará disponible para editar/validar más adelante).
         }
     }
 }

@@ -17,3 +17,12 @@ data class EquipmentLineDto(
     val description: String,
     val quantity: Int
 )
+
+/** Refleja `ProposalSendRequest` del gateway — genera el PDF y lo envía adjunto. */
+data class ProposalSendRequestDto(
+    val to: String,
+    val cc: String?,
+    val subject: String,
+    val message: String,
+    val proposal: ProposalPdfRequestDto
+)

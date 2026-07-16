@@ -234,6 +234,31 @@
                         android:textStyle="bold" />
                 </LinearLayout>
 
+                <HorizontalScrollView
+                    android:id="@+id/scrollTopologyGraph"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:scrollbars="horizontal"
+                    android:visibility="gone">
+
+                    <com.upc.asistenteredidbi.presentation.common.TopologyGraphView
+                        android:id="@+id/topologyGraphView"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content" />
+
+                </HorizontalScrollView>
+
+                <TextView
+                    android:id="@+id/tvTopologyLegend"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:text="Línea sólida = cable de red · discontinua = WiFi · punteada = USB/Bluetooth · rojo = con falla"
+                    android:textColor="#9CA3AF"
+                    android:textSize="12sp"
+                    android:visibility="gone" />
+
                 <TextView
                     android:id="@+id/tvTopologyDetail"
                     android:layout_width="match_parent"

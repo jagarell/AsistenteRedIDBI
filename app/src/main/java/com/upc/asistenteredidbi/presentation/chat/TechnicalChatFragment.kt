@@ -306,7 +306,8 @@ class TechnicalChatFragment : Fragment() {
                 "topologyText" to proposal?.topologyText.orEmpty(),
                 "equipmentJson" to equipmentJson,
                 "topologyJson" to topologyJson,
-                "score" to (proposal?.score ?: -1)
+                "score" to (proposal?.score ?: -1),
+                "minutaId" to (state.minutaId ?: -1L)
             )
         )
     }

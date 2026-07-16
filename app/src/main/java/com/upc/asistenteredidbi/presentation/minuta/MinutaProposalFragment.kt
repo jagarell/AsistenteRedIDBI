@@ -5,6 +5,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
+import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
@@ -53,6 +54,10 @@ class MinutaProposalFragment : Fragment() {
 
     private val evaluationId: Long by lazy {
         arguments?.get("evaluationId")?.toString()?.toLongOrNull() ?: 1L
+    }
+
+    private val minutaId: Long by lazy {
+        arguments?.getLong("minutaId", -1L) ?: -1L
     }
 
     private var currentEquipment: List<TechnicalEquipmentRecommendation> = emptyList()
@@ -106,16 +111,20 @@ class MinutaProposalFragment : Fragment() {
                 R.id.action_minutaProposalFragment_to_editProposalFragment,
                 Bundle().apply {
                     putString("evaluationId", evaluationId.toString())
+                    putLong("minutaId", minutaId)
                 }
             )
         }
 
         binding.btnSaveDraft.setOnClickListener {
+            val dataJson = moshi.adapter(ProposalPdfData::class.java).toJson(buildProposalPdfData())
+
             findNavController().navigate(
                 R.id.action_minutaProposalFragment_to_sendDraftFragment,
                 Bundle().apply {
                     putString("evaluationId", evaluationId.toString())
                     putString("pdfPath", generatedPdfFile?.absolutePath.orEmpty())
+                    putString("proposalDataJson", dataJson)
                 }
             )
         }
@@ -125,18 +134,21 @@ class MinutaProposalFragment : Fragment() {
         }
     }
 
+    /** Los datos reales en pantalla, listos para generar/enviar el PDF. */
+    private fun buildProposalPdfData(): ProposalPdfData = ProposalPdfData(
+        establishmentName = binding.tvEstablishmentName.text.toString(),
+        address = binding.tvEstablishmentAddress.text.toString(),
+        technicianName = binding.tvTechnicianName.text.toString(),
+        score = arguments?.getInt("score", -1)?.takeIf { it >= 0 },
+        summary = arguments?.getString("proposalSummary"),
+        recommendations = currentRecommendations,
+        equipment = currentEquipment,
+        topologyText = binding.tvTopologyDetail.text.toString()
+    )
+
     /** Pide al gateway el PDF real (bytes) y lo guarda/abre localmente. */
     private fun generatePdf() {
-        val data = ProposalPdfData(
-            establishmentName = binding.tvEstablishmentName.text.toString(),
-            address = binding.tvEstablishmentAddress.text.toString(),
-            technicianName = binding.tvTechnicianName.text.toString(),
-            score = arguments?.getInt("score", -1)?.takeIf { it >= 0 },
-            summary = arguments?.getString("proposalSummary"),
-            recommendations = currentRecommendations,
-            equipment = currentEquipment,
-            topologyText = binding.tvTopologyDetail.text.toString()
-        )
+        val data = buildProposalPdfData()
 
         binding.btnGeneratePdf.isEnabled = false
         binding.btnGeneratePdf.text = "Generando..."
@@ -195,6 +207,13 @@ class MinutaProposalFragment : Fragment() {
             topology != null -> topology.toHierarchicalText()
             topologyText.isNotBlank() -> topologyText
             else -> "Topología no disponible."
+        }
+
+        val hasGraph = topology != null && topology.nodes.isNotEmpty()
+        binding.scrollTopologyGraph.isVisible = hasGraph
+        binding.tvTopologyLegend.isVisible = hasGraph
+        if (hasGraph) {
+            binding.topologyGraphView.setTopology(topology)
         }
     }
 
