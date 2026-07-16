@@ -1,10 +1,6 @@
 package com.upc.asistenteredidbi.presentation.minuta
 
-import android.app.DownloadManager
-import android.content.Context
-import android.net.Uri
 import android.os.Bundle
-import android.os.Environment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -21,9 +17,10 @@ class SendDraftFragment : Fragment() {
     private var _binding: FragmentSendDraftBinding? = null
     private val binding get() = _binding!!
 
-    private val pdfName = "Propuesta_ElRincon_v1.0.pdf"
-    private val pdfSizeMb = 2.4
-    private val pdfUrl = "https://example.com/Propuesta_ElRincon_v1.0.pdf"
+    // El backend todavía no genera el PDF real (ExportService pendiente);
+    // se muestra un nombre de archivo genérico en vez de uno con datos
+    // ficticios de un cliente.
+    private val pdfName = "Propuesta_tecnica.pdf"
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -40,15 +37,13 @@ class SendDraftFragment : Fragment() {
     }
 
     private fun setupInitialData() {
-        binding.etTo.setText("roberto.garcia@elrincon.com")
-        binding.etCc.setText("tecnico@technet.com")
-        binding.etSubject.setText("Propuesta de Infraestructura de Red - Restaurante El Rincón")
+        binding.etSubject.setText("Propuesta de Infraestructura de Red")
         binding.etMessage.setText(
             "Estimado cliente,\n\nAdjunto encontrará nuestra propuesta técnica de infraestructura de red para su establecimiento."
         )
 
         binding.tvPdfName.text = pdfName
-        binding.tvPdfSize.text = "${pdfSizeMb} MB"
+        binding.tvPdfSize.text = "Pendiente de generar"
     }
 
     private fun setupClicks() {
@@ -57,7 +52,12 @@ class SendDraftFragment : Fragment() {
         }
 
         binding.layoutPdf.setOnClickListener {
-            downloadPdf(pdfUrl, pdfName)
+            // El backend todavía no genera un PDF real para descargar.
+            Toast.makeText(
+                requireContext(),
+                "La generación de PDF aún no está disponible.",
+                Toast.LENGTH_SHORT
+            ).show()
         }
 
         binding.btnSendProposal.setOnClickListener {
@@ -68,21 +68,6 @@ class SendDraftFragment : Fragment() {
         binding.btnViewHistory.setOnClickListener {
             findNavController().navigate(R.id.action_sendDraftFragment_to_historialFragment)
         }
-    }
-
-    private fun downloadPdf(url: String, fileName: String) {
-        val request = DownloadManager.Request(Uri.parse(url))
-            .setTitle(fileName)
-            .setDescription("Descargando propuesta técnica")
-            .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
-            .setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, fileName)
-            .setAllowedOverMetered(true)
-            .setAllowedOverRoaming(true)
-
-        val manager = requireContext().getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
-        manager.enqueue(request)
-
-        Toast.makeText(requireContext(), "Descargando PDF...", Toast.LENGTH_SHORT).show()
     }
 
     override fun onDestroyView() {

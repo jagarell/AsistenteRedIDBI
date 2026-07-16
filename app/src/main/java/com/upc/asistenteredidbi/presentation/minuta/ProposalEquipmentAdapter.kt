@@ -2,6 +2,7 @@ package com.upc.asistenteredidbi.presentation.minuta
 
 import android.view.LayoutInflater
 import android.view.ViewGroup
+import androidx.core.view.isVisible
 import androidx.recyclerview.widget.RecyclerView
 import com.upc.asistenteredidbi.databinding.ItemProposalEquipmentBinding
 
@@ -38,6 +39,7 @@ class ProposalEquipmentAdapter : RecyclerView.Adapter<ProposalEquipmentAdapter.V
             binding.tvName.text = item.name
             binding.tvDescription.text = item.description
             binding.tvPrice.text = item.price
+            binding.tvPrice.isVisible = item.price.isNotBlank()
             binding.tvQuantity.text = item.quantity
         }
     }

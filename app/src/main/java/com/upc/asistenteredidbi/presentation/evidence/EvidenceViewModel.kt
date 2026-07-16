@@ -62,7 +62,7 @@ class EvidenceViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
-    private val evaluationId: String = savedStateHandle["evaluationId"] ?: "1"
+    val evaluationId: String = savedStateHandle["evaluationId"] ?: "1"
 
     private val _uiState = MutableStateFlow(EvidenceUiState())
     val uiState: StateFlow<EvidenceUiState> = _uiState.asStateFlow()

@@ -81,14 +81,16 @@
                         android:orientation="vertical">
 
                         <TextView
+                            android:id="@+id/tvEstablishmentName"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:text="Restaurante El Rincón"
+                            android:text="Establecimiento"
                             android:textColor="#111827"
                             android:textSize="20sp"
                             android:textStyle="bold" />
 
                         <TextView
+                            android:id="@+id/tvEstablishmentAddress"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="4dp"
@@ -131,9 +133,10 @@
                             android:textStyle="bold" />
 
                         <TextView
+                            android:id="@+id/tvTechnicianName"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="José Arellano"
+                            android:text="-"
                             android:textColor="#374151"
                             android:textSize="14sp"
                             android:textStyle="bold" />
@@ -171,9 +174,10 @@
                             android:textStyle="bold" />
 
                         <TextView
+                            android:id="@+id/tvDate"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="20 Jun 2026"
+                            android:text="-"
                             android:textColor="#374151"
                             android:textSize="14sp"
                             android:textStyle="bold" />
@@ -230,14 +234,15 @@
                         android:textStyle="bold" />
                 </LinearLayout>
 
-                <ImageView
-                    android:id="@+id/imgTopology"
+                <TextView
+                    android:id="@+id/tvTopologyDetail"
                     android:layout_width="match_parent"
-                    android:layout_height="250dp"
+                    android:layout_height="wrap_content"
                     android:layout_marginTop="16dp"
-                    android:adjustViewBounds="true"
-                    android:scaleType="fitCenter"
-                    android:src="@drawable/img_topology_placeholder" />
+                    android:fontFamily="monospace"
+                    android:text="Topología no disponible."
+                    android:textColor="#374151"
+                    android:textSize="14sp" />
             </LinearLayout>
 
             <!-- Equipamiento -->
@@ -296,7 +301,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="Total Estimado"
+                        android:text="Equipos totales"
                         android:textColor="#374151"
                         android:textSize="18sp"
                         android:textStyle="bold" />
@@ -305,7 +310,7 @@
                         android:id="@+id/tvTotal"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="$3,150"
+                        android:text="0"
                         android:textColor="#1565C0"
                         android:textSize="24sp"
                         android:textStyle="bold" />

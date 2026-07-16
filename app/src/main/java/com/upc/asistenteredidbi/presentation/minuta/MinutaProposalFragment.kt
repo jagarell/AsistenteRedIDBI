@@ -1,8 +1,6 @@
 package com.upc.asistenteredidbi.presentation.minuta
 
-import android.graphics.BitmapFactory
 import android.os.Bundle
-import android.util.Base64
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -14,10 +12,20 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.squareup.moshi.Moshi
+import com.squareup.moshi.Types
 import com.upc.asistenteredidbi.R
+import com.upc.asistenteredidbi.data.session.SessionManager
 import com.upc.asistenteredidbi.databinding.FragmentMinutaProposalBinding
+import com.upc.asistenteredidbi.domain.model.ChatTopology
+import com.upc.asistenteredidbi.domain.model.TechnicalEquipmentRecommendation
+import com.upc.asistenteredidbi.presentation.common.toHierarchicalText
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class MinutaProposalFragment : Fragment() {
@@ -29,6 +37,12 @@ class MinutaProposalFragment : Fragment() {
 
     private lateinit var equipmentAdapter: ProposalEquipmentAdapter
     private lateinit var recommendationAdapter: ProposalRecommendationAdapter
+
+    @Inject
+    lateinit var moshi: Moshi
+
+    @Inject
+    lateinit var sessionManager: SessionManager
 
     private val evaluationId: Long by lazy {
         arguments?.get("evaluationId")?.toString()?.toLongOrNull() ?: 1L
@@ -46,9 +60,11 @@ class MinutaProposalFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         setupRecyclerViews()
         setupClicks()
-        loadMockEquipment()
+        renderProposalFromChat()
         observeViewModel()
+        observeTechnicianName()
 
+        viewModel.load()
         viewModel.loadAnalysis()
     }
 
@@ -97,13 +113,92 @@ class MinutaProposalFragment : Fragment() {
         }
     }
 
+    /** Pinta el resumen, el equipo y la topología que llegaron desde el chat. */
+    private fun renderProposalFromChat() {
+        val today = SimpleDateFormat("d MMM yyyy", Locale("es", "ES")).format(Date())
+        binding.tvDate.text = today
+
+        val equipmentJson = arguments?.getString("equipmentJson").orEmpty()
+        val equipment = parseEquipment(equipmentJson)
+
+        if (equipment.isNotEmpty()) {
+            equipmentAdapter.submitList(equipment.map { item ->
+                ProposalEquipmentItem(
+                    iconRes = iconFor(item.name),
+                    name = item.name,
+                    description = item.description,
+                    price = "",
+                    quantity = "Cant: ${item.quantity}"
+                )
+            })
+            binding.tvTotal.text = equipment.sumOf { it.quantity }.toString()
+        }
+
+        val topologyJson = arguments?.getString("topologyJson").orEmpty()
+        val topology = parseTopology(topologyJson)
+        val topologyText = arguments?.getString("topologyText").orEmpty()
+
+        binding.tvTopologyDetail.text = when {
+            topology != null -> topology.toHierarchicalText()
+            topologyText.isNotBlank() -> topologyText
+            else -> "Topología no disponible."
+        }
+    }
+
+    private fun parseEquipment(json: String): List<TechnicalEquipmentRecommendation> {
+        if (json.isBlank()) return emptyList()
+        return try {
+            val type = Types.newParameterizedType(
+                List::class.java,
+                TechnicalEquipmentRecommendation::class.java
+            )
+            moshi.adapter<List<TechnicalEquipmentRecommendation>>(type).fromJson(json).orEmpty()
+        } catch (_: Exception) {
+            emptyList()
+        }
+    }
+
+    private fun parseTopology(json: String): ChatTopology? {
+        if (json.isBlank()) return null
+        return try {
+            moshi.adapter(ChatTopology::class.java).fromJson(json)
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    private fun iconFor(equipmentName: String): Int {
+        val name = equipmentName.lowercase()
+        return when {
+            "router" in name -> R.drawable.ic_router
+            "switch" in name -> R.drawable.ic_network
+            "access point" in name || "wifi" in name -> R.drawable.ic_wifi
+            "firewall" in name || "seguridad" in name -> R.drawable.ic_security
+            "ups" in name || "energía" in name || "energia" in name -> R.drawable.ic_energy
+            else -> R.drawable.ic_network
+        }
+    }
+
+    private fun observeTechnicianName() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                sessionManager.fullNameFlow.collect { name ->
+                    binding.tvTechnicianName.text = name?.takeIf { it.isNotBlank() } ?: "-"
+                }
+            }
+        }
+    }
+
     private fun observeViewModel() {
         viewLifecycleOwner.lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.uiState.collect { state ->
 
-                    if (state.isAnalyzing) {
-                        Toast.makeText(requireContext(), "Cargando recomendaciones IA...", Toast.LENGTH_SHORT).show()
+                    state.minuta?.let { minuta ->
+                        binding.tvEstablishmentName.text = minuta.establishmentName
+                        binding.tvEstablishmentAddress.text =
+                            minuta.establishmentAddress?.takeIf { it.isNotBlank() }
+                                ?: "Propuesta de Infraestructura de Red"
                     }
 
                     state.analysis?.let { analysis ->
@@ -118,57 +213,14 @@ class MinutaProposalFragment : Fragment() {
                         Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
                         viewModel.clearAnalysisError()
                     }
+
+                    state.errorMessage?.let { message ->
+                        Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
+                        viewModel.clearGeneralError()
+                    }
                 }
             }
         }
-    }
-
-    private fun loadMockEquipment() {
-        equipmentAdapter.submitList(
-            listOf(
-                ProposalEquipmentItem(
-                    R.drawable.ic_router,
-                    "Cisco ISR 1100 Series Router",
-                    "Router principal con firewall integrado",
-                    "$450",
-                    "Cant: 1"
-                ),
-                ProposalEquipmentItem(
-                    R.drawable.ic_network,
-                    "Cisco Catalyst 2960-X Switch",
-                    "Switch administrable 24 puertos PoE",
-                    "$760",
-                    "Cant: 2"
-                ),
-                ProposalEquipmentItem(
-                    R.drawable.ic_wifi,
-                    "Ubiquiti UniFi AP AC PRO",
-                    "Punto de acceso WiFi 6, cobertura 200m²",
-                    "$1,000",
-                    "Cant: 4"
-                ),
-                ProposalEquipmentItem(
-                    R.drawable.ic_security,
-                    "Fortinet FortiGate 60F",
-                    "UTM/Firewall empresarial",
-                    "$620",
-                    "Cant: 1"
-                ),
-                ProposalEquipmentItem(
-                    R.drawable.ic_energy,
-                    "UPS APC Smart-UPS 1500VA",
-                    "Respaldo de energía 15 min",
-                    "$320",
-                    "Cant: 1"
-                )
-            )
-        )
-    }
-
-    private fun setTopologyFromBase64(base64: String) {
-        val bytes = Base64.decode(base64, Base64.DEFAULT)
-        val bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
-        binding.imgTopology.setImageBitmap(bitmap)
     }
 
     override fun onDestroyView() {

@@ -30,15 +30,7 @@ class EditProposalFragment : Fragment() {
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        setupInitialData()
         setupClicks()
-    }
-
-    private fun setupInitialData() {
-        binding.etRestaurant.setText("Restaurante El Rincón")
-        binding.etAddress.setText("Av. Insurgentes Sur 1234, CDMX")
-        binding.etContact.setText("Roberto García")
-        binding.etPhone.setText("+52 55 1234 5678")
     }
 
     private fun setupClicks() {

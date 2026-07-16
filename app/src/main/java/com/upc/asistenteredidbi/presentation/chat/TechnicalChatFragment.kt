@@ -18,12 +18,17 @@ import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.chip.Chip
+import com.squareup.moshi.Moshi
+import com.squareup.moshi.Types
 import com.upc.asistenteredidbi.R
 import com.upc.asistenteredidbi.databinding.FragmentTechnicalChatBinding
+import com.upc.asistenteredidbi.domain.model.ChatTopology
 import com.upc.asistenteredidbi.domain.model.TechnicalChatInputType
+import com.upc.asistenteredidbi.domain.model.TechnicalEquipmentRecommendation
 import com.upc.asistenteredidbi.presentation.common.toHierarchicalText
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class TechnicalChatFragment : Fragment() {
@@ -34,6 +39,9 @@ class TechnicalChatFragment : Fragment() {
     private val viewModel: TechnicalChatViewModel by viewModels()
 
     private lateinit var messagesAdapter: ChatMessagesAdapter
+
+    @Inject
+    lateinit var moshi: Moshi
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -276,14 +284,29 @@ class TechnicalChatFragment : Fragment() {
             return
         }
 
+        val proposal = state.proposal
+
+        val equipmentJson = proposal?.equipment?.let { equipment ->
+            val type = Types.newParameterizedType(
+                List::class.java,
+                TechnicalEquipmentRecommendation::class.java
+            )
+            moshi.adapter<List<TechnicalEquipmentRecommendation>>(type).toJson(equipment)
+        }.orEmpty()
+
+        val topologyJson = proposal?.topology?.let {
+            moshi.adapter(ChatTopology::class.java).toJson(it)
+        }.orEmpty()
+
         findNavController().navigate(
             R.id.action_chat_to_evidence,
             bundleOf(
                 "evaluationId" to viewModel.evaluationId.toString(),
-                "proposalSummary" to
-                        state.proposal?.summary.orEmpty(),
-                "topologyText" to
-                        state.proposal?.topologyText.orEmpty()
+                "proposalSummary" to proposal?.summary.orEmpty(),
+                "topologyText" to proposal?.topologyText.orEmpty(),
+                "equipmentJson" to equipmentJson,
+                "topologyJson" to topologyJson,
+                "score" to (proposal?.score ?: -1)
             )
         )
     }

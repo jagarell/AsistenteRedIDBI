@@ -169,6 +169,21 @@
             android:defaultValue=""
             app:argType="string" />
 
+        <argument
+            android:name="equipmentJson"
+            android:defaultValue=""
+            app:argType="string" />
+
+        <argument
+            android:name="topologyJson"
+            android:defaultValue=""
+            app:argType="string" />
+
+        <argument
+            android:name="score"
+            android:defaultValue="-1"
+            app:argType="integer" />
+
         <action
             android:id="@+id/action_evidenceFragment_to_minutaFragment"
             app:destination="@id/minutaFragment" />
@@ -198,6 +213,21 @@
             android:name="topologyText"
             android:defaultValue=""
             app:argType="string" />
+
+        <argument
+            android:name="equipmentJson"
+            android:defaultValue=""
+            app:argType="string" />
+
+        <argument
+            android:name="topologyJson"
+            android:defaultValue=""
+            app:argType="string" />
+
+        <argument
+            android:name="score"
+            android:defaultValue="-1"
+            app:argType="integer" />
 
         <action
             android:id="@+id/action_minutaFragment_to_minutaProposalFragment"
@@ -229,6 +259,21 @@
             android:name="topologyText"
             android:defaultValue=""
             app:argType="string" />
+
+        <argument
+            android:name="equipmentJson"
+            android:defaultValue=""
+            app:argType="string" />
+
+        <argument
+            android:name="topologyJson"
+            android:defaultValue=""
+            app:argType="string" />
+
+        <argument
+            android:name="score"
+            android:defaultValue="-1"
+            app:argType="integer" />
 
         <action
             android:id="@+id/action_minutaProposalFragment_to_editProposalFragment"

@@ -102,7 +102,7 @@
                         android:layout_marginTop="8dp"
                         android:background="@drawable/bg_edittext"
                         android:paddingHorizontal="18dp"
-                        android:text="Restaurante El Rincón"
+                        android:hint="Nombre del establecimiento"
                         android:textColor="#1F2937"
                         android:textSize="16sp"/>
 
@@ -122,7 +122,7 @@
                         android:layout_marginTop="8dp"
                         android:background="@drawable/bg_edittext"
                         android:paddingHorizontal="18dp"
-                        android:text="Av. Insurgentes Sur 1234, CDMX"
+                        android:hint="Dirección"
                         android:textColor="#1F2937"
                         android:textSize="16sp"/>
 
@@ -142,7 +142,7 @@
                         android:layout_marginTop="8dp"
                         android:background="@drawable/bg_edittext"
                         android:paddingHorizontal="18dp"
-                        android:text="Roberto García"
+                        android:hint="Nombre del contacto"
                         android:textColor="#1F2937"
                         android:textSize="16sp"/>
 
@@ -162,7 +162,7 @@
                         android:layout_marginTop="8dp"
                         android:background="@drawable/bg_edittext"
                         android:paddingHorizontal="18dp"
-                        android:text="+52 55 1234 5678"
+                        android:hint="Teléfono de contacto"
                         android:textColor="#1F2937"
                         android:textSize="16sp"/>
 

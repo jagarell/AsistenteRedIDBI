@@ -44,6 +44,7 @@
                 android:textStyle="bold" />
 
             <TextView
+                android:id="@+id/tvStatus"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Buena"
@@ -53,6 +54,7 @@
         </LinearLayout>
 
         <TextView
+            android:id="@+id/tvPercent"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="78%"
@@ -72,6 +74,7 @@
         android:progressTint="#1565C0"
         android:progressBackgroundTint="#EEF2F7" />
     <TextView
+        android:id="@+id/tvDescription"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="12dp"

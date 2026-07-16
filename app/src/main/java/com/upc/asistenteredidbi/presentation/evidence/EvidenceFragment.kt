@@ -140,9 +140,17 @@ class EvidenceFragment : Fragment() {
 
                     state.analysis?.let { response ->
                         try {
+                            // Reenvía el evaluationId real y todo lo que llegó
+                            // del chat (resumen, topología, equipo, score) en
+                            // vez de descartarlo con un id hardcodeado.
                             val bundle = Bundle().apply {
-                                putString("evaluationId","1")
+                                putString("evaluationId", viewModel.evaluationId)
                                 putInt("globalScore", response.globalScore)
+                                putString("proposalSummary", arguments?.getString("proposalSummary").orEmpty())
+                                putString("topologyText", arguments?.getString("topologyText").orEmpty())
+                                putString("equipmentJson", arguments?.getString("equipmentJson").orEmpty())
+                                putString("topologyJson", arguments?.getString("topologyJson").orEmpty())
+                                putInt("score", arguments?.getInt("score", -1) ?: -1)
                             }
 
                             viewModel.clearResult()
