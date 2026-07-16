@@ -11,7 +11,7 @@ activity = "1.13.0"
 constraintlayout = "2.2.1"
 navigationFragmentKtx = "2.9.8"
 navigationUiKtx = "2.9.8"
-hilt = "2.60.1"
+hilt = "2.58"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
