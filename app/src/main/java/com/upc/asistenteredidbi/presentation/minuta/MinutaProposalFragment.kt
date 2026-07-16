@@ -18,10 +18,14 @@ import com.upc.asistenteredidbi.R
 import com.upc.asistenteredidbi.data.session.SessionManager
 import com.upc.asistenteredidbi.databinding.FragmentMinutaProposalBinding
 import com.upc.asistenteredidbi.domain.model.ChatTopology
+import com.upc.asistenteredidbi.domain.model.ProposalPdfData
 import com.upc.asistenteredidbi.domain.model.TechnicalEquipmentRecommendation
+import com.upc.asistenteredidbi.domain.usecase.GenerateProposalPdfUseCase
+import com.upc.asistenteredidbi.presentation.common.PdfFileUtils
 import com.upc.asistenteredidbi.presentation.common.toHierarchicalText
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
+import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -44,9 +48,16 @@ class MinutaProposalFragment : Fragment() {
     @Inject
     lateinit var sessionManager: SessionManager
 
+    @Inject
+    lateinit var generateProposalPdfUseCase: GenerateProposalPdfUseCase
+
     private val evaluationId: Long by lazy {
         arguments?.get("evaluationId")?.toString()?.toLongOrNull() ?: 1L
     }
+
+    private var currentEquipment: List<TechnicalEquipmentRecommendation> = emptyList()
+    private var currentRecommendations: List<String> = emptyList()
+    private var generatedPdfFile: File? = null
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -104,12 +115,53 @@ class MinutaProposalFragment : Fragment() {
                 R.id.action_minutaProposalFragment_to_sendDraftFragment,
                 Bundle().apply {
                     putString("evaluationId", evaluationId.toString())
+                    putString("pdfPath", generatedPdfFile?.absolutePath.orEmpty())
                 }
             )
         }
 
         binding.btnGeneratePdf.setOnClickListener {
-            Toast.makeText(requireContext(), "Generando PDF...", Toast.LENGTH_SHORT).show()
+            generatePdf()
+        }
+    }
+
+    /** Pide al gateway el PDF real (bytes) y lo guarda/abre localmente. */
+    private fun generatePdf() {
+        val data = ProposalPdfData(
+            establishmentName = binding.tvEstablishmentName.text.toString(),
+            address = binding.tvEstablishmentAddress.text.toString(),
+            technicianName = binding.tvTechnicianName.text.toString(),
+            score = arguments?.getInt("score", -1)?.takeIf { it >= 0 },
+            summary = arguments?.getString("proposalSummary"),
+            recommendations = currentRecommendations,
+            equipment = currentEquipment,
+            topologyText = binding.tvTopologyDetail.text.toString()
+        )
+
+        binding.btnGeneratePdf.isEnabled = false
+        binding.btnGeneratePdf.text = "Generando..."
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            generateProposalPdfUseCase(data)
+                .onSuccess { bytes ->
+                    val file = PdfFileUtils.saveToCache(
+                        requireContext(),
+                        bytes,
+                        "propuesta_$evaluationId.pdf"
+                    )
+                    generatedPdfFile = file
+                    PdfFileUtils.openPdf(requireContext(), file)
+                }
+                .onFailure { error ->
+                    Toast.makeText(
+                        requireContext(),
+                        error.message ?: "No se pudo generar el PDF",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+
+            binding.btnGeneratePdf.isEnabled = true
+            binding.btnGeneratePdf.text = "Generar PDF"
         }
     }
 
@@ -120,6 +172,7 @@ class MinutaProposalFragment : Fragment() {
 
         val equipmentJson = arguments?.getString("equipmentJson").orEmpty()
         val equipment = parseEquipment(equipmentJson)
+        currentEquipment = equipment
 
         if (equipment.isNotEmpty()) {
             equipmentAdapter.submitList(equipment.map { item ->
@@ -202,6 +255,7 @@ class MinutaProposalFragment : Fragment() {
                     }
 
                     state.analysis?.let { analysis ->
+                        currentRecommendations = analysis.recommendations
                         recommendationAdapter.submitList(
                             analysis.recommendations.mapIndexed { index, text ->
                                 ProposalRecommendationItem(index + 1, text)

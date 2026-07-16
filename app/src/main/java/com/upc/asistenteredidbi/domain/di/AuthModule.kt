@@ -7,12 +7,14 @@ import com.upc.asistenteredidbi.data.remote.ChatApiService
 import com.upc.asistenteredidbi.data.remote.EvaluationApiService
 import com.upc.asistenteredidbi.data.remote.EvidenceApiService
 import com.upc.asistenteredidbi.data.remote.MinutaApiService
+import com.upc.asistenteredidbi.data.remote.PdfApiService
 import com.upc.asistenteredidbi.data.remote.ProfileApiService
 import com.upc.asistenteredidbi.data.repository.AuthRepositoryImpl
 import com.upc.asistenteredidbi.data.repository.ChatRepositoryImpl
 import com.upc.asistenteredidbi.data.repository.EvaluationRepositoryImpl
 import com.upc.asistenteredidbi.data.repository.EvidenceRepositoryImpl
 import com.upc.asistenteredidbi.data.repository.MinutaRecordRepositoryImpl
+import com.upc.asistenteredidbi.data.repository.PdfRepositoryImpl
 import com.upc.asistenteredidbi.data.repository.ProfileRepositoryImpl
 import com.upc.asistenteredidbi.data.session.SessionManager
 import com.upc.asistenteredidbi.domain.repository.AuthRepository
@@ -20,6 +22,7 @@ import com.upc.asistenteredidbi.domain.repository.ChatRepository
 import com.upc.asistenteredidbi.domain.repository.EvaluationRepository
 import com.upc.asistenteredidbi.domain.repository.EvidenceRepository
 import com.upc.asistenteredidbi.domain.repository.MinutaRecordRepository
+import com.upc.asistenteredidbi.domain.repository.PdfRepository
 import com.upc.asistenteredidbi.domain.repository.ProfileRepository
 import dagger.Binds
 import dagger.Module
@@ -161,6 +164,14 @@ object AuthModule {
     ): MinutaApiService {
         return retrofit.create(MinutaApiService::class.java)
     }
+
+    @Provides
+    @Singleton
+    fun providePdfApiService(
+        retrofit: Retrofit
+    ): PdfApiService {
+        return retrofit.create(PdfApiService::class.java)
+    }
 }
 
 @Module
@@ -202,4 +213,10 @@ abstract class AuthRepositoryModule {
     abstract fun bindMinutaRecordRepository(
         impl: MinutaRecordRepositoryImpl
     ): MinutaRecordRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindPdfRepository(
+        impl: PdfRepositoryImpl
+    ): PdfRepository
 }

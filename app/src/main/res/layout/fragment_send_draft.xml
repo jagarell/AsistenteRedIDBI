@@ -196,6 +196,17 @@
                         android:text="2.4 MB"
                         android:textColor="#9CA3AF"
                         android:textSize="14sp" />
+
+                    <ImageButton
+                        android:id="@+id/btnDownloadPdf"
+                        android:layout_width="32dp"
+                        android:layout_height="32dp"
+                        android:layout_marginStart="10dp"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:contentDescription="Descargar PDF"
+                        android:padding="4dp"
+                        app:srcCompat="@drawable/ic_save"
+                        app:tint="#1565C0" />
                 </LinearLayout>
             </LinearLayout>
 

@@ -307,6 +307,11 @@
             android:defaultValue="1"
             app:argType="string" />
 
+        <argument
+            android:name="pdfPath"
+            android:defaultValue=""
+            app:argType="string" />
+
         <action
             android:id="@+id/action_sendDraftFragment_to_historialFragment"
             app:destination="@id/historialFragment"

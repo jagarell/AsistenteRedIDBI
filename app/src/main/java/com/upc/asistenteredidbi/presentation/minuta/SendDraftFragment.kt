@@ -9,7 +9,10 @@ import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
 import com.upc.asistenteredidbi.R
 import com.upc.asistenteredidbi.databinding.FragmentSendDraftBinding
+import com.upc.asistenteredidbi.presentation.common.PdfFileUtils
 import dagger.hilt.android.AndroidEntryPoint
+import java.io.File
+import java.util.Locale
 
 @AndroidEntryPoint
 class SendDraftFragment : Fragment() {
@@ -17,10 +20,13 @@ class SendDraftFragment : Fragment() {
     private var _binding: FragmentSendDraftBinding? = null
     private val binding get() = _binding!!
 
-    // El backend todavía no genera el PDF real (ExportService pendiente);
-    // se muestra un nombre de archivo genérico en vez de uno con datos
-    // ficticios de un cliente.
-    private val pdfName = "Propuesta_tecnica.pdf"
+    /** El PDF real ya generado en la pantalla de propuesta (bytes del gateway). */
+    private val pdfFile: File? by lazy {
+        arguments?.getString("pdfPath")
+            ?.takeIf { it.isNotBlank() }
+            ?.let { File(it) }
+            ?.takeIf { it.exists() }
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -42,8 +48,14 @@ class SendDraftFragment : Fragment() {
             "Estimado cliente,\n\nAdjunto encontrará nuestra propuesta técnica de infraestructura de red para su establecimiento."
         )
 
-        binding.tvPdfName.text = pdfName
-        binding.tvPdfSize.text = "Pendiente de generar"
+        val file = pdfFile
+        if (file != null) {
+            binding.tvPdfName.text = file.name
+            binding.tvPdfSize.text = formatSize(file.length())
+        } else {
+            binding.tvPdfName.text = "Propuesta_tecnica.pdf"
+            binding.tvPdfSize.text = "Genera el PDF desde la propuesta técnica"
+        }
     }
 
     private fun setupClicks() {
@@ -52,12 +64,22 @@ class SendDraftFragment : Fragment() {
         }
 
         binding.layoutPdf.setOnClickListener {
-            // El backend todavía no genera un PDF real para descargar.
-            Toast.makeText(
-                requireContext(),
-                "La generación de PDF aún no está disponible.",
-                Toast.LENGTH_SHORT
-            ).show()
+            withPdfOrWarn { file -> PdfFileUtils.openPdf(requireContext(), file) }
+        }
+
+        binding.btnDownloadPdf.setOnClickListener {
+            withPdfOrWarn { file ->
+                val ok = PdfFileUtils.downloadToPublicDownloads(
+                    requireContext(),
+                    file.readBytes(),
+                    file.name
+                )
+                Toast.makeText(
+                    requireContext(),
+                    if (ok) "PDF descargado en Descargas" else "No se pudo descargar el PDF",
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
         }
 
         binding.btnSendProposal.setOnClickListener {
@@ -67,6 +89,28 @@ class SendDraftFragment : Fragment() {
 
         binding.btnViewHistory.setOnClickListener {
             findNavController().navigate(R.id.action_sendDraftFragment_to_historialFragment)
+        }
+    }
+
+    private fun withPdfOrWarn(action: (File) -> Unit) {
+        val file = pdfFile
+        if (file != null) {
+            action(file)
+        } else {
+            Toast.makeText(
+                requireContext(),
+                "Genera el PDF primero desde la propuesta técnica",
+                Toast.LENGTH_SHORT
+            ).show()
+        }
+    }
+
+    private fun formatSize(bytes: Long): String {
+        val kb = bytes / 1024f
+        return if (kb < 1024f) {
+            String.format(Locale.US, "%.0f KB", kb)
+        } else {
+            String.format(Locale.US, "%.1f MB", kb / 1024f)
         }
     }
 
