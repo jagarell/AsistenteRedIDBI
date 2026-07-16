@@ -62,7 +62,7 @@ class AssistantHomeFragment : Fragment() {
         }
 
         binding.cardContinue.setOnClickListener {
-            findNavController().navigate(R.id.action_home_to_chat)
+            findNavController().navigate(R.id.action_home_to_minutas)
         }
 
         binding.cardHistorial.setOnClickListener {

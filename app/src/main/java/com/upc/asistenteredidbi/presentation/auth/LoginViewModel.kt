@@ -98,7 +98,10 @@ class LoginViewModel @Inject constructor(
 
                 sessionManager.saveSession(
                     accessToken = session.accessToken,
-                    expiresInMinutes = session.expiresInMinutes
+                    expiresInMinutes = session.expiresInMinutes,
+                    userId = session.userId,
+                    fullName = session.fullName,
+                    role = session.role
                 )
 
                 _uiState.update {

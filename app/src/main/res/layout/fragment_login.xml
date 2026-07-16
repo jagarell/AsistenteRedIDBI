@@ -144,7 +144,8 @@
                         <CheckBox
                             android:id="@+id/cb_remember"
                             android:layout_width="wrap_content"
-                            android:layout_height="wrap_content" />
+                            android:layout_height="wrap_content"
+                            android:visibility="invisible"/>
 
                         <TextView
                             android:layout_width="0dp"
@@ -153,6 +154,7 @@
                             android:text="Recordar sesión"
                             android:textColor="#4B5563"
                             android:textSize="15sp"
+                            android:visibility="invisible"
                             android:textStyle="bold" />
 
                         <TextView
@@ -178,7 +180,7 @@
                         android:id="@+id/btn_login"
                         android:layout_width="match_parent"
                         android:layout_height="56dp"
-                        android:layout_marginTop="20dp"
+                        android:layout_marginTop="10dp"
                         android:text="Iniciar Sesión"
                         android:textAllCaps="false"
                         android:textSize="18sp"

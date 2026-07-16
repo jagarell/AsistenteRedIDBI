@@ -7,6 +7,6 @@ data class RegisterResult(
     val phone: String,
     val company: String,
     val city: String,
-    val role: String,
+    val role: Role,
     val message: String
 )

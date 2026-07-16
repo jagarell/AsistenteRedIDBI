@@ -53,8 +53,15 @@ class EvidenceFragment : Fragment() {
         }
 
     private val takePicture =
-        registerForActivityResult(ActivityResultContracts.TakePicture()) { success ->
-            if (success) markCurrentAsCaptured()
+        registerForActivityResult(
+            ActivityResultContracts.TakePicture()
+        ) { success ->
+            if (success && photoUri != null) {
+                markCurrentAsCaptured()
+
+                // Cuando conectes la carga real al backend:
+                // viewModel.uploadPhotoForSelectedItem(photoUri!!)
+            }
         }
 
     private val pickImage =
@@ -106,10 +113,7 @@ class EvidenceFragment : Fragment() {
         }
 
         binding.btnAnalyze.setOnClickListener {
-            binding.btnAnalyze.setOnClickListener {
-                val evaluationId = arguments?.get("evaluationId")?.toString()?.toLongOrNull() ?: 1L
-                viewModel.analyzeEvaluation()
-            }
+            viewModel.analyzeEvaluation()
         }
 
         binding.btnUploadPlan.setOnClickListener {
@@ -135,19 +139,24 @@ class EvidenceFragment : Fragment() {
                     }
 
                     state.analysis?.let { response ->
-                        val evaluationId = arguments?.get("evaluationId")?.toString()?.toLongOrNull() ?: 1L
+                        try {
+                            val bundle = Bundle().apply {
+                                putString("evaluationId","1")
+                                putInt("globalScore", response.globalScore)
+                            }
 
-                        val bundle = Bundle().apply {
-                            putLong("evaluationId", evaluationId)
-                            putInt("globalScore", response.globalScore)
+                            viewModel.clearResult()
+
+                            if (findNavController().currentDestination?.id == R.id.evidenceFragment) {
+                                findNavController().navigate(
+                                    R.id.action_evidenceFragment_to_minutaFragment,
+                                    bundle
+                                )
+                            }
+
+                        } catch (e: Exception) {
+                            e.printStackTrace()
                         }
-
-                        viewModel.clearResult()
-
-                        findNavController().navigate(
-                            R.id.action_evidenceFragment_to_minutaFragment,
-                            bundle
-                        )
                     }
 
                     state.errorMessage?.let {
@@ -171,16 +180,25 @@ class EvidenceFragment : Fragment() {
             .show()
     }
 
+    private var currentPhotoFile: File? = null
+
     private fun openCamera() {
-        val file = File.createTempFile("evidence_", ".jpg", requireContext().cacheDir)
+        val file = File.createTempFile(
+            "evidence_",
+            ".jpg",
+            requireContext().cacheDir
+        )
+
+        currentPhotoFile = file
+
         photoUri = FileProvider.getUriForFile(
             requireContext(),
             "${requireContext().packageName}.provider",
             file
         )
+
         takePicture.launch(photoUri)
     }
-
     private fun markCurrentAsCaptured() {
         val selected = currentItem ?: return
         val index = items.indexOfFirst { it.id == selected.id }

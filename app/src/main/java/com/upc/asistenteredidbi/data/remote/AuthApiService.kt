@@ -1,12 +1,14 @@
 package com.upc.asistenteredidbi.data.remote
 
 import com.upc.asistenteredidbi.data.remote.dto.ForgotPasswordRequestDto
+import com.upc.asistenteredidbi.data.remote.dto.ForgotPasswordResponseDto
 import com.upc.asistenteredidbi.data.remote.dto.GenericMessageDto
 import com.upc.asistenteredidbi.data.remote.dto.LoginRequestDto
 import com.upc.asistenteredidbi.data.remote.dto.LoginResponseDto
 import com.upc.asistenteredidbi.data.remote.dto.RegisterRequestDto
 import com.upc.asistenteredidbi.data.remote.dto.RegisterResponseDto
 import com.upc.asistenteredidbi.data.remote.dto.ResetPasswordRequestDto
+import com.upc.asistenteredidbi.data.remote.dto.ResetPasswordResponseDto
 import com.upc.asistenteredidbi.data.remote.dto.UserDto
 import retrofit2.http.Body
 import retrofit2.http.GET
@@ -28,9 +30,13 @@ interface AuthApiService {
     @GET("api/v1/auth/me")
     suspend fun getCurrentUser(): UserDto
 
-    @POST("api/v1/auth/forgot-password")
-    suspend fun forgotPassword(@Body request: ForgotPasswordRequestDto): GenericMessageDto
+    @POST("api/auth/forgot-password")
+    suspend fun forgotPassword(
+        @Body request: ForgotPasswordRequestDto
+    ): ForgotPasswordResponseDto
 
-    @POST("api/v1/auth/reset-password")
-    suspend fun resetPassword(@Body request: ResetPasswordRequestDto): GenericMessageDto
+    @POST("api/auth/reset-password")
+    suspend fun resetPassword(
+        @Body request: ResetPasswordRequestDto
+    ): ResetPasswordResponseDto
 }

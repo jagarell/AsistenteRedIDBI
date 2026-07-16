@@ -9,12 +9,15 @@ data class User(
     val phone: String?,
     val company: String?,
     val city: String?,
-    val role: String
+    val role: Role
 )
 
 data class AuthSession(
     val accessToken: String,
-    val expiresInMinutes: Int
+    val expiresInMinutes: Int,
+    val userId: Long,
+    val fullName: String,
+    val role: Role
 )
 
 data class ProfileStats(

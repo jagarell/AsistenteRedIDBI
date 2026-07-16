@@ -5,23 +5,30 @@
     android:id="@+id/nav_graph"
     app:startDestination="@id/loginFragment">
 
-    <!-- ── Autenticación ────────────────────────────────────── -->
+    <!-- ───────────────────────────────────────────────────────
+         AUTENTICACIÓN
+    ──────────────────────────────────────────────────────── -->
+
     <fragment
         android:id="@+id/loginFragment"
         android:name="com.upc.asistenteredidbi.presentation.auth.LoginFragment"
         android:label="Iniciar sesión"
         tools:layout="@layout/fragment_login">
+
         <action
             android:id="@+id/action_login_to_home"
             app:destination="@id/assistantHomeFragment"
             app:popUpTo="@id/loginFragment"
-            app:popUpToInclusive="true"/>
+            app:popUpToInclusive="true" />
+
         <action
             android:id="@+id/action_login_to_register"
-            app:destination="@id/registerFragment"/>
+            app:destination="@id/registerFragment" />
+
         <action
             android:id="@+id/action_login_to_forgot"
-            app:destination="@id/forgotPasswordFragment"/>
+            app:destination="@id/forgotPasswordFragment" />
+
     </fragment>
 
     <fragment
@@ -29,11 +36,13 @@
         android:name="com.upc.asistenteredidbi.presentation.auth.RegisterFragment"
         android:label="Registro"
         tools:layout="@layout/fragment_register">
+
         <action
             android:id="@+id/action_register_to_login"
             app:destination="@id/loginFragment"
             app:popUpTo="@id/loginFragment"
-            app:popUpToInclusive="true"/>
+            app:popUpToInclusive="true" />
+
     </fragment>
 
     <fragment
@@ -41,57 +50,104 @@
         android:name="com.upc.asistenteredidbi.presentation.auth.ForgotPasswordFragment"
         android:label="Recuperar contraseña"
         tools:layout="@layout/fragment_forgot_password">
+
         <action
-            android:id="@+id/action_forgot_to_login"
-            app:destination="@id/loginFragment"
-            app:popUpTo="@id/loginFragment"
-            app:popUpToInclusive="true"/>
+            android:id="@+id/action_forgotPasswordFragment_to_resetPasswordFragment"
+            app:destination="@id/resetPasswordFragment" />
+
     </fragment>
 
-    <!-- ── Home del asistente ───────────────────────────────── -->
+    <fragment
+        android:id="@+id/resetPasswordFragment"
+        android:name="com.upc.asistenteredidbi.presentation.auth.ResetPasswordFragment"
+        android:label="Nueva contraseña"
+        tools:layout="@layout/fragment_reset_password">
+
+        <argument
+            android:name="email"
+            android:defaultValue=""
+            app:argType="string" />
+
+        <argument
+            android:name="expiresInMinutes"
+            android:defaultValue="10"
+            app:argType="integer" />
+
+        <action
+            android:id="@+id/action_resetPasswordFragment_to_loginFragment"
+            app:destination="@id/loginFragment"
+            app:popUpTo="@id/loginFragment"
+            app:popUpToInclusive="true" />
+
+    </fragment>
+
+    <!-- ───────────────────────────────────────────────────────
+         HOME
+    ──────────────────────────────────────────────────────── -->
+
     <fragment
         android:id="@+id/assistantHomeFragment"
         android:name="com.upc.asistenteredidbi.presentation.home.AssistantHomeFragment"
         android:label="Inicio"
         tools:layout="@layout/fragment_assistant_home">
+
         <action
             android:id="@+id/action_home_to_chat"
-            app:destination="@id/technicalChatFragment"/>
+            app:destination="@id/technicalChatFragment" />
+
         <action
             android:id="@+id/action_home_to_historial"
-            app:destination="@id/historialFragment"/>
+            app:destination="@id/historialFragment" />
+
         <action
             android:id="@+id/action_home_to_perfil"
-            app:destination="@id/perfilFragment"/>
+            app:destination="@id/perfilFragment" />
+
         <action
             android:id="@+id/action_home_to_config"
-            app:destination="@id/configuracionFragment"/>
+            app:destination="@id/configuracionFragment" />
+
+        <action
+            android:id="@+id/action_home_to_minutas"
+            app:destination="@id/minutasListFragment" />
+
         <action
             android:id="@+id/action_home_to_logout"
             app:destination="@id/loginFragment"
-            app:popUpTo="@id/nav_graph"
-            app:popUpToInclusive="true"/>
+            app:popUpTo="@id/assistantHomeFragment"
+            app:popUpToInclusive="true" />
+
     </fragment>
 
-    <!-- ── Chat conversacional (evaluación técnica) ─────────── -->
+    <!-- ───────────────────────────────────────────────────────
+         CHAT TÉCNICO
+    ──────────────────────────────────────────────────────── -->
+
     <fragment
         android:id="@+id/technicalChatFragment"
         android:name="com.upc.asistenteredidbi.presentation.chat.TechnicalChatFragment"
         android:label="Evaluación técnica"
         tools:layout="@layout/fragment_technical_chat">
+
         <argument
             android:name="evaluationId"
-            app:argType="string"
-            android:defaultValue="new"/>
-        <action
-            android:id="@+id/action_chat_to_minuta"
-            app:destination="@id/minutaFragment"/>
+            android:defaultValue="1"
+            app:argType="string" />
+
         <action
             android:id="@+id/action_chat_to_evidence"
-            app:destination="@id/evidenceFragment"/>
+            app:destination="@id/evidenceFragment" />
+
+        <action
+            android:id="@+id/action_chat_to_minuta"
+            app:destination="@id/minutaFragment" />
+
     </fragment>
 
-    <!-- ── Captura de evidencias ────────────────────────────── -->
+    <!-- ───────────────────────────────────────────────────────
+         EVIDENCIAS
+    ──────────────────────────────────────────────────────── -->
+
     <fragment
         android:id="@+id/evidenceFragment"
         android:name="com.upc.asistenteredidbi.presentation.evidence.EvidenceFragment"
@@ -100,6 +156,17 @@
 
         <argument
             android:name="evaluationId"
+            android:defaultValue="1"
+            app:argType="string" />
+
+        <argument
+            android:name="proposalSummary"
+            android:defaultValue=""
+            app:argType="string" />
+
+        <argument
+            android:name="topologyText"
+            android:defaultValue=""
             app:argType="string" />
 
         <action
@@ -108,70 +175,149 @@
 
     </fragment>
 
-    <!-- ── Minuta técnica (4 tabs) ──────────────────────────── -->
+    <!-- ───────────────────────────────────────────────────────
+         MINUTA CONSOLIDADA
+    ──────────────────────────────────────────────────────── -->
+
     <fragment
         android:id="@+id/minutaFragment"
-        android:name="com.upc.asistenteredidbi.presentation.minuta.MinutaFragment">
+        android:name="com.upc.asistenteredidbi.presentation.minuta.MinutaFragment"
+        android:label="Minuta técnica">
+
+        <argument
+            android:name="evaluationId"
+            android:defaultValue="1"
+            app:argType="string" />
+
+        <argument
+            android:name="proposalSummary"
+            android:defaultValue=""
+            app:argType="string" />
+
+        <argument
+            android:name="topologyText"
+            android:defaultValue=""
+            app:argType="string" />
 
         <action
             android:id="@+id/action_minutaFragment_to_minutaProposalFragment"
             app:destination="@id/minutaProposalFragment" />
+
     </fragment>
+
+    <!-- ───────────────────────────────────────────────────────
+         PROPUESTA TÉCNICA
+    ──────────────────────────────────────────────────────── -->
 
     <fragment
         android:id="@+id/minutaProposalFragment"
         android:name="com.upc.asistenteredidbi.presentation.minuta.MinutaProposalFragment"
-        android:label="Propuesta Técnica">
+        android:label="Propuesta técnica"
+        tools:layout="@layout/fragment_minuta_proposal">
+
+        <argument
+            android:name="evaluationId"
+            android:defaultValue="1"
+            app:argType="string" />
+
+        <argument
+            android:name="proposalSummary"
+            android:defaultValue=""
+            app:argType="string" />
+
+        <argument
+            android:name="topologyText"
+            android:defaultValue=""
+            app:argType="string" />
+
         <action
             android:id="@+id/action_minutaProposalFragment_to_editProposalFragment"
             app:destination="@id/editProposalFragment" />
+
         <action
             android:id="@+id/action_minutaProposalFragment_to_sendDraftFragment"
             app:destination="@id/sendDraftFragment" />
+
     </fragment>
 
     <fragment
         android:id="@+id/editProposalFragment"
         android:name="com.upc.asistenteredidbi.presentation.minuta.EditProposalFragment"
-        android:label="Editar Propuesta" />
+        android:label="Editar propuesta">
+
+        <argument
+            android:name="evaluationId"
+            android:defaultValue="1"
+            app:argType="string" />
+
+    </fragment>
 
     <fragment
         android:id="@+id/sendDraftFragment"
         android:name="com.upc.asistenteredidbi.presentation.minuta.SendDraftFragment"
-        android:label="Enviar Borrador">
+        android:label="Enviar borrador">
+
+        <argument
+            android:name="evaluationId"
+            android:defaultValue="1"
+            app:argType="string" />
+
         <action
             android:id="@+id/action_sendDraftFragment_to_historialFragment"
             app:destination="@id/historialFragment"
             app:popUpTo="@id/assistantHomeFragment"
             app:popUpToInclusive="false" />
+
     </fragment>
 
-    <!-- ── Historial de evaluaciones ────────────────────────── -->
+    <!-- ───────────────────────────────────────────────────────
+         HISTORIAL
+    ──────────────────────────────────────────────────────── -->
+
     <fragment
         android:id="@+id/historialFragment"
         android:name="com.upc.asistenteredidbi.presentation.historial.HistorialFragment"
         android:label="Historial"
         tools:layout="@layout/fragment_historial">
+
         <action
             android:id="@+id/action_historial_to_minuta"
-            app:destination="@id/minutaFragment"/>
+            app:destination="@id/minutaFragment" />
+
         <action
             android:id="@+id/action_historial_to_chat"
             app:destination="@id/technicalChatFragment" />
+
     </fragment>
 
-    <!-- ── Perfil ────────────────────────────────────────────── -->
+    <!-- ───────────────────────────────────────────────────────
+         MINUTAS (listado de todos los técnicos, validación por supervisor)
+    ──────────────────────────────────────────────────────── -->
+
+    <fragment
+        android:id="@+id/minutasListFragment"
+        android:name="com.upc.asistenteredidbi.presentation.minutas.MinutasListFragment"
+        android:label="Minutas"
+        tools:layout="@layout/fragment_minutas_list" />
+
+    <!-- ───────────────────────────────────────────────────────
+         PERFIL
+    ──────────────────────────────────────────────────────── -->
+
     <fragment
         android:id="@+id/perfilFragment"
         android:name="com.upc.asistenteredidbi.presentation.perfil.PerfilFragment"
         android:label="Mi perfil"
-        tools:layout="@layout/fragment_perfil"/>
+        tools:layout="@layout/fragment_perfil" />
 
-    <!-- ── Configuración ────────────────────────────────────── -->
+    <!-- ───────────────────────────────────────────────────────
+         CONFIGURACIÓN
+    ──────────────────────────────────────────────────────── -->
+
     <fragment
         android:id="@+id/configuracionFragment"
         android:name="com.upc.asistenteredidbi.presentation.configuration.ConfiguracionFragment"
         android:label="Configuración"
-        tools:layout="@layout/fragment_configuracion"/>
+        tools:layout="@layout/fragment_configuracion" />
 
 </navigation>

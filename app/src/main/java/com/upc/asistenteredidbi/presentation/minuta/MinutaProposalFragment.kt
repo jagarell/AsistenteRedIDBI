@@ -78,7 +78,7 @@ class MinutaProposalFragment : Fragment() {
             findNavController().navigate(
                 R.id.action_minutaProposalFragment_to_editProposalFragment,
                 Bundle().apply {
-                    putLong("evaluationId", evaluationId)
+                    putString("evaluationId", evaluationId.toString())
                 }
             )
         }
@@ -87,7 +87,7 @@ class MinutaProposalFragment : Fragment() {
             findNavController().navigate(
                 R.id.action_minutaProposalFragment_to_sendDraftFragment,
                 Bundle().apply {
-                    putLong("evaluationId", evaluationId)
+                    putString("evaluationId", evaluationId.toString())
                 }
             )
         }

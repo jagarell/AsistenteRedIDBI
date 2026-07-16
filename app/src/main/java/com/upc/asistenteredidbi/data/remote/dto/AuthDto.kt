@@ -50,14 +50,4 @@ data class BrandAssetDto(
 )
 
 @JsonClass(generateAdapter = true)
-data class ForgotPasswordRequestDto(@Json(name = "email") val email: String)
-
-@JsonClass(generateAdapter = true)
-data class ResetPasswordRequestDto(
-    @Json(name = "token") val token: String,
-    @Json(name = "new_password") val newPassword: String,
-    @Json(name = "confirm_password") val confirmPassword: String
-)
-
-@JsonClass(generateAdapter = true)
 data class GenericMessageDto(@Json(name = "message") val message: String)

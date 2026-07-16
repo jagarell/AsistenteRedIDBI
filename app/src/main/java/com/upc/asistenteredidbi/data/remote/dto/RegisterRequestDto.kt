@@ -6,6 +6,7 @@ data class RegisterRequestDto(
     val phone: String,
     val company: String,
     val city: String,
+    val role: String = "TECNICO",
     val password: String,
     val confirmPassword: String
 )

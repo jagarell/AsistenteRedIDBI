@@ -33,7 +33,8 @@ class RegisterViewModel @Inject constructor(
         company: String,
         city: String,
         password: String,
-        confirmPassword: String
+        confirmPassword: String,
+        role: String = "TECNICO"
     ) {
         if (_uiState.value.isLoading) return
 
@@ -54,7 +55,8 @@ class RegisterViewModel @Inject constructor(
                 company = company,
                 city = city,
                 password = password,
-                confirmPassword = confirmPassword
+                confirmPassword = confirmPassword,
+                role = role
             ).onSuccess { response ->
                 _uiState.update {
                     it.copy(

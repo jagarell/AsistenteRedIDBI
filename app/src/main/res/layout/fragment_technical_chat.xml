@@ -156,7 +156,7 @@
     <LinearLayout
         android:id="@+id/inputArea"
         android:layout_width="match_parent"
-        android:layout_height="150dp"
+        android:layout_height="wrap_content"
         android:layout_gravity="bottom"
         android:background="@android:color/white"
         android:elevation="12dp"
@@ -165,6 +165,22 @@
         android:paddingEnd="22dp"
         android:paddingTop="14dp"
         android:paddingBottom="30dp">
+
+        <HorizontalScrollView
+            android:id="@+id/scrollQuickReplies"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="10dp"
+            android:scrollbars="none"
+            android:visibility="gone">
+
+            <LinearLayout
+                android:id="@+id/containerQuickReplies"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal" />
+
+        </HorizontalScrollView>
 
         <LinearLayout
             android:layout_width="match_parent"

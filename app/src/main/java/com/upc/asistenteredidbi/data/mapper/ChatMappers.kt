@@ -5,12 +5,14 @@ import com.upc.asistenteredidbi.data.remote.dto.ChatNodeDto
 import com.upc.asistenteredidbi.data.remote.dto.ChatProgressDto
 import com.upc.asistenteredidbi.data.remote.dto.ChatResponseDto
 import com.upc.asistenteredidbi.data.remote.dto.ChatResponseExtractedDataDto
+import com.upc.asistenteredidbi.data.remote.dto.TechnicalChatResponseDto
 import com.upc.asistenteredidbi.domain.model.ChatClosingSummary
 import com.upc.asistenteredidbi.domain.model.ChatExtractedData
 import com.upc.asistenteredidbi.domain.model.ChatInputType
 import com.upc.asistenteredidbi.domain.model.ChatNode
 import com.upc.asistenteredidbi.domain.model.ChatProgress
 import com.upc.asistenteredidbi.domain.model.ChatResponseAnswer
+import com.upc.asistenteredidbi.domain.model.TechnicalChatProgress
 
 fun ChatNodeDto.toDomain(): ChatNode = ChatNode(
     nodeKey = nodeKey,
@@ -52,3 +54,18 @@ fun ChatClosingSummaryDto.toDomain(): ChatClosingSummary = ChatClosingSummary(
     suggestedLocalAreas = suggestedLocalAreas,
     suggestedEquipmentCount = suggestedEquipmentCount
 )
+
+fun TechnicalChatResponseDto.toTechnicalChatProgress(): TechnicalChatProgress {
+    return TechnicalChatProgress(
+        evaluationId = evaluationId,
+        currentStep = currentStep,
+        currentQuestionKey = currentQuestionKey,
+        currentQuestion = currentQuestion,
+        answeredQuestions = answeredQuestions,
+        totalQuestions = totalQuestions,
+        progressPercent = progressPercent,
+        completed = completed,
+        answers = answers,
+        proposal = proposal?.toDomain()
+    )
+}

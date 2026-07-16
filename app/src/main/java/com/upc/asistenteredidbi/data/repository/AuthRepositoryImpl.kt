@@ -3,10 +3,14 @@ package com.upc.asistenteredidbi.data.repository
 import com.upc.asistenteredidbi.data.mapper.toDomain
 import com.upc.asistenteredidbi.data.mapper.toRegisterResult
 import com.upc.asistenteredidbi.data.remote.AuthApiService
+import com.upc.asistenteredidbi.data.remote.dto.ForgotPasswordRequestDto
 import com.upc.asistenteredidbi.data.remote.dto.LoginRequestDto
 import com.upc.asistenteredidbi.data.remote.dto.RegisterRequestDto
+import com.upc.asistenteredidbi.data.remote.dto.ResetPasswordRequestDto
 import com.upc.asistenteredidbi.domain.model.AuthSession
+import com.upc.asistenteredidbi.domain.model.ForgotPasswordResult
 import com.upc.asistenteredidbi.domain.model.RegisterResult
+import com.upc.asistenteredidbi.domain.model.ResetPasswordResult
 import com.upc.asistenteredidbi.domain.model.User
 import com.upc.asistenteredidbi.domain.repository.AuthRepository
 import kotlinx.coroutines.Dispatchers
@@ -38,7 +42,8 @@ class AuthRepositoryImpl @Inject constructor(
         company: String,
         city: String,
         password: String,
-        confirmPassword: String
+        confirmPassword: String,
+        role: String
     ): Result<RegisterResult> = safeCall {
         api.register(
             RegisterRequestDto(
@@ -47,6 +52,7 @@ class AuthRepositoryImpl @Inject constructor(
                 phone = phone,
                 company = company,
                 city = city,
+                role = role,
                 password = password,
                 confirmPassword = confirmPassword
             )
@@ -71,6 +77,32 @@ class AuthRepositoryImpl @Inject constructor(
 
     override suspend fun logout() {
         TODO("Not yet implemented")
+    }
+
+    override suspend fun forgotPassword(
+        email: String
+    ): Result<ForgotPasswordResult> = safeCall {
+        api.forgotPassword(
+            ForgotPasswordRequestDto(
+                email = email
+            )
+        ).toDomain()
+    }
+
+    override suspend fun resetPassword(
+        email: String,
+        code: String,
+        newPassword: String,
+        confirmPassword: String
+    ): Result<ResetPasswordResult> = safeCall {
+        api.resetPassword(
+            ResetPasswordRequestDto(
+                email = email,
+                code = code,
+                newPassword = newPassword,
+                confirmPassword = confirmPassword
+            )
+        ).toDomain()
     }
 
     private suspend fun <T> safeCall(

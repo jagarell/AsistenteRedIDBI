@@ -30,7 +30,8 @@ class RegisterUseCase @Inject constructor(
         company: String,
         city: String,
         password: String,
-        confirmPassword: String
+        confirmPassword: String,
+        role: String = "TECNICO"
     ): Result<RegisterResult> {
         return repository.register(
             fullName = fullName,
@@ -39,7 +40,8 @@ class RegisterUseCase @Inject constructor(
             company = company,
             city = city,
             password = password,
-            confirmPassword = confirmPassword
+            confirmPassword = confirmPassword,
+            role = role
         )
     }
 }

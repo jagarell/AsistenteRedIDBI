@@ -83,7 +83,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
-                    android:hint="Carlos Rodríguez"
+                    android:hint="José Arellano"
                     app:boxBackgroundMode="outline"
                     app:boxCornerRadiusBottomEnd="18dp"
                     app:boxCornerRadiusBottomStart="18dp"
@@ -248,6 +248,40 @@
                         android:inputType="textPassword" />
 
                 </com.google.android.material.textfield.TextInputLayout>
+
+                <!-- Rol -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="18dp"
+                    android:text="Rol"
+                    android:textColor="#374151"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
+
+                <RadioGroup
+                    android:id="@+id/rgRole"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:orientation="horizontal">
+
+                    <RadioButton
+                        android:id="@+id/rbTecnico"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:checked="true"
+                        android:text="Técnico" />
+
+                    <RadioButton
+                        android:id="@+id/rbSupervisor"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Supervisor" />
+
+                </RadioGroup>
 
                 <TextView
                     android:id="@+id/tvError"
