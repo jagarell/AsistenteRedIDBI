@@ -2,6 +2,7 @@ package com.upc.asistenteredidbi.data.repository
 
 import com.upc.asistenteredidbi.data.mapper.toDomain
 import com.upc.asistenteredidbi.data.remote.MinutaApiService
+import com.upc.asistenteredidbi.data.remote.dto.MinutaRecordRequestDto
 import com.upc.asistenteredidbi.domain.model.MinutaRecord
 import com.upc.asistenteredidbi.domain.repository.MinutaRecordRepository
 import kotlinx.coroutines.Dispatchers
@@ -14,6 +15,26 @@ class MinutaRecordRepositoryImpl @Inject constructor(
 
     override suspend fun listMinutas(): Result<List<MinutaRecord>> = safeCall {
         api.listMinutas().map { it.toDomain() }
+    }
+
+    override suspend fun createMinuta(
+        evaluationId: Long?,
+        clientName: String,
+        address: String?,
+        summary: String?,
+        topologyJson: String?,
+        contentJson: String?
+    ): Result<MinutaRecord> = safeCall {
+        api.createMinuta(
+            MinutaRecordRequestDto(
+                evaluationId = evaluationId,
+                clientName = clientName,
+                address = address,
+                summary = summary,
+                topologyJson = topologyJson,
+                contentJson = contentJson
+            )
+        ).toDomain()
     }
 
     override suspend fun completeMinuta(id: Long): Result<MinutaRecord> = safeCall {

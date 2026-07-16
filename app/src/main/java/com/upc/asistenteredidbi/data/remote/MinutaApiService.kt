@@ -1,6 +1,8 @@
 package com.upc.asistenteredidbi.data.remote
 
+import com.upc.asistenteredidbi.data.remote.dto.MinutaRecordRequestDto
 import com.upc.asistenteredidbi.data.remote.dto.MinutaRecordResponseDto
+import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST
 import retrofit2.http.Path
@@ -17,6 +19,10 @@ interface MinutaApiService {
 
     @GET("api/minutas/{id}")
     suspend fun getMinuta(@Path("id") id: Long): MinutaRecordResponseDto
+
+    /** Crea la minuta en estado BORRADOR (técnico autor = usuario autenticado). */
+    @POST("api/minutas")
+    suspend fun createMinuta(@Body request: MinutaRecordRequestDto): MinutaRecordResponseDto
 
     /** Marca la minuta como COMPLETA (lista para validación). */
     @POST("api/minutas/{id}/completar")

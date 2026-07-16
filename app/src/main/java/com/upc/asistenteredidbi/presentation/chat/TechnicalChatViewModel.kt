@@ -3,9 +3,14 @@ package com.upc.asistenteredidbi.presentation.chat
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.squareup.moshi.Moshi
+import com.upc.asistenteredidbi.domain.model.ChatTopology
+import com.upc.asistenteredidbi.domain.model.MinutaContentPayload
 import com.upc.asistenteredidbi.domain.model.TechnicalChatInputType
 import com.upc.asistenteredidbi.domain.model.TechnicalChatProposal
+import com.upc.asistenteredidbi.domain.repository.EvaluationRepository
 import com.upc.asistenteredidbi.domain.usecase.AnswerTechnicalChatUseCase
+import com.upc.asistenteredidbi.domain.usecase.CreateMinutaUseCase
 import com.upc.asistenteredidbi.domain.usecase.StartTechnicalChatUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -35,6 +40,9 @@ data class TechnicalChatUiState(
 class TechnicalChatViewModel @Inject constructor(
     private val startTechnicalChatUseCase: StartTechnicalChatUseCase,
     private val answerTechnicalChatUseCase: AnswerTechnicalChatUseCase,
+    private val evaluationRepository: EvaluationRepository,
+    private val createMinutaUseCase: CreateMinutaUseCase,
+    private val moshi: Moshi,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -48,6 +56,9 @@ class TechnicalChatViewModel @Inject constructor(
 
     val uiState: StateFlow<TechnicalChatUiState> =
         _uiState.asStateFlow()
+
+    /** Evita crear la minuta más de una vez si la finalización se procesa de nuevo. */
+    private var minutaPersisted = false
 
     init {
         startChat()
@@ -171,6 +182,10 @@ class TechnicalChatViewModel @Inject constructor(
                         errorMessage = null
                     )
                 }
+
+                if (response.completed) {
+                    response.proposal?.let { persistMinuta(it) }
+                }
             }.onFailure { error ->
                 _uiState.update {
                     it.copy(
@@ -186,6 +201,48 @@ class TechnicalChatViewModel @Inject constructor(
     fun clearError() {
         _uiState.update {
             it.copy(errorMessage = null)
+        }
+    }
+
+    /**
+     * Crea la minuta (BORRADOR) en el gateway al completarse el chat de 20
+     * nodos, para que quede visible en el listado de minutas de cualquier
+     * técnico/supervisor — incluso si el técnico actual no continúa hasta la
+     * propuesta final. Es una operación en segundo plano: si falla, no
+     * interrumpe el flujo del chat (el usuario ya tiene su propuesta).
+     */
+    private fun persistMinuta(proposal: TechnicalChatProposal) {
+        if (minutaPersisted) return
+        minutaPersisted = true
+
+        viewModelScope.launch {
+            val evaluation = evaluationRepository
+                .getEvaluation(evaluationId.toString())
+                .getOrNull()
+
+            val topologyJson = proposal.topology?.let {
+                moshi.adapter(ChatTopology::class.java).toJson(it)
+            }
+
+            val contentJson = moshi.adapter(MinutaContentPayload::class.java).toJson(
+                MinutaContentPayload(
+                    equipment = proposal.equipment,
+                    recommendations = proposal.recommendations,
+                    score = proposal.score
+                )
+            )
+
+            createMinutaUseCase(
+                evaluationId = evaluationId,
+                clientName = evaluation?.establishmentName ?: "Evaluación $evaluationId",
+                address = evaluation?.establishmentAddress,
+                summary = proposal.summary,
+                topologyJson = topologyJson,
+                contentJson = contentJson
+            )
+            // Silencioso a propósito: si falla, el técnico puede completar la
+            // evaluación de todas formas; no hay nada que el usuario deba
+            // resolver aquí (no hay reintento automático en esta primera versión).
         }
     }
 }
