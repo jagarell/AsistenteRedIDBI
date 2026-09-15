@@ -6,25 +6,15 @@ import com.upc.asistenteredidbi.domain.model.EvaluationSummaryItem
 import com.upc.asistenteredidbi.domain.repository.EvaluationRepository
 import javax.inject.Inject
 
-/** HU02: inicia una nueva evaluación ("Nueva Evaluación" en el Home).
- *  La dirección puede venir de GPS (lat/lng) o de texto libre. */
+/** HU02: inicia una nueva evaluación ("Nueva Evaluación" en el Home). */
 class StartEvaluationUseCase @Inject constructor(private val repository: EvaluationRepository) {
     suspend operator fun invoke(
-        establishmentName: String,
-        establishmentAddress: String?,
-        latitude: Double? = null,
-        longitude: Double? = null,
-        clientName: String? = null,
-        clientPhone: String? = null
-    ): Result<Evaluation> {
-        if (establishmentName.isBlank()) {
-            return Result.failure(IllegalArgumentException("El nombre del establecimiento es obligatorio"))
-        }
-        return repository.startEvaluation(
-            establishmentName.trim(), establishmentAddress?.trim(), latitude, longitude,
-            clientName?.trim(), clientPhone?.trim()
-        )
-    }
+        establishmentName: String? = null,
+        establishmentAddress: String? = null
+    ): Result<Evaluation> = repository.startEvaluation(
+        establishmentName?.trim()?.takeIf { it.isNotBlank() },
+        establishmentAddress?.trim()?.takeIf { it.isNotBlank() }
+    )
 }
 
 /** Listado para "Continuar Evaluación" y la pantalla Historial (con filtros). */

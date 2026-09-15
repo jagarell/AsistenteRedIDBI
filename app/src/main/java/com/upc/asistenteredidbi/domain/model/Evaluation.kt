@@ -16,10 +16,8 @@ enum class EvaluationStatus {
 
 data class Evaluation(
     val id: String,
-    val establishmentId: String,
     val establishmentName: String,
     val establishmentAddress: String?,
-    val googleMapsUrl: String?,
     val status: EvaluationStatus,
     val createdAt: String
 )
@@ -42,10 +40,10 @@ data class EvaluationFilters(
 
 /** Vista consolidada de solo lectura (HU03-HU04 §5: tabla de equipos + áreas + respuestas). */
 data class Minuta(
-    val evaluationId: String,
+    val evaluationId: Long,
     val establishmentName: String,
     val establishmentAddress: String?,
-    val conversationResponses: List<ChatResponseAnswer>,
+    val conversationResponses: List<ChatAnswerItem>,
     val areas: List<EvidenceAreaItem>,
     val equipment: List<EvidenceEquipmentItem>,
     val equipmentTable: List<EquipmentTableRow>

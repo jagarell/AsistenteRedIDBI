@@ -18,7 +18,7 @@ import com.upc.asistenteredidbi.domain.model.User
 
 
 fun UserDto.toDomain(): User = User(
-    id = id,
+    id = id.toString(),
     fullName = fullName,
     email = email,
     phone = phone,
@@ -30,7 +30,8 @@ fun UserDto.toDomain(): User = User(
 fun ProfileStatsDto.toDomain(): ProfileStats = ProfileStats(
     totalEvaluations = totalEvaluations,
     evaluationsThisMonth = evaluationsThisMonth,
-    totalProposals = totalProposals
+    totalProposals = totalProposals,
+    sentProposals = sentProposals
 )
 
 fun BrandAssetDto.toDomain(): BrandAsset = BrandAsset(

@@ -12,15 +12,11 @@ import com.upc.asistenteredidbi.domain.model.EvaluationSummaryItem
  */
 interface EvaluationRepository {
 
-    /** HU02: crea el establecimiento (si no existe) y abre una nueva evaluación.
-     *  La dirección puede venir de GPS (lat/lng) o de texto libre. */
+    /** HU02: abre una nueva evaluación en el gateway ("Nueva Evaluación" en el Home).
+     *  Ambos campos son opcionales — el gateway aplica un nombre/ubicación por defecto si se omiten. */
     suspend fun startEvaluation(
-        establishmentName: String,
-        establishmentAddress: String?,
-        latitude: Double?,
-        longitude: Double?,
-        clientName: String?,
-        clientPhone: String?
+        establishmentName: String? = null,
+        establishmentAddress: String? = null
     ): Result<Evaluation>
 
     /** Pantalla "Historial", con filtros por cliente/fecha/estado. */
@@ -28,5 +24,5 @@ interface EvaluationRepository {
 
     suspend fun getEvaluation(evaluationId: String): Result<Evaluation>
 
-    suspend fun analyzeEvaluation(evaluationId: Long): Result<AnalysisResponseDto>
+    suspend fun analyzeEvaluation(evaluationId: Long, answers: Map<String, String> = emptyMap()): Result<AnalysisResponseDto>
 }

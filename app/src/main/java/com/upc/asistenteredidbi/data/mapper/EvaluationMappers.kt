@@ -6,13 +6,19 @@ import com.upc.asistenteredidbi.domain.model.Evaluation
 import com.upc.asistenteredidbi.domain.model.EvaluationStatus
 import com.upc.asistenteredidbi.domain.model.EvaluationSummaryItem
 
+/** Estados reales de `EvaluationStatus` en el gateway (COMPLETADO/BORRADOR/ENVIADO/EN_ANALISIS) —
+ *  distintos de los que usa `EvaluationStatus.fromApiValue` para el listado mock de Historial. */
+private fun gatewayStatusToDomain(value: String): EvaluationStatus = when (value.uppercase()) {
+    "COMPLETADO" -> EvaluationStatus.GENERADA
+    "ENVIADO", "EN_ANALISIS" -> EvaluationStatus.EN_PROGRESO
+    else -> EvaluationStatus.BORRADOR
+}
+
 fun EvaluationDto.toDomain(): Evaluation = Evaluation(
-    id = id,
-    establishmentId = establishmentId,
-    establishmentName = establishmentName,
-    establishmentAddress = establishmentAddress,
-    googleMapsUrl = googleMapsUrl,
-    status = EvaluationStatus.fromApiValue(status),
+    id = id.toString(),
+    establishmentName = restaurantName,
+    establishmentAddress = address,
+    status = gatewayStatusToDomain(status),
     createdAt = createdAt
 )
 

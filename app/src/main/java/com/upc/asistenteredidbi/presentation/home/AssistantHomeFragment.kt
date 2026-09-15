@@ -7,10 +7,18 @@ import android.view.ViewGroup
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
+import androidx.recyclerview.widget.LinearLayoutManager
+import com.upc.asistenteredidbi.MainActivity
 import com.upc.asistenteredidbi.R
 import com.upc.asistenteredidbi.databinding.FragmentAssistantHomeBinding
+import com.upc.asistenteredidbi.domain.model.MinutaRecord
+import com.upc.asistenteredidbi.domain.model.MinutaRecordStatus
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
 class AssistantHomeFragment : Fragment() {
@@ -33,7 +41,60 @@ class AssistantHomeFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         setupRecycler()
         setupClicks()
-        loadMockData()
+        observeViewModel()
+        viewModel.loadHome()
+    }
+
+    private fun observeViewModel() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.uiState.collect { state ->
+                    if (state.userFirstName.isNotBlank()) {
+                        binding.tvUserName.text = state.userFirstName
+                    }
+                    if (state.userCompany.isNotBlank()) {
+                        binding.tvUserRole.text = state.userCompany
+                    }
+
+                    state.stats?.let { stats ->
+                        binding.tvStatEvaluations.text = stats.totalEvaluations.toString()
+                        binding.tvStatProposals.text = stats.totalProposals.toString()
+                        binding.tvStatSent.text = stats.sentProposals.toString()
+                    }
+
+                    recentAdapter.submitList(state.recentMinutas.map { it.toHomeRecentItem() })
+
+                    binding.cardNewEvaluation.isEnabled = !state.isStartingEvaluation
+
+                    state.newEvaluationId?.let { evaluationId ->
+                        viewModel.consumeNewEvaluationId()
+                        findNavController().navigate(
+                            R.id.action_home_to_chat,
+                            Bundle().apply { putString("evaluationId", evaluationId.toString()) }
+                        )
+                    }
+
+                    state.errorMessage?.let { message ->
+                        Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
+                        viewModel.clearError()
+                    }
+                }
+            }
+        }
+    }
+
+    private fun MinutaRecord.toHomeRecentItem(): HomeRecentItem {
+        val statusType = when (status) {
+            MinutaRecordStatus.BORRADOR -> StatusType.BORRADOR
+            MinutaRecordStatus.COMPLETA -> StatusType.ENVIADO
+            MinutaRecordStatus.VALIDADA -> StatusType.COMPLETADO
+        }
+        return HomeRecentItem(
+            title = clientName,
+            date = createdAt?.take(10).orEmpty(),
+            status = statusType.name.lowercase().replaceFirstChar { it.uppercase() },
+            statusType = statusType
+        )
     }
 
     private fun setupRecycler() {
@@ -41,12 +102,13 @@ class AssistantHomeFragment : Fragment() {
             Toast.makeText(requireContext(), it.title, Toast.LENGTH_SHORT).show()
         }
 
+        binding.rvRecentes.layoutManager = LinearLayoutManager(requireContext())
         binding.rvRecentes.adapter = recentAdapter
     }
 
     private fun setupClicks() {
         binding.btnMenu.setOnClickListener {
-            Toast.makeText(requireContext(), "Menú", Toast.LENGTH_SHORT).show()
+            (activity as MainActivity).openDrawer()
         }
 
         binding.btnNotification.setOnClickListener {
@@ -58,7 +120,7 @@ class AssistantHomeFragment : Fragment() {
         }
 
         binding.cardNewEvaluation.setOnClickListener {
-            findNavController().navigate(R.id.action_home_to_chat)
+            viewModel.startNewEvaluation()
         }
 
         binding.cardContinue.setOnClickListener {
@@ -72,31 +134,6 @@ class AssistantHomeFragment : Fragment() {
         binding.tvSeeAll.setOnClickListener {
             findNavController().navigate(R.id.action_home_to_historial)
         }
-    }
-
-    private fun loadMockData() {
-        recentAdapter.submitList(
-            listOf(
-                HomeRecentItem(
-                    title = "Restaurante El Rincón",
-                    date = "20 Jun 2026",
-                    status = "Completado",
-                    statusType = StatusType.COMPLETADO
-                ),
-                HomeRecentItem(
-                    title = "Café Central Gourmet",
-                    date = "18 Jun 2026",
-                    status = "Borrador",
-                    statusType = StatusType.BORRADOR
-                ),
-                HomeRecentItem(
-                    title = "Pizza Palace Express",
-                    date = "10 Jun 2026",
-                    status = "Enviado",
-                    statusType = StatusType.ENVIADO
-                )
-            )
-        )
     }
 
     override fun onDestroyView() {

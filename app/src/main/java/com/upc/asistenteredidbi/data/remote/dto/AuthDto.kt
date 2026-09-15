@@ -19,13 +19,13 @@ data class LoginResponseDto(
 
 @JsonClass(generateAdapter = true)
 data class UserDto(
-    @Json(name = "id") val id: String,
-    @Json(name = "full_name") val fullName: String,
-    @Json(name = "email") val email: String,
-    @Json(name = "phone") val phone: String?,
-    @Json(name = "company") val company: String?,
-    @Json(name = "city") val city: String?,
-    @Json(name = "role") val role: String
+    val id: Long,
+    val fullName: String,
+    val email: String,
+    val phone: String?,
+    val company: String?,
+    val city: String?,
+    val role: String
 )
 
 @JsonClass(generateAdapter = true)
@@ -38,9 +38,10 @@ data class UpdateProfileRequestDto(
 
 @JsonClass(generateAdapter = true)
 data class ProfileStatsDto(
-    @Json(name = "total_evaluations") val totalEvaluations: Int,
-    @Json(name = "evaluations_this_month") val evaluationsThisMonth: Int,
-    @Json(name = "total_proposals") val totalProposals: Int
+    val totalEvaluations: Int,
+    val evaluationsThisMonth: Int = 0,
+    val totalProposals: Int,
+    val sentProposals: Int = 0
 )
 
 @JsonClass(generateAdapter = true)

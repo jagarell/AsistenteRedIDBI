@@ -13,16 +13,20 @@ import retrofit2.http.PATCH
 import retrofit2.http.PUT
 import retrofit2.http.Part
 
-/** Servicio Retrofit — refleja `profile_router.py` (Mi Perfil, Gestionar marca). */
+/** Servicio Retrofit — refleja `ProfileController` del gateway (`/api/profile/me`).
+ * getProfile/getProfileStats pegan a la misma URL real; cada DTO solo toma
+ * los campos que le interesan (Moshi ignora el resto). updateProfile/
+ * getBrand/updateBrand siguen apuntando a rutas que el gateway no
+ * implementa todavía — no se llaman desde ninguna pantalla actual. */
 interface ProfileApiService {
 
-    @GET("api/v1/profile/me")
+    @GET("api/profile/me")
     suspend fun getProfile(): UserDto
 
     @PATCH("api/v1/profile/me")
     suspend fun updateProfile(@Body request: UpdateProfileRequestDto): UserDto
 
-    @GET("api/v1/profile/me/stats")
+    @GET("api/profile/me")
     suspend fun getProfileStats(): ProfileStatsDto
 
     @GET("api/v1/profile/me/brand")
