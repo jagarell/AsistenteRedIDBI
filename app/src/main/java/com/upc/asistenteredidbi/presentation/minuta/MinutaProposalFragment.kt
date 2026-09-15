@@ -1,10 +1,12 @@
 package com.upc.asistenteredidbi.presentation.minuta
 
+import android.app.Dialog
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
+import androidx.appcompat.widget.Toolbar
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
@@ -19,11 +21,12 @@ import com.upc.asistenteredidbi.R
 import com.upc.asistenteredidbi.data.session.SessionManager
 import com.upc.asistenteredidbi.databinding.FragmentMinutaProposalBinding
 import com.upc.asistenteredidbi.domain.model.ChatTopology
+import com.upc.asistenteredidbi.presentation.common.TopologyGraphView
 import com.upc.asistenteredidbi.domain.model.ProposalPdfData
 import com.upc.asistenteredidbi.domain.model.TechnicalEquipmentRecommendation
 import com.upc.asistenteredidbi.domain.usecase.GenerateProposalPdfUseCase
 import com.upc.asistenteredidbi.presentation.common.PdfFileUtils
-import com.upc.asistenteredidbi.presentation.common.toHierarchicalText
+import com.upc.asistenteredidbi.presentation.common.toExplainedText
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 import java.io.File
@@ -42,6 +45,7 @@ class MinutaProposalFragment : Fragment() {
 
     private lateinit var equipmentAdapter: ProposalEquipmentAdapter
     private lateinit var recommendationAdapter: ProposalRecommendationAdapter
+    private lateinit var asIsAdapter: ProposalRecommendationAdapter
 
     @Inject
     lateinit var moshi: Moshi
@@ -52,9 +56,9 @@ class MinutaProposalFragment : Fragment() {
     @Inject
     lateinit var generateProposalPdfUseCase: GenerateProposalPdfUseCase
 
-    private val evaluationId: Long by lazy {
-        arguments?.get("evaluationId")?.toString()?.toLongOrNull() ?: 1L
-    }
+    /** Mismo evaluationId que ya resuelve el ViewModel desde SavedStateHandle — se
+     *  reutiliza aquí en vez de re-parsear `arguments` con un fallback propio. */
+    private val evaluationId: String get() = viewModel.evaluationId
 
     private val minutaId: Long by lazy {
         arguments?.getLong("minutaId", -1L) ?: -1L
@@ -87,6 +91,7 @@ class MinutaProposalFragment : Fragment() {
     private fun setupRecyclerViews() {
         equipmentAdapter = ProposalEquipmentAdapter()
         recommendationAdapter = ProposalRecommendationAdapter()
+        asIsAdapter = ProposalRecommendationAdapter()
 
         binding.rvEquipment.apply {
             layoutManager = LinearLayoutManager(requireContext())
@@ -97,6 +102,12 @@ class MinutaProposalFragment : Fragment() {
         binding.rvRecommendations.apply {
             layoutManager = LinearLayoutManager(requireContext())
             adapter = recommendationAdapter
+            isNestedScrollingEnabled = false
+        }
+
+        binding.rvAsIsFindings.apply {
+            layoutManager = LinearLayoutManager(requireContext())
+            adapter = asIsAdapter
             isNestedScrollingEnabled = false
         }
     }
@@ -110,7 +121,7 @@ class MinutaProposalFragment : Fragment() {
             findNavController().navigate(
                 R.id.action_minutaProposalFragment_to_editProposalFragment,
                 Bundle().apply {
-                    putString("evaluationId", evaluationId.toString())
+                    putString("evaluationId", evaluationId)
                     putLong("minutaId", minutaId)
                 }
             )
@@ -122,7 +133,7 @@ class MinutaProposalFragment : Fragment() {
             findNavController().navigate(
                 R.id.action_minutaProposalFragment_to_sendDraftFragment,
                 Bundle().apply {
-                    putString("evaluationId", evaluationId.toString())
+                    putString("evaluationId", evaluationId)
                     putString("pdfPath", generatedPdfFile?.absolutePath.orEmpty())
                     putString("proposalDataJson", dataJson)
                 }
@@ -162,7 +173,13 @@ class MinutaProposalFragment : Fragment() {
                         "propuesta_$evaluationId.pdf"
                     )
                     generatedPdfFile = file
-                    PdfFileUtils.openPdf(requireContext(), file)
+                    findNavController().navigate(
+                        R.id.action_minutaProposalFragment_to_pdfPreview,
+                        Bundle().apply {
+                            putString("pdfPath", file.absolutePath)
+                            putString("establishmentName", binding.tvEstablishmentName.text.toString())
+                        }
+                    )
                 }
                 .onFailure { error ->
                     Toast.makeText(
@@ -192,7 +209,7 @@ class MinutaProposalFragment : Fragment() {
                     iconRes = iconFor(item.name),
                     name = item.name,
                     description = item.description,
-                    price = "",
+                    price = item.unitPrice?.let { "$${"%.0f".format(it)}" }.orEmpty(),
                     quantity = "Cant: ${item.quantity}"
                 )
             })
@@ -204,7 +221,7 @@ class MinutaProposalFragment : Fragment() {
         val topologyText = arguments?.getString("topologyText").orEmpty()
 
         binding.tvTopologyDetail.text = when {
-            topology != null -> topology.toHierarchicalText()
+            topology != null -> topology.toExplainedText()
             topologyText.isNotBlank() -> topologyText
             else -> "Topología no disponible."
         }
@@ -214,7 +231,29 @@ class MinutaProposalFragment : Fragment() {
         binding.tvTopologyLegend.isVisible = hasGraph
         if (hasGraph) {
             binding.topologyGraphView.setTopology(topology)
+            binding.topologyGraphView.setOnClickListener {
+                openTopologyZoomDialog(topology)
+            }
         }
+    }
+
+    /** Pantalla completa con pellizcar-para-zoom y arrastre — la vista chica
+     * embebida no soporta gestos para no competir con el scroll de la
+     * pantalla de Propuesta Técnica. */
+    private fun openTopologyZoomDialog(topology: ChatTopology) {
+        val dialog = Dialog(requireContext(), android.R.style.Theme_Black_NoTitleBar_Fullscreen)
+        dialog.setContentView(R.layout.dialog_topology_zoom)
+
+        dialog.findViewById<Toolbar>(R.id.toolbar).setNavigationOnClickListener {
+            dialog.dismiss()
+        }
+
+        dialog.findViewById<TopologyGraphView>(R.id.topologyGraphViewZoom).apply {
+            zoomEnabled = true
+            setTopology(topology)
+        }
+
+        dialog.show()
     }
 
     private fun parseEquipment(json: String): List<TechnicalEquipmentRecommendation> {
@@ -277,6 +316,11 @@ class MinutaProposalFragment : Fragment() {
                         currentRecommendations = analysis.recommendations
                         recommendationAdapter.submitList(
                             analysis.recommendations.mapIndexed { index, text ->
+                                ProposalRecommendationItem(index + 1, text)
+                            }
+                        )
+                        asIsAdapter.submitList(
+                            analysis.asIsFindings.mapIndexed { index, text ->
                                 ProposalRecommendationItem(index + 1, text)
                             }
                         )

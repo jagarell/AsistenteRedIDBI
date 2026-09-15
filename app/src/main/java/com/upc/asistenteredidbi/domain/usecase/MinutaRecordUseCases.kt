@@ -24,13 +24,15 @@ class UpdateMinutaUseCase @Inject constructor(
         clientName: String,
         address: String?,
         contactName: String?,
-        contactPhone: String?
+        contactPhone: String?,
+        notes: String?
     ): Result<MinutaRecord> = repository.updateMinuta(
         id = id,
         clientName = clientName,
         address = address,
         contactName = contactName,
-        contactPhone = contactPhone
+        contactPhone = contactPhone,
+        notes = notes
     )
 }
 

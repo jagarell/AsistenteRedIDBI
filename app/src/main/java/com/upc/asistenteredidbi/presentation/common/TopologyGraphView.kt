@@ -5,21 +5,36 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.DashPathEffect
 import android.graphics.Paint
-import android.graphics.RectF
+import android.graphics.PorterDuff
+import android.graphics.PorterDuffColorFilter
+import android.graphics.drawable.Drawable
 import android.text.TextPaint
 import android.text.TextUtils
 import android.util.AttributeSet
+import android.view.MotionEvent
+import android.view.ScaleGestureDetector
 import android.view.View
+import androidx.core.content.ContextCompat
+import com.upc.asistenteredidbi.R
 import com.upc.asistenteredidbi.domain.model.ChatTopology
+import kotlin.math.max
 
 /**
- * Dibuja la topología estructurada construida a partir del chat: un nodo por
- * dispositivo, ordenados por nivel (fila), con enlaces coloreados/estilizados
- * según el tipo de conexión y el estado (con falla → rojo).
+ * Dibuja la topología estructurada construida a partir del chat: un ícono por
+ * tipo de dispositivo (router, switch, POS, cámara...) sobre una insignia de
+ * color, con su etiqueta debajo, ordenados por nivel (fila) y conectados por
+ * enlaces coloreados/estilizados según el tipo de conexión y el estado (con
+ * falla → rojo).
  *
  * Pensada para vivir dentro de un HorizontalScrollView: el ancho intrínseco es
  * el del contenido completo (no se re-escala), para que los diagramas anchos
- * se puedan desplazar en vez de amontonarse.
+ * se puedan desplazar en vez de amontonarse. Si el contenido es más angosto
+ * que el espacio disponible, se centra en vez de quedar pegado a la izquierda.
+ *
+ * [zoomEnabled] habilita pellizcar-para-zoom y arrastrar — pensado para la
+ * vista de pantalla completa (ver [TopologyZoomDialog]), no para la vista
+ * chica embebida en la Propuesta Técnica (ahí competiría con el scroll de la
+ * pantalla).
  */
 class TopologyGraphView @JvmOverloads constructor(
     context: Context,
@@ -30,20 +45,45 @@ class TopologyGraphView @JvmOverloads constructor(
 
     private val density = resources.displayMetrics.density
     private val nodeWidth = 132 * density
-    private val nodeHeight = 52 * density
+    private val badgeDiameter = 56 * density
+    private val nodeHeight = 96 * density
     private val hGap = 18 * density
-    private val vGap = 50 * density
+    private val vGap = 46 * density
     private val padding = 16 * density
-    private val cornerRadius = 10 * density
+    private val iconInset = 14 * density
 
     private var topology: ChatTopology? = null
     private var positions: Map<String, NodePosition> = emptyMap()
     private var contentWidth = 0f
     private var contentHeight = 0f
 
-    private val nodePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL }
-    private val textPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = Color.WHITE
+    /** Cuánto centrar horizontalmente el contenido cuando es más angosto que
+     * el ancho disponible (se recalcula en onMeasure). */
+    private var centerOffsetX = 0f
+
+    var zoomEnabled = false
+
+    private var scaleFactor = 1f
+    private var translateX = 0f
+    private var translateY = 0f
+    private var lastTouchX = 0f
+    private var lastTouchY = 0f
+    private var isDragging = false
+
+    private val scaleDetector = ScaleGestureDetector(
+        context,
+        object : ScaleGestureDetector.SimpleOnScaleGestureListener() {
+            override fun onScale(detector: ScaleGestureDetector): Boolean {
+                scaleFactor = (scaleFactor * detector.scaleFactor).coerceIn(1f, 4f)
+                invalidate()
+                return true
+            }
+        }
+    )
+
+    private val badgePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL }
+    private val labelPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = Color.parseColor("#263238")
         textAlign = Paint.Align.CENTER
         textSize = 11.5f * density
         isFakeBoldText = true
@@ -55,6 +95,9 @@ class TopologyGraphView @JvmOverloads constructor(
 
     fun setTopology(newTopology: ChatTopology?) {
         topology = newTopology
+        scaleFactor = 1f
+        translateX = 0f
+        translateY = 0f
         computeLayout()
         requestLayout()
         invalidate()
@@ -79,7 +122,7 @@ class TopologyGraphView @JvmOverloads constructor(
         byLevel.values.forEachIndexed { rowIndex, nodesInRow ->
             val rowWidth = nodesInRow.size * nodeWidth + (nodesInRow.size - 1) * hGap
             val startX = (contentWidth - rowWidth) / 2f
-            val cy = padding + rowIndex * (nodeHeight + vGap) + nodeHeight / 2f
+            val cy = padding + rowIndex * (nodeHeight + vGap) + badgeDiameter / 2f
             nodesInRow.forEachIndexed { colIndex, node ->
                 val cx = startX + colIndex * (nodeWidth + hGap) + nodeWidth / 2f
                 map[node.id] = NodePosition(cx, cy)
@@ -89,9 +132,42 @@ class TopologyGraphView @JvmOverloads constructor(
     }
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
-        val w = if (contentWidth > 0f) contentWidth.toInt() else MeasureSpec.getSize(widthMeasureSpec)
+        val available = MeasureSpec.getSize(widthMeasureSpec)
+        val w = if (contentWidth > 0f) max(contentWidth.toInt(), available) else available
         val h = if (contentHeight > 0f) contentHeight.toInt() else (nodeHeight + padding * 2).toInt()
+        centerOffsetX = if (w > contentWidth) (w - contentWidth) / 2f else 0f
         setMeasuredDimension(w, h)
+    }
+
+    override fun onTouchEvent(event: MotionEvent): Boolean {
+        if (!zoomEnabled) return super.onTouchEvent(event)
+
+        scaleDetector.onTouchEvent(event)
+
+        when (event.actionMasked) {
+            MotionEvent.ACTION_DOWN -> {
+                lastTouchX = event.x
+                lastTouchY = event.y
+                isDragging = true
+                parent?.requestDisallowInterceptTouchEvent(true)
+            }
+
+            MotionEvent.ACTION_MOVE -> {
+                if (isDragging && !scaleDetector.isInProgress) {
+                    translateX += event.x - lastTouchX
+                    translateY += event.y - lastTouchY
+                    lastTouchX = event.x
+                    lastTouchY = event.y
+                    invalidate()
+                }
+            }
+
+            MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                isDragging = false
+                parent?.requestDisallowInterceptTouchEvent(false)
+            }
+        }
+        return true
     }
 
     override fun onDraw(canvas: Canvas) {
@@ -99,7 +175,14 @@ class TopologyGraphView @JvmOverloads constructor(
         val t = topology ?: return
         if (t.nodes.isEmpty()) return
 
-        // Enlaces primero (quedan debajo de los nodos).
+        canvas.save()
+        if (zoomEnabled) {
+            canvas.translate(translateX, translateY)
+            canvas.scale(scaleFactor, scaleFactor, width / 2f, height / 2f)
+        }
+        canvas.translate(centerOffsetX, 0f)
+
+        // Enlaces primero (quedan debajo de los íconos).
         t.links.forEach { link ->
             val from = positions[link.source] ?: return@forEach
             val to = positions[link.target] ?: return@forEach
@@ -115,37 +198,64 @@ class TopologyGraphView @JvmOverloads constructor(
                 Color.parseColor("#90A4AE")
             }
 
-            canvas.drawLine(from.cx, from.cy + nodeHeight / 2f, to.cx, to.cy - nodeHeight / 2f, linkPaint)
+            val radius = badgeDiameter / 2f
+            canvas.drawLine(from.cx, from.cy + radius, to.cx, to.cy - radius, linkPaint)
         }
 
-        // Nodos encima.
+        // Íconos encima.
         t.nodes.forEach { node ->
             val pos = positions[node.id] ?: return@forEach
-            nodePaint.color = colorForType(node.type)
-
-            val rect = RectF(
-                pos.cx - nodeWidth / 2f, pos.cy - nodeHeight / 2f,
-                pos.cx + nodeWidth / 2f, pos.cy + nodeHeight / 2f
-            )
-            canvas.drawRoundRect(rect, cornerRadius, cornerRadius, nodePaint)
-            drawLabel(canvas, node.label, pos.cx, pos.cy)
+            drawBadge(canvas, node.type, pos.cx, pos.cy)
+            drawLabel(canvas, node.label, pos.cx, pos.cy + badgeDiameter / 2f + 8 * density)
         }
+
+        canvas.restore()
     }
 
-    private fun drawLabel(canvas: Canvas, text: String, cx: Float, cy: Float) {
-        val maxWidth = nodeWidth - 14 * density
+    private fun drawBadge(canvas: Canvas, type: String, cx: Float, cy: Float) {
+        badgePaint.color = colorForType(type)
+        val radius = badgeDiameter / 2f
+        canvas.drawCircle(cx, cy, radius, badgePaint)
+
+        val icon = iconFor(type) ?: return
+        val half = radius - iconInset
+        icon.setBounds(
+            (cx - half).toInt(), (cy - half).toInt(),
+            (cx + half).toInt(), (cy + half).toInt()
+        )
+        icon.colorFilter = PorterDuffColorFilter(Color.WHITE, PorterDuff.Mode.SRC_IN)
+        icon.draw(canvas)
+    }
+
+    private fun iconFor(type: String): Drawable? {
+        val res = when (type.lowercase()) {
+            "internet" -> R.drawable.ic_network
+            "router" -> R.drawable.ic_router
+            "switch" -> R.drawable.ic_server
+            "access_point" -> R.drawable.ic_wifi
+            "pos" -> R.drawable.ic_monitor
+            "printer" -> R.drawable.ic_document
+            "camera" -> R.drawable.ic_camera
+            "computer" -> R.drawable.ic_monitor
+            else -> R.drawable.ic_network
+        }
+        return ContextCompat.getDrawable(context, res)?.mutate()
+    }
+
+    private fun drawLabel(canvas: Canvas, text: String, cx: Float, top: Float) {
+        val maxWidth = nodeWidth - 8 * density
         val lines = wrapToTwoLines(text, maxWidth)
-        val lineHeight = textPaint.textSize * 1.15f
-        var y = cy - (lineHeight * (lines.size - 1)) / 2f + textPaint.textSize * 0.35f
+        val lineHeight = labelPaint.textSize * 1.2f
+        var y = top + labelPaint.textSize
         lines.forEach { line ->
-            canvas.drawText(line, cx, y, textPaint)
+            canvas.drawText(line, cx, y, labelPaint)
             y += lineHeight
         }
     }
 
     /** Ajusta la etiqueta a máximo 2 líneas, con puntos suspensivos si no cabe. */
     private fun wrapToTwoLines(text: String, maxWidth: Float): List<String> {
-        if (textPaint.measureText(text) <= maxWidth) {
+        if (labelPaint.measureText(text) <= maxWidth) {
             return listOf(text)
         }
         val words = text.split(" ")
@@ -153,7 +263,7 @@ class TopologyGraphView @JvmOverloads constructor(
         var index = 0
         while (index < words.size) {
             val candidate = if (firstLine.isEmpty()) words[index] else "$firstLine ${words[index]}"
-            if (textPaint.measureText(candidate) > maxWidth && firstLine.isNotEmpty()) break
+            if (labelPaint.measureText(candidate) > maxWidth && firstLine.isNotEmpty()) break
             firstLine.append(if (firstLine.isEmpty()) words[index] else " ${words[index]}")
             index++
         }
@@ -161,7 +271,7 @@ class TopologyGraphView @JvmOverloads constructor(
         if (remaining.isBlank()) {
             return listOf(firstLine.toString())
         }
-        val secondLine = TextUtils.ellipsize(remaining, textPaint, maxWidth, TextUtils.TruncateAt.END).toString()
+        val secondLine = TextUtils.ellipsize(remaining, labelPaint, maxWidth, TextUtils.TruncateAt.END).toString()
         return listOf(firstLine.toString(), secondLine)
     }
 

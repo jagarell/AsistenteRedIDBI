@@ -40,12 +40,18 @@ class MinutaViewModel @Inject constructor(
 ) : ViewModel() {
 
     val evaluationId: String =
-        savedStateHandle.get<Any>("evaluationId")?.toString() ?: "1"
+        savedStateHandle.get<Any>("evaluationId")?.toString().orEmpty()
 
     private val _uiState = MutableStateFlow(MinutaUiState())
     val uiState: StateFlow<MinutaUiState> = _uiState.asStateFlow()
 
     fun load() {
+        val id = evaluationId.toLongOrNull()
+        if (id == null) {
+            _uiState.update { it.copy(errorMessage = "No se pudo identificar la evaluación.") }
+            return
+        }
+
         viewModelScope.launch {
             _uiState.update {
                 it.copy(
@@ -54,7 +60,7 @@ class MinutaViewModel @Inject constructor(
                 )
             }
 
-            getMinutaUseCase(evaluationId)
+            getMinutaUseCase(id)
                 .onSuccess { minuta ->
                     _uiState.update {
                         it.copy(
@@ -75,6 +81,12 @@ class MinutaViewModel @Inject constructor(
     }
 
     fun loadAnalysis() {
+        val id = evaluationId.toLongOrNull()
+        if (id == null) {
+            _uiState.update { it.copy(analysisErrorMessage = "No se pudo identificar la evaluación.") }
+            return
+        }
+
         viewModelScope.launch {
             _uiState.update {
                 it.copy(
@@ -84,7 +96,7 @@ class MinutaViewModel @Inject constructor(
             }
 
             evaluationRepository
-                .analyzeEvaluation(evaluationId.toLongOrNull() ?: 1L)
+                .analyzeEvaluation(id)
                 .onSuccess { analysis ->
                     _uiState.update {
                         it.copy(

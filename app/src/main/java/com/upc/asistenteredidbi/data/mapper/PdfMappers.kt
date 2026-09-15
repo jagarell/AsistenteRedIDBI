@@ -10,7 +10,8 @@ fun ProposalPdfData.toDto(): ProposalPdfRequestDto = ProposalPdfRequestDto(
     technicianName = technicianName,
     score = score,
     summary = summary,
+    asIsFindings = asIsFindings,
     recommendations = recommendations,
-    equipment = equipment.map { EquipmentLineDto(it.name, it.description, it.quantity) },
+    equipment = equipment.map { EquipmentLineDto(it.name, it.description, it.quantity, it.unitPrice) },
     topologyText = topologyText
 )

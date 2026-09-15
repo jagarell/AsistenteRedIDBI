@@ -27,6 +27,7 @@ data class TechnicalChatProgress(
 
 data class TechnicalChatProposal(
     val summary: String,
+    val asIsFindings: List<String> = emptyList(),
     val recommendations: List<String>,
     val equipment: List<TechnicalEquipmentRecommendation>,
     val topologyText: String,
@@ -37,7 +38,9 @@ data class TechnicalChatProposal(
 data class TechnicalEquipmentRecommendation(
     val name: String,
     val description: String,
-    val quantity: Int
+    val quantity: Int,
+    /** Pendiente de catálogo real de precios de IDBI — null hasta entonces. */
+    val unitPrice: Double? = null
 )
 
 /** Topología de red estructurada, construida por el motor a partir del chat. */

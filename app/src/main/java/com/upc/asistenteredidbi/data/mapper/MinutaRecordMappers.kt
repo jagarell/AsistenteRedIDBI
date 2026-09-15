@@ -11,6 +11,7 @@ fun MinutaRecordResponseDto.toDomain(): MinutaRecord = MinutaRecord(
     address = address,
     contactName = contactName,
     contactPhone = contactPhone,
+    notes = notes,
     technicianId = technicianId,
     technicianName = technicianName,
     status = MinutaRecordStatus.fromApiValue(status),

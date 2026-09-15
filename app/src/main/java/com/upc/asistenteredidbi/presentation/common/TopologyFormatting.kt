@@ -28,6 +28,24 @@ fun ChatTopology.toHierarchicalText(): String {
     }
 }
 
+/**
+ * Igual que [toHierarchicalText] pero con una frase introductoria que resume
+ * la topología (cantidad de dispositivos y niveles), para mostrarla como
+ * explicación junto al diagrama en la Propuesta Técnica.
+ */
+fun ChatTopology.toExplainedText(): String {
+    if (nodes.isEmpty() || links.isEmpty()) {
+        return "Topología no disponible."
+    }
+
+    val levels = nodes.map { it.level }.distinct().size
+    val intro = "Se propone una topología jerárquica de $levels niveles con " +
+        "${nodes.size} dispositivos y ${links.size} enlaces, desde la conexión a " +
+        "internet hasta cada punto final (POS, cámaras, impresoras, equipos)."
+
+    return intro + "\n\n" + toHierarchicalText()
+}
+
 private fun connectionTypeLabel(connectionType: String): String = when (connectionType.uppercase()) {
     "CABLE_RED" -> "Cable de red"
     "WIFI" -> "WiFi"

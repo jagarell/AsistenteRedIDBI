@@ -32,6 +32,7 @@ fun TechnicalChatResponseDto.toDomain(): TechnicalChatProgress {
 fun TechnicalChatProposalDto.toDomain(): TechnicalChatProposal {
     return TechnicalChatProposal(
         summary = summary,
+        asIsFindings = asIsFindings.orEmpty(),
         recommendations = recommendations,
         equipment = equipment.map { item ->
             item.toDomain()
@@ -48,7 +49,8 @@ fun TechnicalEquipmentRecommendationDto.toDomain():
     return TechnicalEquipmentRecommendation(
         name = name,
         description = description,
-        quantity = quantity
+        quantity = quantity,
+        unitPrice = unitPrice
     )
 }
 

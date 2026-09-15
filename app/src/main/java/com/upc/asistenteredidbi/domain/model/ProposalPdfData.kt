@@ -7,6 +7,7 @@ data class ProposalPdfData(
     val technicianName: String?,
     val score: Int?,
     val summary: String?,
+    val asIsFindings: List<String> = emptyList(),
     val recommendations: List<String>,
     val equipment: List<TechnicalEquipmentRecommendation>,
     val topologyText: String?

@@ -24,6 +24,7 @@ data class TechnicalChatResponseDto(
 
 data class TechnicalChatProposalDto(
     val summary: String,
+    val asIsFindings: List<String>? = null,
     val recommendations: List<String>,
     val equipment: List<TechnicalEquipmentRecommendationDto>,
     val topologyText: String,
@@ -34,7 +35,8 @@ data class TechnicalChatProposalDto(
 data class TechnicalEquipmentRecommendationDto(
     val name: String,
     val description: String,
-    val quantity: Int
+    val quantity: Int,
+    val unitPrice: Double? = null
 )
 
 /** Topología estructurada construida por el motor de chat (FastAPI) a partir

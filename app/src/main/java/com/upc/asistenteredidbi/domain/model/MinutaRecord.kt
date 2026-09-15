@@ -30,6 +30,7 @@ data class MinutaRecord(
     val address: String?,
     val contactName: String?,
     val contactPhone: String?,
+    val notes: String?,
     val technicianId: Long?,
     val technicianName: String?,
     val status: MinutaRecordStatus,

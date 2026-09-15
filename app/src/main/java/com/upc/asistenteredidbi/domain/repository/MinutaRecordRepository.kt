@@ -28,7 +28,8 @@ interface MinutaRecordRepository {
         clientName: String,
         address: String?,
         contactName: String?,
-        contactPhone: String?
+        contactPhone: String?,
+        notes: String?
     ): Result<MinutaRecord>
 
     suspend fun completeMinuta(id: Long): Result<MinutaRecord>

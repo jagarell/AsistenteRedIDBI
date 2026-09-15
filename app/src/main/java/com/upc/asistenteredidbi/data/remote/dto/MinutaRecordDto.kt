@@ -11,6 +11,7 @@ data class MinutaRecordRequestDto(
     val address: String? = null,
     val contactName: String? = null,
     val contactPhone: String? = null,
+    val notes: String? = null,
     val summary: String? = null,
     val topologyJson: String? = null,
     val contentJson: String? = null
@@ -23,6 +24,7 @@ data class MinutaRecordResponseDto(
     val address: String?,
     val contactName: String?,
     val contactPhone: String?,
+    val notes: String?,
     val technicianId: Long?,
     val technicianName: String?,
     val status: String,

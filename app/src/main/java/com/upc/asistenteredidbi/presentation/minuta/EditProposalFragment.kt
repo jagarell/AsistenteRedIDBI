@@ -56,6 +56,7 @@ class EditProposalFragment : Fragment() {
                     binding.etAddress.setText(minuta.address.orEmpty())
                     binding.etContact.setText(minuta.contactName.orEmpty())
                     binding.etPhone.setText(minuta.contactPhone.orEmpty())
+                    binding.etNotes.setText(minuta.notes.orEmpty())
                 }
                 .onFailure {
                     // Sin datos previos que cargar; el técnico completa desde cero.
@@ -78,6 +79,7 @@ class EditProposalFragment : Fragment() {
         val address = binding.etAddress.text?.toString().orEmpty().trim()
         val contactName = binding.etContact.text?.toString().orEmpty().trim()
         val contactPhone = binding.etPhone.text?.toString().orEmpty().trim()
+        val notes = binding.etNotes.text?.toString().orEmpty().trim()
 
         if (clientName.isBlank()) {
             Toast.makeText(requireContext(), "Ingresa el nombre del establecimiento", Toast.LENGTH_SHORT).show()
@@ -100,7 +102,8 @@ class EditProposalFragment : Fragment() {
                 clientName = clientName,
                 address = address,
                 contactName = contactName,
-                contactPhone = contactPhone
+                contactPhone = contactPhone,
+                notes = notes
             ).onSuccess {
                 Toast.makeText(requireContext(), "Cambios guardados", Toast.LENGTH_SHORT).show()
                 findNavController().navigateUp()

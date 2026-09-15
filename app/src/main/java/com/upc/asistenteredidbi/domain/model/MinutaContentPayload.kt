@@ -6,6 +6,7 @@ package com.upc.asistenteredidbi.domain.model
  */
 data class MinutaContentPayload(
     val equipment: List<TechnicalEquipmentRecommendation>,
+    val asIsFindings: List<String> = emptyList(),
     val recommendations: List<String>,
     val score: Int?
 )

@@ -26,7 +26,8 @@ class MinutaRecordRepositoryImpl @Inject constructor(
         clientName: String,
         address: String?,
         contactName: String?,
-        contactPhone: String?
+        contactPhone: String?,
+        notes: String?
     ): Result<MinutaRecord> = safeCall {
         api.updateMinuta(
             id,
@@ -34,7 +35,8 @@ class MinutaRecordRepositoryImpl @Inject constructor(
                 clientName = clientName,
                 address = address,
                 contactName = contactName,
-                contactPhone = contactPhone
+                contactPhone = contactPhone,
+                notes = notes
             )
         ).toDomain()
     }

@@ -7,6 +7,7 @@ data class ProposalPdfRequestDto(
     val technicianName: String?,
     val score: Int?,
     val summary: String?,
+    val asIsFindings: List<String> = emptyList(),
     val recommendations: List<String>,
     val equipment: List<EquipmentLineDto>,
     val topologyText: String?
@@ -15,7 +16,8 @@ data class ProposalPdfRequestDto(
 data class EquipmentLineDto(
     val name: String,
     val description: String,
-    val quantity: Int
+    val quantity: Int,
+    val unitPrice: Double? = null
 )
 
 /** Refleja `ProposalSendRequest` del gateway — genera el PDF y lo envía adjunto. */
