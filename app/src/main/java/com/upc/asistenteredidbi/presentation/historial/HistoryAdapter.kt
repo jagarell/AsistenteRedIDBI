@@ -38,7 +38,9 @@ class HistoryAdapter(
 
         fun bind(item: HistoryItem) {
             binding.tvTitle.text = item.restaurantName
-            binding.tvSubtitle.text = "${item.location} · ${item.date}"
+            binding.tvSubtitle.text = listOf(item.location, item.date)
+                .filter { it.isNotBlank() }
+                .joinToString(" · ")
             binding.tvStatus.text = item.status.label
             binding.progressHistory.progress = item.progress
             binding.tvProgress.text = "${item.progress}%"

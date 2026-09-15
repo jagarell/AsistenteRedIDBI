@@ -6,6 +6,7 @@ import com.upc.asistenteredidbi.domain.model.EvaluationFilters
 import com.upc.asistenteredidbi.domain.model.EvaluationStatus
 import com.upc.asistenteredidbi.domain.model.EvaluationSummaryItem
 import com.upc.asistenteredidbi.domain.usecase.ListEvaluationsUseCase
+import com.upc.asistenteredidbi.domain.usecase.StartEvaluationUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -26,7 +27,9 @@ data class HistorialUiState(
     val searchQuery: String = "",
     val selectedTab: HistorialTab = HistorialTab.TODOS,
     val allEvaluations: List<EvaluationSummaryItem> = emptyList(),
-    val errorMessage: String? = null
+    val errorMessage: String? = null,
+    val isStartingEvaluation: Boolean = false,
+    val newEvaluationId: Long? = null
 ) {
     val filteredEvaluations: List<EvaluationSummaryItem>
         get() = allEvaluations
@@ -36,7 +39,8 @@ data class HistorialUiState(
 
 @HiltViewModel
 class HistorialViewModel @Inject constructor(
-    private val listEvaluationsUseCase: ListEvaluationsUseCase
+    private val listEvaluationsUseCase: ListEvaluationsUseCase,
+    private val startEvaluationUseCase: StartEvaluationUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HistorialUiState())
@@ -53,4 +57,25 @@ class HistorialViewModel @Inject constructor(
 
     fun onSearchQueryChange(value: String) = _uiState.update { it.copy(searchQuery = value) }
     fun onTabSelected(tab: HistorialTab) = _uiState.update { it.copy(selectedTab = tab) }
+
+    fun startNewEvaluation() {
+        if (_uiState.value.isStartingEvaluation) return
+
+        viewModelScope.launch {
+            _uiState.update { it.copy(isStartingEvaluation = true, errorMessage = null) }
+            startEvaluationUseCase()
+                .onSuccess { evaluation ->
+                    _uiState.update {
+                        it.copy(isStartingEvaluation = false, newEvaluationId = evaluation.id.toLongOrNull())
+                    }
+                }
+                .onFailure { error ->
+                    _uiState.update {
+                        it.copy(isStartingEvaluation = false, errorMessage = error.message ?: "No se pudo iniciar la evaluación")
+                    }
+                }
+        }
+    }
+
+    fun consumeNewEvaluationId() = _uiState.update { it.copy(newEvaluationId = null) }
 }

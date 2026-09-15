@@ -9,7 +9,7 @@
         android:id="@+id/header"
         android:layout_width="match_parent"
         android:layout_height="190dp"
-        android:background="#1976D2"
+        android:background="@color/header_blue"
         android:orientation="vertical"
         android:paddingStart="22dp"
         android:paddingEnd="22dp"
@@ -145,20 +145,6 @@
                     app:chipCornerRadius="21dp" />
 
                 <com.google.android.material.chip.Chip
-                    android:id="@+id/chipSent"
-                    style="@style/Widget.MaterialComponents.Chip.Choice"
-                    android:layout_width="wrap_content"
-                    android:layout_height="42dp"
-                    android:text="Enviados"
-                    android:textSize="14sp"
-                    android:textStyle="bold"
-                    android:textColor="@color/chip_text_selector"
-                    app:chipBackgroundColor="@color/chip_selector_blue"
-                    app:chipStrokeWidth="0dp"
-                    app:checkedIconVisible="false"
-                    app:chipCornerRadius="21dp" />
-
-                <com.google.android.material.chip.Chip
                     android:id="@+id/chipAnalysis"
                     style="@style/Widget.MaterialComponents.Chip.Choice"
                     android:layout_width="wrap_content"
@@ -224,7 +210,7 @@
         android:layout_marginEnd="28dp"
         android:layout_marginBottom="88dp"
         android:scaleType="center"
-        app:backgroundTint="#1976D2"
+        app:backgroundTint="@color/header_blue"
         app:borderWidth="0dp"
         app:elevation="8dp"
         app:fabCustomSize="58dp"
