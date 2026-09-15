@@ -2,56 +2,69 @@ package com.upc.asistenteredidbi.presentation.configuration
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.upc.asistenteredidbi.data.session.AppPreferences
 import com.upc.asistenteredidbi.domain.model.User
 import com.upc.asistenteredidbi.domain.usecase.GetProfileUseCase
-import com.upc.asistenteredidbi.domain.usecase.LogoutUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-
 data class ConfiguracionUiState(
-    val isLoading: Boolean = false,
     val user: User? = null,
-    val twoFactorEnabled: Boolean = false,
-    val notifyNewEvaluations: Boolean = true,
-    val notifyProposalUpdates: Boolean = true,
-    val notifyWeeklySummary: Boolean = false,
-    val didLogout: Boolean = false,
-    val errorMessage: String? = null
+    val pushNotifications: Boolean = true,
+    val emailNotifications: Boolean = true,
+    val systemAlerts: Boolean = false,
+    val twoFactorAuth: Boolean = false
 )
 
 @HiltViewModel
 class ConfiguracionViewModel @Inject constructor(
     private val getProfileUseCase: GetProfileUseCase,
-    private val logoutUseCase: LogoutUseCase
+    private val appPreferences: AppPreferences
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ConfiguracionUiState())
     val uiState: StateFlow<ConfiguracionUiState> = _uiState.asStateFlow()
 
+    init {
+        viewModelScope.launch {
+            combine(
+                appPreferences.pushNotificationsFlow,
+                appPreferences.emailNotificationsFlow,
+                appPreferences.systemAlertsFlow,
+                appPreferences.twoFactorAuthFlow
+            ) { push, email, alerts, twoFactor ->
+                Quad(push, email, alerts, twoFactor)
+            }.collect { (push, email, alerts, twoFactor) ->
+                _uiState.update {
+                    it.copy(
+                        pushNotifications = push,
+                        emailNotifications = email,
+                        systemAlerts = alerts,
+                        twoFactorAuth = twoFactor
+                    )
+                }
+            }
+        }
+    }
+
     fun load() {
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, errorMessage = null) }
-            getProfileUseCase()
-                .onSuccess { user -> _uiState.update { it.copy(isLoading = false, user = user) } }
-                .onFailure { error -> _uiState.update { it.copy(isLoading = false, errorMessage = error.message) } }
+            getProfileUseCase().onSuccess { user ->
+                _uiState.update { it.copy(user = user) }
+            }
         }
     }
 
-    fun onToggleTwoFactor(enabled: Boolean) = _uiState.update { it.copy(twoFactorEnabled = enabled) }
-    fun onToggleNewEvaluations(enabled: Boolean) = _uiState.update { it.copy(notifyNewEvaluations = enabled) }
-    fun onToggleProposalUpdates(enabled: Boolean) = _uiState.update { it.copy(notifyProposalUpdates = enabled) }
-    fun onToggleWeeklySummary(enabled: Boolean) = _uiState.update { it.copy(notifyWeeklySummary = enabled) }
-
-    fun logout() {
-        viewModelScope.launch {
-            logoutUseCase()
-            _uiState.update { it.copy(didLogout = true) }
-        }
-    }
+    fun setPushNotifications(enabled: Boolean) = viewModelScope.launch { appPreferences.setPushNotifications(enabled) }
+    fun setEmailNotifications(enabled: Boolean) = viewModelScope.launch { appPreferences.setEmailNotifications(enabled) }
+    fun setSystemAlerts(enabled: Boolean) = viewModelScope.launch { appPreferences.setSystemAlerts(enabled) }
+    fun setTwoFactorAuth(enabled: Boolean) = viewModelScope.launch { appPreferences.setTwoFactorAuth(enabled) }
 }
+
+private data class Quad<A, B, C, D>(val a: A, val b: B, val c: C, val d: D)
