@@ -5,6 +5,13 @@ plugins {
     id("org.jetbrains.kotlin.kapt")
 }
 
+// El plugin de google-services exige app/google-services.json (aún no
+// descargado desde Firebase Console). Se aplica solo si el archivo existe
+// para no romper el build mientras tanto.
+if (file("google-services.json").exists()) {
+    apply(plugin = "com.google.gms.google-services")
+}
+
 android {
     namespace = "com.upc.asistenteredidbi"
     compileSdk = 35
@@ -98,4 +105,9 @@ dependencies {
     implementation("androidx.datastore:datastore-preferences:1.1.1")
 
     implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
+
+    // Firebase Cloud Messaging (notificaciones push)
+    implementation(platform("com.google.firebase:firebase-bom:33.5.1"))
+    implementation("com.google.firebase:firebase-messaging-ktx")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.8.1")
 }

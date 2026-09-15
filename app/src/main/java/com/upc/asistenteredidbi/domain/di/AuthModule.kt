@@ -7,6 +7,7 @@ import com.upc.asistenteredidbi.data.remote.ChatApiService
 import com.upc.asistenteredidbi.data.remote.EvaluationApiService
 import com.upc.asistenteredidbi.data.remote.EvidenceApiService
 import com.upc.asistenteredidbi.data.remote.MinutaApiService
+import com.upc.asistenteredidbi.data.remote.NotificationApiService
 import com.upc.asistenteredidbi.data.remote.PdfApiService
 import com.upc.asistenteredidbi.data.remote.ProfileApiService
 import com.upc.asistenteredidbi.data.repository.AuthRepositoryImpl
@@ -172,6 +173,15 @@ object AuthModule {
     ): PdfApiService {
         return retrofit.create(PdfApiService::class.java)
     }
+
+    @Provides
+    @Singleton
+    fun provideNotificationApiService(
+        retrofit: Retrofit
+    ): NotificationApiService {
+        return retrofit.create(NotificationApiService::class.java)
+    }
+
 }
 
 @Module
@@ -219,4 +229,5 @@ abstract class AuthRepositoryModule {
     abstract fun bindPdfRepository(
         impl: PdfRepositoryImpl
     ): PdfRepository
+
 }

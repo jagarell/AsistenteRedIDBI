@@ -22,4 +22,5 @@
     <string name="tab_risks">Riesgos</string>
     <string name="tab_proposal">Propuesta</string>
     <string name="tab_topology">Topología</string>
+    <string name="notification_channel_push_name">Notificaciones</string>
 </resources>
