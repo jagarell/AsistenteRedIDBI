@@ -23,7 +23,8 @@ data class AuthSession(
 data class ProfileStats(
     val totalEvaluations: Int,
     val evaluationsThisMonth: Int,
-    val totalProposals: Int
+    val totalProposals: Int,
+    val sentProposals: Int = 0
 )
 
 data class BrandAsset(

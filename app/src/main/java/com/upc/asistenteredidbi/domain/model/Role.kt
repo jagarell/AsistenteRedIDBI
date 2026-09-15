@@ -16,3 +16,8 @@ enum class Role {
                 ?: TECNICO
     }
 }
+
+fun Role.toDisplayLabel(): String = when (this) {
+    Role.TECNICO -> "Técnico Senior"
+    Role.SUPERVISOR -> "Supervisor"
+}
