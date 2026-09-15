@@ -7,6 +7,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.inputmethod.EditorInfo
 import android.widget.Toast
+import androidx.core.content.ContextCompat
 import androidx.core.os.bundleOf
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
@@ -40,6 +41,18 @@ class TechnicalChatFragment : Fragment() {
 
     private lateinit var messagesAdapter: ChatMessagesAdapter
 
+    /** Selección acumulada para la pregunta MULTI_SELECT actual (wifi_zones,
+     * services). Se envía con el botón de enviar de siempre — antes había un
+     * botón "Enviar selección" al final del scroll horizontal de chips, que
+     * quedaba fuera de pantalla y el usuario nunca lo encontraba. */
+    private val multiSelectAnswers = mutableSetOf<String>()
+
+    /** Último paso para el que se renderizaron controles — permite limpiar la
+     * caja de texto exactamente cuando cambia de pregunta, sin depender de
+     * que el usuario haya usado el botón de enviar (ver bug: texto tipeado
+     * para una pregunta que quedaba abandonado y se colaba en la siguiente). */
+    private var lastRenderedStep: Int = -1
+
     @Inject
     lateinit var moshi: Moshi
 
@@ -69,7 +82,9 @@ class TechnicalChatFragment : Fragment() {
     }
 
     private fun setupRecycler() {
-        messagesAdapter = ChatMessagesAdapter()
+        messagesAdapter = ChatMessagesAdapter { message ->
+            viewModel.editAnswer(message.id)
+        }
 
         binding.rvMessages.apply {
             layoutManager = LinearLayoutManager(
@@ -121,15 +136,19 @@ class TechnicalChatFragment : Fragment() {
     }
 
     private fun submitAnswer() {
-        val answer = binding.etTextInput.text
-            ?.toString()
-            .orEmpty()
-            .trim()
+        val isMultiSelect =
+            viewModel.uiState.value.currentInputType == TechnicalChatInputType.MULTI_SELECT
+
+        val answer = if (isMultiSelect) {
+            multiSelectAnswers.joinToString(", ")
+        } else {
+            binding.etTextInput.text?.toString().orEmpty().trim()
+        }
 
         if (answer.isBlank()) {
             Toast.makeText(
                 requireContext(),
-                "Escribe una respuesta",
+                if (isMultiSelect) "Selecciona al menos una opción" else "Escribe una respuesta",
                 Toast.LENGTH_SHORT
             ).show()
             return
@@ -137,6 +156,7 @@ class TechnicalChatFragment : Fragment() {
 
         viewModel.sendAnswer(answer)
         binding.etTextInput.text?.clear()
+        multiSelectAnswers.clear()
     }
 
     private fun showProposal() {
@@ -151,8 +171,15 @@ class TechnicalChatFragment : Fragment() {
                     appendLine()
                     appendLine("Puntaje de infraestructura: $score/100")
                 }
+                if (proposal.asIsFindings.isNotEmpty()) {
+                    appendLine()
+                    appendLine("Diagnóstico actual (AS-IS):")
+                    proposal.asIsFindings.forEach { finding ->
+                        appendLine("• $finding")
+                    }
+                }
                 appendLine()
-                appendLine("Recomendaciones:")
+                appendLine("Propuesta recomendada (TO-BE):")
                 proposal.recommendations.forEach { recommendation ->
                     appendLine("• $recommendation")
                 }
@@ -172,7 +199,7 @@ class TechnicalChatFragment : Fragment() {
         ).show()
     }
 
-    /** Renderiza controles rápidos según el tipo de nodo (HU05: 20 nodos). */
+    /** Renderiza controles rápidos según el tipo de nodo (HU05: 23 nodos). */
     private fun renderQuickReplies(state: TechnicalChatUiState) {
         binding.containerQuickReplies.removeAllViews()
 
@@ -184,6 +211,26 @@ class TechnicalChatFragment : Fragment() {
 
             else -> InputType.TYPE_CLASS_TEXT
         }
+
+        // Antes el texto tipeado para una pregunta abandonada (el usuario
+        // empezó a escribir y después tocó un botón Sí/No/opción en vez de
+        // enviar) quedaba en la caja y podía terminar enviándose como
+        // respuesta de la SIGUIENTE pregunta sin que nadie lo notara. Se
+        // limpia apenas cambia el paso, sin depender del camino de envío.
+        if (state.currentStep != lastRenderedStep) {
+            binding.etTextInput.text?.clear()
+            lastRenderedStep = state.currentStep
+        }
+
+        // YES_NO/CHOICE responden con un tap directo — no tienen por qué
+        // convivir con el teclado de texto. MULTI_SELECT sí necesita el botón
+        // de enviar (para confirmar la selección de chips), pero no la caja.
+        val needsTextInput = state.currentInputType == TechnicalChatInputType.TEXT ||
+            state.currentInputType == TechnicalChatInputType.NUMBER
+        val showTextRow = state.currentInputType != TechnicalChatInputType.YES_NO &&
+            state.currentInputType != TechnicalChatInputType.CHOICE
+        binding.etTextInput.isVisible = needsTextInput
+        binding.containerTextRow.isVisible = showTextRow
 
         if (!canAnswer) {
             binding.scrollQuickReplies.isVisible = false
@@ -225,7 +272,27 @@ class TechnicalChatFragment : Fragment() {
             isAllCaps = false
             textSize = 14f
             setOnClickListener {
-                viewModel.sendAnswer(label)
+                // El estado se actualiza sincrónicamente al llamar sendAnswer(),
+                // así que sin esto los botones desaparecen en el mismo gesto del
+                // tap sin ningún feedback visual (de ahí la sensación de "no
+                // pinta"). Se marca el tocado, se deshabilitan los hermanos, y
+                // se espera un frame antes de enviar para que ese estado sí
+                // llegue a renderizarse.
+                for (i in 0 until binding.containerQuickReplies.childCount) {
+                    binding.containerQuickReplies.getChildAt(i).isEnabled = false
+                }
+                // No es un widget checkable: se pinta con el mismo azul que
+                // usan los chips seleccionados (chip_selector_blue), pero como
+                // color plano — un ColorStateList por state_checked no
+                // aplicaría nada aquí.
+                backgroundTintList = android.content.res.ColorStateList.valueOf(
+                    android.graphics.Color.parseColor("#1565C0")
+                )
+                setTextColor(android.graphics.Color.WHITE)
+                viewLifecycleOwner.lifecycleScope.launch {
+                    kotlinx.coroutines.delay(120)
+                    viewModel.sendAnswer(label)
+                }
             }
         }
         binding.containerQuickReplies.addView(button)
@@ -233,34 +300,36 @@ class TechnicalChatFragment : Fragment() {
     }
 
     private fun addMultiSelectChips(options: List<String>) {
-        val selected = mutableSetOf<String>()
-
-        val submitButton = MaterialButton(requireContext()).apply {
-            text = "Enviar selección"
-            isAllCaps = false
-            textSize = 14f
-            isEnabled = false
-            setOnClickListener {
-                if (selected.isNotEmpty()) {
-                    viewModel.sendAnswer(selected.joinToString(", "))
-                }
-            }
-        }
+        multiSelectAnswers.clear()
 
         options.forEach { option ->
             val chip = Chip(requireContext()).apply {
                 text = option
                 isCheckable = true
+                isClickable = true
+                // El Chip ya alterna isChecked solo al tocarlo (es un
+                // CompoundButton); un OnClickListener que también lo alternara
+                // duplicaba el toggle y lo dejaba siempre en el estado
+                // original, por lo que nunca se marcaba visualmente.
                 setOnCheckedChangeListener { _, isChecked ->
-                    if (isChecked) selected.add(option) else selected.remove(option)
-                    submitButton.isEnabled = selected.isNotEmpty()
+                    if (isChecked) multiSelectAnswers.add(option) else multiSelectAnswers.remove(option)
                 }
+                // Sin esto el chip alterna su estado pero no se nota: usa los
+                // selectores ya definidos para pintar azul/blanco al marcarse.
+                chipBackgroundColor = ContextCompat.getColorStateList(
+                    requireContext(),
+                    R.color.chip_selector_blue
+                )
+                setTextColor(
+                    ContextCompat.getColorStateList(
+                        requireContext(),
+                        R.color.chip_text_selector
+                    )
+                )
             }
             binding.containerQuickReplies.addView(chip)
             applyEndMargin(chip)
         }
-
-        binding.containerQuickReplies.addView(submitButton)
     }
 
     /** Aplica un margen final a una vista ya agregada a [containerQuickReplies]. */
@@ -298,6 +367,9 @@ class TechnicalChatFragment : Fragment() {
             moshi.adapter(ChatTopology::class.java).toJson(it)
         }.orEmpty()
 
+        val answersType = Types.newParameterizedType(Map::class.java, String::class.java, String::class.java)
+        val answersJson = moshi.adapter<Map<String, String>>(answersType).toJson(state.answers)
+
         findNavController().navigate(
             R.id.action_chat_to_evidence,
             bundleOf(
@@ -306,6 +378,7 @@ class TechnicalChatFragment : Fragment() {
                 "topologyText" to proposal?.topologyText.orEmpty(),
                 "equipmentJson" to equipmentJson,
                 "topologyJson" to topologyJson,
+                "answersJson" to answersJson,
                 "score" to (proposal?.score ?: -1),
                 "minutaId" to (state.minutaId ?: -1L)
             )

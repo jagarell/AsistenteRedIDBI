@@ -4,6 +4,8 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.squareup.moshi.Moshi
+import com.upc.asistenteredidbi.data.session.ChatProgressSnapshot
+import com.upc.asistenteredidbi.data.session.ChatProgressStore
 import com.upc.asistenteredidbi.domain.model.ChatTopology
 import com.upc.asistenteredidbi.domain.model.MinutaContentPayload
 import com.upc.asistenteredidbi.domain.model.TechnicalChatInputType
@@ -43,14 +45,17 @@ class TechnicalChatViewModel @Inject constructor(
     private val answerTechnicalChatUseCase: AnswerTechnicalChatUseCase,
     private val evaluationRepository: EvaluationRepository,
     private val createMinutaUseCase: CreateMinutaUseCase,
+    private val chatProgressStore: ChatProgressStore,
     private val moshi: Moshi,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
-    val evaluationId: Long =
-        savedStateHandle.get<String>("evaluationId")
-            ?.toLongOrNull()
-            ?: 1L
+    /** Null si el argumento de navegación no trae un evaluationId real y parseable —
+     *  en vez de asumir la evaluación 1, se falla explícito (ver [init]). */
+    private val validEvaluationId: Long? =
+        savedStateHandle.get<String>("evaluationId")?.toLongOrNull()
+
+    val evaluationId: Long = validEvaluationId ?: -1L
 
     private val _uiState =
         MutableStateFlow(TechnicalChatUiState())
@@ -62,7 +67,61 @@ class TechnicalChatViewModel @Inject constructor(
     private var minutaPersisted = false
 
     init {
-        startChat()
+        if (validEvaluationId == null) {
+            _uiState.update {
+                it.copy(errorMessage = "No se pudo iniciar la evaluación: falta el ID.")
+            }
+        } else {
+            viewModelScope.launch {
+                val saved = chatProgressStore.load(evaluationId)
+                if (saved != null) {
+                    minutaPersisted = saved.minutaId != null
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            messages = saved.messages,
+                            currentStep = saved.currentStep,
+                            currentInputType = saved.currentInputType,
+                            currentOptions = saved.currentOptions,
+                            answeredQuestions = saved.answeredQuestions,
+                            totalQuestions = saved.totalQuestions,
+                            progressPercent = saved.progressPercent,
+                            answers = saved.answers,
+                            completed = saved.completed,
+                            proposal = saved.proposal,
+                            minutaId = saved.minutaId
+                        )
+                    }
+                } else {
+                    startChat()
+                }
+            }
+        }
+    }
+
+    /** Guarda el progreso actual para poder retomarlo si se sale del chat o
+     *  se mata el proceso antes de terminar la propuesta. */
+    private fun persistProgress() {
+        if (validEvaluationId == null) return
+        val state = _uiState.value
+        viewModelScope.launch {
+            chatProgressStore.save(
+                evaluationId,
+                ChatProgressSnapshot(
+                    messages = state.messages,
+                    currentStep = state.currentStep,
+                    currentInputType = state.currentInputType,
+                    currentOptions = state.currentOptions,
+                    answeredQuestions = state.answeredQuestions,
+                    totalQuestions = state.totalQuestions,
+                    progressPercent = state.progressPercent,
+                    answers = state.answers,
+                    completed = state.completed,
+                    proposal = state.proposal,
+                    minutaId = state.minutaId
+                )
+            )
+        }
     }
 
     private fun startChat() {
@@ -80,7 +139,12 @@ class TechnicalChatViewModel @Inject constructor(
 
                     val firstMessage = ChatMessage(
                         "¡Hola! Soy tu Asistente de Red con IA.\n\n$question",
-                        false
+                        false,
+                        id = 0L,
+                        stepIndex = response.currentStep,
+                        inputType = response.currentInputType,
+                        options = response.currentOptions,
+                        answersSnapshot = response.answers
                     )
 
                     _uiState.update {
@@ -99,6 +163,7 @@ class TechnicalChatViewModel @Inject constructor(
                             errorMessage = null
                         )
                     }
+                    persistProgress()
                 }
                 .onFailure { error ->
                     _uiState.update {
@@ -120,13 +185,19 @@ class TechnicalChatViewModel @Inject constructor(
             cleanAnswer.isBlank() ||
             state.isLoading ||
             state.isSending ||
-            state.completed
+            state.completed ||
+            validEvaluationId == null
         ) {
             return
         }
 
         val messagesWithUserAnswer =
-            state.messages + ChatMessage(cleanAnswer, true)
+            state.messages + ChatMessage(
+                cleanAnswer,
+                true,
+                id = state.messages.size.toLong(),
+                isEditable = true
+            )
 
         _uiState.update {
             it.copy(
@@ -151,7 +222,8 @@ class TechnicalChatViewModel @Inject constructor(
                     updatedMessages.add(
                         ChatMessage(
                             "Evaluación completada. He procesado tus respuestas y generado una propuesta técnica preliminar.",
-                            false
+                            false,
+                            id = updatedMessages.size.toLong()
                         )
                     )
                 } else {
@@ -161,7 +233,12 @@ class TechnicalChatViewModel @Inject constructor(
                             updatedMessages.add(
                                 ChatMessage(
                                     question,
-                                    false
+                                    false,
+                                    id = updatedMessages.size.toLong(),
+                                    stepIndex = response.currentStep,
+                                    inputType = response.currentInputType,
+                                    options = response.currentOptions,
+                                    answersSnapshot = response.answers
                                 )
                             )
                         }
@@ -184,6 +261,8 @@ class TechnicalChatViewModel @Inject constructor(
                     )
                 }
 
+                persistProgress()
+
                 if (response.completed) {
                     response.proposal?.let { persistMinuta(it) }
                 }
@@ -197,6 +276,42 @@ class TechnicalChatViewModel @Inject constructor(
                 }
             }
         }
+    }
+
+    /**
+     * "Editar respuesta": el motor de chat es sin estado (recibe el mapa
+     * completo de respuestas + currentStep y calcula la siguiente pregunta),
+     * así que reabrir una pregunta anterior es truncar localmente hasta esa
+     * pregunta y dejar que el técnico la responda de nuevo por el mismo
+     * flujo de [sendAnswer] — las respuestas dadas después se descartan.
+     */
+    fun editAnswer(messageId: Long) {
+        val state = _uiState.value
+        if (state.isSending || state.isLoading) return
+
+        val index = state.messages.indexOfFirst { it.id == messageId }
+        if (index <= 0) return
+
+        val question = state.messages[index - 1]
+        val step = question.stepIndex
+        val inputType = question.inputType
+        if (step == null || inputType == null) return
+
+        _uiState.update {
+            it.copy(
+                messages = state.messages.subList(0, index),
+                currentStep = step,
+                currentInputType = inputType,
+                currentOptions = question.options,
+                answers = question.answersSnapshot,
+                completed = false,
+                proposal = null,
+                minutaId = null,
+                errorMessage = null
+            )
+        }
+        minutaPersisted = false
+        persistProgress()
     }
 
     fun clearError() {
@@ -228,6 +343,7 @@ class TechnicalChatViewModel @Inject constructor(
             val contentJson = moshi.adapter(MinutaContentPayload::class.java).toJson(
                 MinutaContentPayload(
                     equipment = proposal.equipment,
+                    asIsFindings = proposal.asIsFindings,
                     recommendations = proposal.recommendations,
                     score = proposal.score
                 )
@@ -242,11 +358,16 @@ class TechnicalChatViewModel @Inject constructor(
                 contentJson = contentJson
             ).onSuccess { minuta ->
                 _uiState.update { it.copy(minutaId = minuta.id) }
+                // La propuesta ya quedó guardada como minuta: desde aquí en
+                // adelante la pantalla de Propuesta Técnica es la fuente de
+                // verdad, así que ya no hace falta poder retomar el chat.
+                chatProgressStore.clear(evaluationId)
             }
             // Si falla, se deja minutaId=null a propósito: el técnico puede
             // completar la evaluación de todas formas; no hay reintento
             // automático en esta primera versión (la minuta simplemente no
-            // quedará disponible para editar/validar más adelante).
+            // quedará disponible para editar/validar más adelante). El
+            // progreso sigue guardado localmente por si se reintenta luego.
         }
     }
 }
