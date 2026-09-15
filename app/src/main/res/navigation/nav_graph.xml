@@ -131,7 +131,6 @@
 
         <argument
             android:name="evaluationId"
-            android:defaultValue="1"
             app:argType="string" />
 
         <action
@@ -156,7 +155,6 @@
 
         <argument
             android:name="evaluationId"
-            android:defaultValue="1"
             app:argType="string" />
 
         <argument
@@ -206,7 +204,6 @@
 
         <argument
             android:name="evaluationId"
-            android:defaultValue="1"
             app:argType="string" />
 
         <argument
@@ -257,7 +254,6 @@
 
         <argument
             android:name="evaluationId"
-            android:defaultValue="1"
             app:argType="string" />
 
         <argument
@@ -298,6 +294,27 @@
             android:id="@+id/action_minutaProposalFragment_to_sendDraftFragment"
             app:destination="@id/sendDraftFragment" />
 
+        <action
+            android:id="@+id/action_minutaProposalFragment_to_pdfPreview"
+            app:destination="@id/pdfPreviewFragment" />
+
+    </fragment>
+
+    <fragment
+        android:id="@+id/pdfPreviewFragment"
+        android:name="com.upc.asistenteredidbi.presentation.minuta.PdfPreviewFragment"
+        android:label="Propuesta PDF"
+        tools:layout="@layout/fragment_pdf_preview">
+
+        <argument
+            android:name="pdfPath"
+            android:defaultValue=""
+            app:argType="string" />
+
+        <argument
+            android:name="establishmentName"
+            android:defaultValue=""
+            app:argType="string" />
     </fragment>
 
     <fragment
@@ -307,7 +324,6 @@
 
         <argument
             android:name="evaluationId"
-            android:defaultValue="1"
             app:argType="string" />
 
         <argument
@@ -324,7 +340,6 @@
 
         <argument
             android:name="evaluationId"
-            android:defaultValue="1"
             app:argType="string" />
 
         <argument
@@ -393,6 +408,11 @@
         android:id="@+id/configuracionFragment"
         android:name="com.upc.asistenteredidbi.presentation.configuration.ConfiguracionFragment"
         android:label="Configuración"
-        tools:layout="@layout/fragment_configuracion" />
+        tools:layout="@layout/fragment_configuracion">
+
+        <action
+            android:id="@+id/action_config_to_perfil"
+            app:destination="@id/perfilFragment" />
+    </fragment>
 
 </navigation>
