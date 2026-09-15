@@ -6,6 +6,7 @@ import android.graphics.Color
 import android.graphics.DashPathEffect
 import android.graphics.Paint
 import android.graphics.RectF
+import android.text.TextPaint
 import android.text.TextUtils
 import android.util.AttributeSet
 import android.view.View
@@ -41,7 +42,7 @@ class TopologyGraphView @JvmOverloads constructor(
     private var contentHeight = 0f
 
     private val nodePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL }
-    private val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+    private val textPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
         color = Color.WHITE
         textAlign = Paint.Align.CENTER
         textSize = 11.5f * density
