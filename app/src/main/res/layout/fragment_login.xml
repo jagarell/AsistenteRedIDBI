@@ -7,28 +7,29 @@
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="280dp"
-        android:background="#1976D2"
+        android:layout_height="200dp"
+        android:background="@color/header_blue"
         android:gravity="center"
         android:orientation="vertical"
-        android:paddingTop="28dp">
+        android:paddingTop="16dp">
 
         <TextView
-            android:layout_width="88dp"
-            android:layout_height="88dp"
+            android:layout_width="64dp"
+            android:layout_height="64dp"
             android:background="@drawable/bg_login_icon"
             android:gravity="center"
             android:text="⌁"
             android:textColor="@android:color/white"
-            android:textSize="44sp"
+            android:textSize="32sp"
             android:textStyle="bold" />
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
             android:text="Network Assistant"
             android:textColor="@android:color/white"
-            android:textSize="30sp"
+            android:textSize="23sp"
             android:textStyle="bold" />
 
         <TextView
@@ -36,16 +37,16 @@
             android:layout_height="wrap_content"
             android:text="Gestión de Infraestructura de Red"
             android:textColor="#D9EAFE"
-            android:textSize="15sp" />
+            android:textSize="13sp" />
     </LinearLayout>
 
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:layout_marginTop="180dp"
         android:fillViewport="true"
         android:clipToPadding="false"
-        android:paddingBottom="80dp"
-        android:paddingTop="230dp">
+        android:paddingBottom="40dp">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -65,20 +66,20 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
-                    android:padding="26dp">
+                    android:padding="20dp">
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Iniciar Sesión"
-                        android:textColor="#1565C0"
-                        android:textSize="26sp"
+                        android:textColor="@color/primary_blue"
+                        android:textSize="22sp"
                         android:textStyle="bold" />
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="24dp"
+                        android:layout_marginTop="16dp"
                         android:text="Correo Electrónico"
                         android:textColor="#374151"
                         android:textSize="15sp"
@@ -94,7 +95,9 @@
                         app:boxCornerRadiusBottomEnd="16dp"
                         app:boxCornerRadiusBottomStart="16dp"
                         app:boxCornerRadiusTopEnd="16dp"
-                        app:boxCornerRadiusTopStart="16dp">
+                        app:boxCornerRadiusTopStart="16dp"
+                        app:startIconDrawable="@drawable/ic_email"
+                        app:startIconTint="#9CA3AF">
 
                         <com.google.android.material.textfield.TextInputEditText
                             android:id="@+id/et_email"
@@ -107,7 +110,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="18dp"
+                        android:layout_marginTop="12dp"
                         android:text="Contraseña"
                         android:textColor="#374151"
                         android:textSize="15sp"
@@ -124,6 +127,8 @@
                         app:boxCornerRadiusBottomStart="16dp"
                         app:boxCornerRadiusTopEnd="16dp"
                         app:boxCornerRadiusTopStart="16dp"
+                        app:startIconDrawable="@drawable/ic_lock_outline"
+                        app:startIconTint="#9CA3AF"
                         app:endIconMode="password_toggle">
 
                         <com.google.android.material.textfield.TextInputEditText
@@ -141,11 +146,14 @@
                         android:gravity="center_vertical"
                         android:orientation="horizontal">
 
-                        <CheckBox
+                        <View
                             android:id="@+id/cb_remember"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:visibility="invisible"/>
+                            android:layout_width="22dp"
+                            android:layout_height="22dp"
+                            android:layout_marginEnd="8dp"
+                            android:background="@drawable/bg_checkbox_unchecked"
+                            android:clickable="true"
+                            android:focusable="true" />
 
                         <TextView
                             android:layout_width="0dp"
@@ -154,7 +162,6 @@
                             android:text="Recordar sesión"
                             android:textColor="#4B5563"
                             android:textSize="15sp"
-                            android:visibility="invisible"
                             android:textStyle="bold" />
 
                         <TextView
@@ -162,7 +169,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="¿Olvidé contraseña?"
-                            android:textColor="#1565C0"
+                            android:textColor="@color/primary_blue"
                             android:textSize="15sp"
                             android:textStyle="bold" />
                     </LinearLayout>
@@ -179,47 +186,90 @@
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btn_login"
                         android:layout_width="match_parent"
-                        android:layout_height="56dp"
-                        android:layout_marginTop="10dp"
+                        android:layout_height="50dp"
+                        android:layout_marginTop="16dp"
                         android:text="Iniciar Sesión"
                         android:textAllCaps="false"
-                        android:textSize="18sp"
+                        android:textSize="16sp"
                         android:textStyle="bold"
-                        app:cornerRadius="16dp"
-                        app:backgroundTint="#1976D2" />
+                        app:cornerRadius="14dp"
+                        app:backgroundTint="@color/header_blue" />
 
                     <ProgressBar
                         android:id="@+id/progress"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_gravity="center"
-                        android:layout_marginTop="12dp"
+                        android:layout_marginTop="10dp"
                         android:visibility="gone" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="14dp"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <View
+                            android:layout_width="0dp"
+                            android:layout_height="1dp"
+                            android:layout_weight="1"
+                            android:background="@color/divider" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="12dp"
+                            android:layout_marginEnd="12dp"
+                            android:text="o"
+                            android:textColor="#9CA3AF"
+                            android:textSize="14sp" />
+
+                        <View
+                            android:layout_width="0dp"
+                            android:layout_height="1dp"
+                            android:layout_weight="1"
+                            android:background="@color/divider" />
+                    </LinearLayout>
 
                     <TextView
                         android:id="@+id/tv_register"
                         android:layout_width="match_parent"
-                        android:layout_height="54dp"
-                        android:layout_marginTop="28dp"
+                        android:layout_height="50dp"
+                        android:layout_marginTop="14dp"
                         android:background="@drawable/bg_outline_button"
                         android:gravity="center"
                         android:text="Crear Cuenta Nueva"
-                        android:textColor="#1565C0"
-                        android:textSize="18sp"
+                        android:textColor="@color/primary_blue"
+                        android:textSize="16sp"
                         android:textStyle="bold" />
 
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <TextView
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="28dp"
+                android:layout_marginTop="16dp"
                 android:gravity="center"
-                android:text="¿Necesitas ayuda? Soporte técnico"
-                android:textColor="#1565C0"
-                android:textSize="16sp"
-                android:textStyle="bold" />
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="¿Necesitas ayuda? "
+                    android:textColor="#6B7280"
+                    android:textSize="15sp" />
+
+                <TextView
+                    android:id="@+id/tvSupport"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Soporte técnico"
+                    android:textColor="@color/primary_blue"
+                    android:textSize="15sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
 
         </LinearLayout>
     </ScrollView>

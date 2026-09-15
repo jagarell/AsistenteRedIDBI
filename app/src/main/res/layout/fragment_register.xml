@@ -9,7 +9,7 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="80dp"
-        android:background="#1976D2"
+        android:background="@color/header_blue"
         android:gravity="center_vertical"
         android:orientation="horizontal"
         android:paddingStart="20dp"
@@ -42,7 +42,7 @@
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:paddingTop="80dp"
+        android:layout_marginTop="80dp"
         android:clipToPadding="false">
 
         <LinearLayout
@@ -88,7 +88,9 @@
                     app:boxCornerRadiusBottomEnd="18dp"
                     app:boxCornerRadiusBottomStart="18dp"
                     app:boxCornerRadiusTopEnd="18dp"
-                    app:boxCornerRadiusTopStart="18dp">
+                    app:boxCornerRadiusTopStart="18dp"
+                    app:startIconDrawable="@drawable/ic_person"
+                    app:startIconTint="#9CA3AF">
 
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/etName"
@@ -118,7 +120,9 @@
                     app:boxCornerRadiusBottomEnd="18dp"
                     app:boxCornerRadiusBottomStart="18dp"
                     app:boxCornerRadiusTopEnd="18dp"
-                    app:boxCornerRadiusTopStart="18dp">
+                    app:boxCornerRadiusTopStart="18dp"
+                    app:startIconDrawable="@drawable/ic_email"
+                    app:startIconTint="#9CA3AF">
 
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/etEmail"
@@ -148,7 +152,9 @@
                     app:boxCornerRadiusBottomEnd="18dp"
                     app:boxCornerRadiusBottomStart="18dp"
                     app:boxCornerRadiusTopEnd="18dp"
-                    app:boxCornerRadiusTopStart="18dp">
+                    app:boxCornerRadiusTopStart="18dp"
+                    app:startIconDrawable="@drawable/ic_phone"
+                    app:startIconTint="#9CA3AF">
 
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/etPhone"
@@ -178,7 +184,9 @@
                     app:boxCornerRadiusBottomEnd="18dp"
                     app:boxCornerRadiusBottomStart="18dp"
                     app:boxCornerRadiusTopEnd="18dp"
-                    app:boxCornerRadiusTopStart="18dp">
+                    app:boxCornerRadiusTopStart="18dp"
+                    app:startIconDrawable="@drawable/ic_building"
+                    app:startIconTint="#9CA3AF">
 
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/etCompany"
@@ -208,7 +216,9 @@
                     app:boxCornerRadiusBottomEnd="18dp"
                     app:boxCornerRadiusBottomStart="18dp"
                     app:boxCornerRadiusTopEnd="18dp"
-                    app:boxCornerRadiusTopStart="18dp">
+                    app:boxCornerRadiusTopStart="18dp"
+                    app:startIconDrawable="@drawable/ic_lock_outline"
+                    app:startIconTint="#9CA3AF">
 
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/etPassword"
@@ -239,7 +249,9 @@
                     app:boxCornerRadiusBottomEnd="18dp"
                     app:boxCornerRadiusBottomStart="18dp"
                     app:boxCornerRadiusTopEnd="18dp"
-                    app:boxCornerRadiusTopStart="18dp">
+                    app:boxCornerRadiusTopStart="18dp"
+                    app:startIconDrawable="@drawable/ic_lock_outline"
+                    app:startIconTint="#9CA3AF">
 
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/etConfirmPassword"
@@ -300,7 +312,7 @@
                     android:textAllCaps="false"
                     android:textSize="20sp"
                     android:textStyle="bold"
-                    app:backgroundTint="#1976D2"
+                    app:backgroundTint="@color/header_blue"
                     app:cornerRadius="18dp" />
 
                 <ProgressBar
@@ -318,7 +330,7 @@
                     android:layout_marginTop="20dp"
                     android:gravity="center"
                     android:text="¿Ya tienes cuenta? Inicia sesión"
-                    android:textColor="#1565C0"
+                    android:textColor="@color/primary_blue"
                     android:textSize="16sp"
                     android:textStyle="bold" />
 

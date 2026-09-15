@@ -5,6 +5,7 @@ import android.util.Patterns
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Toast
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
@@ -48,6 +49,13 @@ class LoginFragment : Fragment() {
     private fun setupInitialState() {
         binding.tvError.isVisible = false
         binding.progress.isVisible = false
+        renderRememberMe(viewModel.uiState.value.rememberMe)
+    }
+
+    private fun renderRememberMe(checked: Boolean) {
+        binding.cbRemember.setBackgroundResource(
+            if (checked) R.drawable.state_checkbox_checked else R.drawable.bg_checkbox_unchecked
+        )
     }
 
     private fun setupClicks() {
@@ -65,6 +73,14 @@ class LoginFragment : Fragment() {
             findNavController().navigate(
                 R.id.action_login_to_forgot
             )
+        }
+
+        binding.cbRemember.setOnClickListener {
+            viewModel.onToggleRememberMe()
+        }
+
+        binding.tvSupport.setOnClickListener {
+            Toast.makeText(requireContext(), "Próximamente", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -105,6 +121,8 @@ class LoginFragment : Fragment() {
         viewLifecycleOwner.lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.uiState.collect { state ->
+
+                    renderRememberMe(state.rememberMe)
 
                     binding.progress.isVisible = state.isLoading
                     binding.btnLogin.isEnabled = !state.isLoading
