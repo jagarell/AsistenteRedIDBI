@@ -9,6 +9,9 @@
     <color name="primary_blue_light">#E3F2FD</color>
     <color name="accent_teal">#00838F</color>
 
+    <!-- Azul de encabezados (distinto de primary_blue, que se usa en botones/íconos) -->
+    <color name="header_blue">#1976D2</color>
+
     <!-- Fondos -->
     <color name="background">#F7F8FA</color>
     <color name="surface">#FFFFFF</color>

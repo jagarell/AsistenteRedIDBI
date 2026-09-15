@@ -9,7 +9,7 @@
         android:id="@+id/header"
         android:layout_width="match_parent"
         android:layout_height="104dp"
-        android:background="#1976D2"
+        android:background="@color/header_blue"
         android:gravity="center_vertical"
         android:orientation="horizontal"
         android:paddingStart="22dp"
@@ -40,9 +40,9 @@
         android:id="@+id/contentForm"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:layout_marginTop="104dp"
         android:clipToPadding="false"
         android:fillViewport="true"
-        android:paddingTop="104dp"
         android:paddingBottom="130dp">
 
         <LinearLayout
@@ -63,7 +63,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="Enviar por Correo"
-                    android:textColor="#1565C0"
+                    android:textColor="@color/primary_blue"
                     android:textSize="18sp"
                     android:textStyle="bold" />
 
@@ -175,7 +175,7 @@
                         android:layout_width="22dp"
                         android:layout_height="22dp"
                         app:srcCompat="@drawable/ic_document"
-                        app:tint="#1565C0" />
+                        app:tint="@color/primary_blue" />
 
                     <TextView
                         android:id="@+id/tvPdfName"
@@ -206,7 +206,7 @@
                         android:contentDescription="Descargar PDF"
                         android:padding="4dp"
                         app:srcCompat="@drawable/ic_save"
-                        app:tint="#1565C0" />
+                        app:tint="@color/primary_blue" />
                 </LinearLayout>
             </LinearLayout>
 
@@ -219,7 +219,7 @@
                 android:textAllCaps="false"
                 android:textSize="18sp"
                 android:textStyle="bold"
-                app:backgroundTint="#1976D2"
+                app:backgroundTint="@color/header_blue"
                 app:cornerRadius="18dp"
                 app:icon="@drawable/ic_send"
                 app:iconPadding="10dp"
@@ -281,7 +281,7 @@
             android:textAllCaps="false"
             android:textSize="19sp"
             android:textStyle="bold"
-            app:backgroundTint="#1976D2"
+            app:backgroundTint="@color/header_blue"
             app:cornerRadius="18dp" />
 
     </LinearLayout>

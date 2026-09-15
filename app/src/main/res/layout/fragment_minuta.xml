@@ -9,7 +9,7 @@
         android:id="@+id/header"
         android:layout_width="match_parent"
         android:layout_height="100dp"
-        android:background="#1976D2"
+        android:background="@color/header_blue"
         android:gravity="center_vertical"
         android:orientation="horizontal"
         android:paddingStart="24dp"
@@ -38,9 +38,9 @@
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:layout_marginTop="100dp"
         android:clipToPadding="false"
         android:fillViewport="true"
-        android:paddingTop="100dp"
         android:paddingBottom="120dp">
 
         <LinearLayout
@@ -91,7 +91,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="72%"
-                            android:textColor="#1565C0"
+                            android:textColor="@color/primary_blue"
                             android:textSize="34sp"
                             android:textStyle="bold" />
 
@@ -181,7 +181,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="🤖  Resumen IA"
-                    android:textColor="#1565C0"
+                    android:textColor="@color/primary_blue"
                     android:textSize="20sp"
                     android:textStyle="bold" />
 
@@ -218,7 +218,7 @@
             android:textAllCaps="false"
             android:textSize="19sp"
             android:textStyle="bold"
-            app:backgroundTint="#1976D2"
+            app:backgroundTint="@color/header_blue"
             app:cornerRadius="18dp"
             app:icon="@drawable/ic_document"
             app:iconTint="@android:color/white" />
