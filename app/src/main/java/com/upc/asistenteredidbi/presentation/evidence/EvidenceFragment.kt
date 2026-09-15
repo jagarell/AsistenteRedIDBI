@@ -7,9 +7,13 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ArrayAdapter
+import android.widget.EditText
+import android.widget.Spinner
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.FileProvider
+import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
@@ -19,11 +23,20 @@ import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.GridLayoutManager
 import com.upc.asistenteredidbi.R
 import com.upc.asistenteredidbi.databinding.FragmentEvidenceBinding
-import com.upc.asistenteredidbi.domain.repository.EvaluationRepository
+import com.upc.asistenteredidbi.domain.model.EquipmentTypeCatalog
+import com.upc.asistenteredidbi.domain.model.EvidenceAreaItem
+import com.upc.asistenteredidbi.domain.model.EvidenceChecklist
+import com.upc.asistenteredidbi.domain.model.EvidenceEquipmentItem
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 import java.io.File
-import javax.inject.Inject
+
+private const val PLAN_TOPOLOGY_AREA_NAME = "Plano y Topología"
+
+/** Nombre del área/equipo fijo reservado para plano + topología — ver
+ * `build_evidence_checklist` en idbi-fastapi. */
+private fun EvidenceChecklist.planTopologyAreaId(): Long? =
+    areas.firstOrNull { it.name == PLAN_TOPOLOGY_AREA_NAME }?.id
 
 @AndroidEntryPoint
 class EvidenceFragment : Fragment() {
@@ -32,19 +45,8 @@ class EvidenceFragment : Fragment() {
     private val binding get() = _binding!!
 
     private lateinit var adapter: EvidenceAdapter
-    private var currentItem: EvidenceItem? = null
-    private var photoUri: Uri? = null
 
     private val viewModel: EvidenceViewModel by viewModels()
-
-    private val items = mutableListOf(
-        EvidenceItem("router", "Router/Modem", "Equipo principal", R.drawable.ic_router),
-        EvidenceItem("switch", "Switch", "Conmutador de red", R.drawable.ic_network),
-        EvidenceItem("pos", "POS/Caja", "Terminal punto de venta", R.drawable.ic_monitor),
-        EvidenceItem("kitchen", "Área Cocina", "Ambiente cocina", R.drawable.ic_kitchen),
-        EvidenceItem("hall", "Salón/Comedor", "Área de clientes", R.drawable.ic_people),
-        EvidenceItem("servers", "Servidores", "Rack/gabinete", R.drawable.ic_server)
-    )
 
     private val requestCameraPermission =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
@@ -52,28 +54,19 @@ class EvidenceFragment : Fragment() {
             else Toast.makeText(requireContext(), "Permiso de cámara denegado", Toast.LENGTH_SHORT).show()
         }
 
-    private val takePicture =
-        registerForActivityResult(
-            ActivityResultContracts.TakePicture()
-        ) { success ->
-            if (success && photoUri != null) {
-                markCurrentAsCaptured()
+    private var photoUri: Uri? = null
+    private var currentPhotoFile: File? = null
 
-                // Cuando conectes la carga real al backend:
-                // viewModel.uploadPhotoForSelectedItem(photoUri!!)
+    private val takePicture =
+        registerForActivityResult(ActivityResultContracts.TakePicture()) { success ->
+            if (success && photoUri != null) {
+                viewModel.uploadPhotoForSelectedItem(photoUri!!)
             }
         }
 
     private val pickImage =
         registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
-            if (uri != null) markCurrentAsCaptured()
-        }
-
-    private val pickPlan =
-        registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
-            if (uri != null) {
-                Toast.makeText(requireContext(), "Plano seleccionado", Toast.LENGTH_SHORT).show()
-            }
+            if (uri != null) viewModel.uploadPhotoForSelectedItem(uri)
         }
 
     override fun onCreateView(
@@ -88,19 +81,14 @@ class EvidenceFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         setupRecycler()
         setupClicks()
-        updateProgress()
         observeViewModel()
+        viewModel.loadChecklist()
     }
 
     private fun setupRecycler() {
-        adapter = EvidenceAdapter { item ->
-            currentItem = item
-            showImageOptions()
-        }
-
+        adapter = EvidenceAdapter { item -> onItemTapped(item) }
         binding.rvEvidence.layoutManager = GridLayoutManager(requireContext(), 2)
         binding.rvEvidence.adapter = adapter
-        adapter.submitList(items)
     }
 
     private fun setupClicks() {
@@ -109,19 +97,122 @@ class EvidenceFragment : Fragment() {
         }
 
         binding.btnMoreEvidence.setOnClickListener {
-            Toast.makeText(requireContext(), "Agregar evidencia adicional", Toast.LENGTH_SHORT).show()
+            showAddItemDialog()
         }
 
         binding.btnAnalyze.setOnClickListener {
-            viewModel.analyzeEvaluation()
+            val checklist = viewModel.uiState.value.checklist
+            if (checklist?.selectionLocked == true) {
+                viewModel.analyzeEvaluation()
+            } else {
+                viewModel.lockSelection()
+            }
         }
 
-        binding.btnUploadPlan.setOnClickListener {
-            pickPlan.launch("*/*")
+        binding.btnUploadPlan.setOnClickListener { openPlanTopologyArea() }
+        binding.btnSelectFile.setOnClickListener { openPlanTopologyArea() }
+        binding.btnUploadTopology.setOnClickListener { openPlanTopologyArea() }
+        binding.btnSelectTopologyFile.setOnClickListener { openPlanTopologyArea() }
+    }
+
+    private fun openPlanTopologyArea() {
+        val areaId = viewModel.uiState.value.checklist?.planTopologyAreaId()
+        if (areaId == null) {
+            Toast.makeText(requireContext(), "Todavía se está preparando el checklist.", Toast.LENGTH_SHORT).show()
+            return
+        }
+        viewModel.openAreaDetail(areaId)
+        showImageOptions()
+    }
+
+    /** Fase A: agregar un área o un equipo fuera de lo ya sembrado del chat. */
+    private fun showAddItemDialog() {
+        AlertDialog.Builder(requireContext())
+            .setTitle("¿Qué quieres agregar?")
+            .setItems(arrayOf("Área del local", "Equipo")) { _, which ->
+                if (which == 0) showAddAreaDialog() else showAddEquipmentDialog()
+            }
+            .show()
+    }
+
+    private fun showAddAreaDialog() {
+        val input = EditText(requireContext()).apply { hint = "Ej: Terraza, Almacén..." }
+        AlertDialog.Builder(requireContext())
+            .setTitle("Nueva área")
+            .setView(input)
+            .setPositiveButton("Agregar") { _, _ ->
+                viewModel.openAddDialog(isArea = true)
+                viewModel.onAddDialogTextChange(input.text.toString())
+                viewModel.confirmAddDialog()
+            }
+            .setNegativeButton("Cancelar", null)
+            .show()
+    }
+
+    private fun showAddEquipmentDialog() {
+        val input = EditText(requireContext()).apply { hint = "Ej: Impresora de cocina" }
+        val spinner = Spinner(requireContext()).apply {
+            adapter = ArrayAdapter(
+                requireContext(),
+                android.R.layout.simple_spinner_dropdown_item,
+                EquipmentTypeCatalog.TYPES.map { it.second }
+            )
+        }
+        val container = android.widget.LinearLayout(requireContext()).apply {
+            orientation = android.widget.LinearLayout.VERTICAL
+            setPadding(48, 24, 48, 0)
+            addView(spinner)
+            addView(input)
         }
 
-        binding.btnSelectFile.setOnClickListener {
-            pickPlan.launch("*/*")
+        AlertDialog.Builder(requireContext())
+            .setTitle("Nuevo equipo")
+            .setView(container)
+            .setPositiveButton("Agregar") { _, _ ->
+                val type = EquipmentTypeCatalog.TYPES[spinner.selectedItemPosition].first
+                viewModel.openAddDialog(isArea = false)
+                viewModel.onAddDialogEquipmentTypeChange(type)
+                viewModel.onAddDialogTextChange(input.text.toString())
+                viewModel.confirmAddDialog()
+            }
+            .setNegativeButton("Cancelar", null)
+            .show()
+    }
+
+    private fun onItemTapped(item: EvidenceItem) {
+        val checklist = viewModel.uiState.value.checklist ?: return
+        val (kind, rawId) = item.id.split(":", limit = 2)
+        val id = rawId.toLongOrNull() ?: return
+
+        if (checklist.selectionLocked) {
+            if (kind == "area") viewModel.openAreaDetail(id) else viewModel.openEquipmentDetail(id)
+
+            val hasPhotos = if (kind == "area") {
+                checklist.areas.firstOrNull { it.id == id }?.photos?.isNotEmpty() == true
+            } else {
+                checklist.equipment.firstOrNull { it.id == id }?.photos?.isNotEmpty() == true
+            }
+
+            if (hasPhotos) {
+                showImageOptions()
+            } else {
+                showImageOptionsOrRemove(kind, id)
+            }
+        } else {
+            val name = if (kind == "area") {
+                checklist.areas.firstOrNull { it.id == id }?.name
+            } else {
+                checklist.equipment.firstOrNull { it.id == id }?.label
+            } ?: "este ítem"
+
+            AlertDialog.Builder(requireContext())
+                .setTitle("¿Quitar $name?")
+                .setMessage("Todavía estás en la selección (Fase A) — puedes quitarlo o agregarlo de nuevo después.")
+                .setPositiveButton("Quitar") { _, _ ->
+                    if (kind == "area") viewModel.deleteArea(id) else viewModel.deleteEquipment(id)
+                }
+                .setNegativeButton("Cancelar", null)
+                .show()
         }
     }
 
@@ -129,20 +220,28 @@ class EvidenceFragment : Fragment() {
         viewLifecycleOwner.lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.uiState.collect { state ->
+                    renderChecklist(state)
 
-                    binding.btnAnalyze.isEnabled = !state.isLoading
-
-                    if (state.isLoading) {
-                        binding.btnAnalyze.text = "Analizando..."
-                    } else {
-                        binding.btnAnalyze.text = "Analizar con IA"
+                    binding.btnAnalyze.isEnabled = !state.isLoading && !state.isAnalyzing
+                    binding.btnAnalyze.text = when {
+                        state.isAnalyzing -> "Analizando..."
+                        state.checklist?.selectionLocked != true -> "Confirmar selección"
+                        else -> "Analizar con IA"
                     }
+                    if (state.checklist?.selectionLocked == true) {
+                        binding.btnAnalyze.alpha = if (state.canAnalyze) 1f else 0.45f
+                        binding.btnAnalyze.isEnabled = state.canAnalyze && !state.isAnalyzing
+                        val missingNames = missingItemNames(state.checklist)
+                        binding.tvMissingHint.isVisible = !state.canAnalyze && missingNames.isNotEmpty()
+                        binding.tvMissingHint.text = "Faltan fotos: ${missingNames.joinToString(", ")}"
+                    } else {
+                        binding.btnAnalyze.alpha = 1f
+                        binding.tvMissingHint.isVisible = false
+                    }
+                    binding.btnMoreEvidence.isVisible = state.checklist?.selectionLocked != true
 
                     state.analysis?.let { response ->
                         try {
-                            // Reenvía el evaluationId real y todo lo que llegó
-                            // del chat (resumen, topología, equipo, score) en
-                            // vez de descartarlo con un id hardcodeado.
                             val bundle = Bundle().apply {
                                 putString("evaluationId", viewModel.evaluationId)
                                 putInt("globalScore", response.globalScore)
@@ -157,12 +256,8 @@ class EvidenceFragment : Fragment() {
                             viewModel.clearResult()
 
                             if (findNavController().currentDestination?.id == R.id.evidenceFragment) {
-                                findNavController().navigate(
-                                    R.id.action_evidenceFragment_to_minutaFragment,
-                                    bundle
-                                )
+                                findNavController().navigate(R.id.action_evidenceFragment_to_minutaFragment, bundle)
                             }
-
                         } catch (e: Exception) {
                             e.printStackTrace()
                         }
@@ -177,6 +272,85 @@ class EvidenceFragment : Fragment() {
         }
     }
 
+    private fun renderChecklist(state: EvidenceUiState) {
+        val checklist = state.checklist ?: return
+        val items = mutableListOf<EvidenceItem>()
+
+        checklist.areas.forEach { area -> items += area.toDisplayItem(checklist.selectionLocked) }
+        checklist.equipment.forEach { equipment -> items += equipment.toDisplayItem(checklist.selectionLocked) }
+
+        adapter.submitList(items)
+
+        val captured = items.count { it.captured }
+        val total = items.size
+        val percent = if (total > 0) ((captured.toFloat() / total) * 100).toInt() else 0
+
+        binding.tvCounter.text = "$captured de $total fotos capturadas"
+        binding.tvPercent.text = "$percent%"
+        binding.progressEvidence.progress = percent
+
+        // "Plano del Local" y "Topología de Red" son dos cajas de subida en la
+        // UI, pero en el checklist del backend son UN SOLO ítem ("Plano y
+        // Topología", ver build_evidence_checklist en idbi-fastapi) — una
+        // foto en cualquiera de las dos cuenta para el mismo requisito. Se
+        // muestra el mismo contador combinado en ambas tarjetas para que no
+        // parezca que subir a "topología" está sumando fotos a "plano".
+        val planAreaId = checklist.planTopologyAreaId()
+        val planArea = checklist.areas.firstOrNull { it.id == planAreaId }
+        val planTopologyCount = planArea?.photos?.size ?: 0
+        val hasPlanTopologyPhotos = planTopologyCount > 0
+        val planTopologyText = "✓ Plano y Topología: $planTopologyCount foto(s) en total (mismo requisito en ambas tarjetas)"
+        binding.tvPlanStatus.isVisible = hasPlanTopologyPhotos
+        binding.tvPlanStatus.text = planTopologyText
+        binding.tvTopologyStatus.isVisible = hasPlanTopologyPhotos
+        binding.tvTopologyStatus.text = planTopologyText
+    }
+
+    /** Nombres de los ítems del checklist que todavía no tienen ninguna foto
+     *  — para explicar por qué "Analizar con IA" sigue bloqueado en vez de
+     *  dejar solo un botón gris sin motivo aparente. */
+    private fun missingItemNames(checklist: EvidenceChecklist): List<String> {
+        val missingAreas = checklist.areas.filter { it.photos.isEmpty() }.map { it.name }
+        val missingEquipment = checklist.equipment.filter { it.photos.isEmpty() }.map { it.label }
+        return missingAreas + missingEquipment
+    }
+
+    private fun EvidenceAreaItem.toDisplayItem(locked: Boolean): EvidenceItem = EvidenceItem(
+        id = "area:$id",
+        title = name,
+        subtitle = when {
+            photos.isNotEmpty() -> "${photos.size} foto(s)"
+            locked -> "Toca para agregar foto"
+            else -> "Toca para quitar"
+        },
+        iconRes = R.drawable.ic_people,
+        captured = photos.isNotEmpty()
+    )
+
+    private fun EvidenceEquipmentItem.toDisplayItem(locked: Boolean): EvidenceItem {
+        val specsText = extractedSpecs?.values?.filterNotNull()?.joinToString(" ")?.takeIf { it.isNotBlank() }
+        return EvidenceItem(
+            id = "equipment:$id",
+            title = label,
+            subtitle = when {
+                specsText != null -> specsText
+                photos.isNotEmpty() -> "${photos.size} foto(s)"
+                locked -> "Toca para agregar foto"
+                else -> "Toca para quitar"
+            },
+            iconRes = iconForEquipmentType(equipmentType),
+            captured = photos.isNotEmpty()
+        )
+    }
+
+    private fun iconForEquipmentType(type: String): Int = when (type) {
+        "router" -> R.drawable.ic_router
+        "switch", "access_point" -> R.drawable.ic_network
+        "camera" -> R.drawable.ic_camera
+        "pos", "computer", "printer" -> R.drawable.ic_monitor
+        else -> R.drawable.ic_server
+    }
+
     private fun showImageOptions() {
         AlertDialog.Builder(requireContext())
             .setTitle("Agregar evidencia")
@@ -189,47 +363,49 @@ class EvidenceFragment : Fragment() {
             .show()
     }
 
-    private var currentPhotoFile: File? = null
+    /** Igual que [showImageOptions], pero para un ítem ya bloqueado (Fase B)
+     *  que todavía no tiene ninguna foto: agrega la opción de quitarlo si en
+     *  el local real no aplica (ej. "Rack / Router" cuando no existe un
+     *  rack), en vez de dejar al técnico bloqueado para siempre en
+     *  "Analizar con IA" por un ítem que nunca va a poder fotografiar. */
+    private fun showImageOptionsOrRemove(kind: String, id: Long) {
+        AlertDialog.Builder(requireContext())
+            .setTitle("Agregar evidencia")
+            .setItems(arrayOf("Tomar foto", "Seleccionar de galería", "No aplica — quitar")) { _, which ->
+                when (which) {
+                    0 -> requestCameraPermission.launch(Manifest.permission.CAMERA)
+                    1 -> pickImage.launch("image/*")
+                    2 -> confirmRemoveNonApplicable(kind, id)
+                }
+            }
+            .show()
+    }
+
+    private fun confirmRemoveNonApplicable(kind: String, id: Long) {
+        val checklist = viewModel.uiState.value.checklist ?: return
+        val name = if (kind == "area") {
+            checklist.areas.firstOrNull { it.id == id }?.name
+        } else {
+            checklist.equipment.firstOrNull { it.id == id }?.label
+        } ?: "este ítem"
+
+        AlertDialog.Builder(requireContext())
+            .setTitle("¿Quitar $name?")
+            .setMessage("Se quitará del checklist porque no aplica en este local. Como la selección ya está confirmada, esto no se puede deshacer.")
+            .setPositiveButton("Quitar") { _, _ ->
+                if (kind == "area") viewModel.deleteArea(id) else viewModel.deleteEquipment(id)
+            }
+            .setNegativeButton("Cancelar", null)
+            .show()
+    }
 
     private fun openCamera() {
-        val file = File.createTempFile(
-            "evidence_",
-            ".jpg",
-            requireContext().cacheDir
-        )
-
+        val file = File.createTempFile("evidence_", ".jpg", requireContext().cacheDir)
         currentPhotoFile = file
-
         photoUri = FileProvider.getUriForFile(
-            requireContext(),
-            "${requireContext().packageName}.provider",
-            file
+            requireContext(), "${requireContext().packageName}.provider", file
         )
-
         takePicture.launch(photoUri)
-    }
-    private fun markCurrentAsCaptured() {
-        val selected = currentItem ?: return
-        val index = items.indexOfFirst { it.id == selected.id }
-
-        if (index != -1) {
-            items[index] = items[index].copy(captured = true)
-            adapter.submitList(items.toList())
-            updateProgress()
-        }
-    }
-
-    private fun updateProgress() {
-        val captured = items.count { it.captured }
-        val total = items.size
-        val percent = ((captured.toFloat() / total) * 100).toInt()
-
-        binding.tvCounter.text = "$captured de $total fotos capturadas"
-        binding.tvPercent.text = "$percent%"
-        binding.progressEvidence.progress = percent
-
-        binding.btnAnalyze.isEnabled = true
-        binding.btnAnalyze.alpha = if (captured >= 3) 1f else 0.45f
     }
 
     override fun onDestroyView() {

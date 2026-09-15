@@ -1,11 +1,13 @@
 package com.upc.asistenteredidbi.data.mapper
 
+import com.upc.asistenteredidbi.data.remote.dto.ChatAnswerDto
 import com.upc.asistenteredidbi.data.remote.dto.EquipmentTableRowDto
 import com.upc.asistenteredidbi.data.remote.dto.EvidenceAreaItemDto
 import com.upc.asistenteredidbi.data.remote.dto.EvidenceChecklistDto
 import com.upc.asistenteredidbi.data.remote.dto.EvidenceEquipmentItemDto
 import com.upc.asistenteredidbi.data.remote.dto.EvidencePhotoDto
 import com.upc.asistenteredidbi.data.remote.dto.MinutaDto
+import com.upc.asistenteredidbi.domain.model.ChatAnswerItem
 import com.upc.asistenteredidbi.domain.model.EquipmentTableRow
 import com.upc.asistenteredidbi.domain.model.EvidenceAreaItem
 import com.upc.asistenteredidbi.domain.model.EvidenceChecklist
@@ -33,6 +35,10 @@ fun EvidenceChecklistDto.toDomain(): EvidenceChecklist = EvidenceChecklist(
     areas = areas.map { it.toDomain() },
     equipment = equipment.map { it.toDomain() },
     allItemsHavePhoto = allItemsHavePhoto
+)
+
+fun ChatAnswerDto.toDomain(): ChatAnswerItem = ChatAnswerItem(
+    nodeKey = nodeKey, question = question, answer = answer
 )
 
 fun EquipmentTableRowDto.toDomain(): EquipmentTableRow = EquipmentTableRow(

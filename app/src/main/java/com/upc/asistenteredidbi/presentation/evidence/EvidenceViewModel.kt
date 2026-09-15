@@ -37,8 +37,8 @@ data class EvidenceUiState(
     val addDialogText: String = "",
     val addDialogEquipmentType: String = "router",
 
-    val selectedAreaId: String? = null,
-    val selectedEquipmentId: String? = null,
+    val selectedAreaId: Long? = null,
+    val selectedEquipmentId: Long? = null,
     val draftComment: String = "",
     val isUploadingPhoto: Boolean = false
 ) {
@@ -62,53 +62,55 @@ class EvidenceViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
-    val evaluationId: String = savedStateHandle["evaluationId"] ?: "1"
+    val evaluationId: String = savedStateHandle["evaluationId"] ?: ""
+
+    /** Null si el evaluationId de navegación no es un ID real parseable — en vez de
+     *  asumir la evaluación 1, las funciones que lo requieren fallan explícito. */
+    private val evaluationIdLong: Long? get() = evaluationId.toLongOrNull()
 
     private val _uiState = MutableStateFlow(EvidenceUiState())
     val uiState: StateFlow<EvidenceUiState> = _uiState.asStateFlow()
 
+    private fun reportMissingEvaluationId() {
+        _uiState.update { it.copy(errorMessage = "No se pudo identificar la evaluación.") }
+    }
+
+    /** Trae el checklist — la primera vez, el backend lo siembra solo a
+     * partir de las respuestas reales del chat (ya persistidas al completar
+     * la evaluación), sin que la app tenga que reenviarlas. */
     fun loadChecklist() {
+        val id = evaluationIdLong ?: return reportMissingEvaluationId()
+
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, errorMessage = null) }
 
-            getChecklistUseCase(evaluationId)
+            getChecklistUseCase(id)
                 .onSuccess { checklist ->
                     _uiState.update {
-                        it.copy(
-                            isLoading = false,
-                            checklist = checklist
-                        )
+                        it.copy(isLoading = false, checklist = checklist)
                     }
                 }
                 .onFailure { error ->
                     _uiState.update {
-                        it.copy(
-                            isLoading = false,
-                            errorMessage = error.message
-                        )
+                        it.copy(isLoading = false, errorMessage = error.message)
                     }
                 }
         }
     }
 
     fun analyzeEvaluation() {
+        val id = evaluationIdLong ?: return reportMissingEvaluationId()
+
         viewModelScope.launch {
             _uiState.update {
-                it.copy(
-                    isAnalyzing = true,
-                    errorMessage = null,
-                    analysis = null
-                )
+                it.copy(isAnalyzing = true, errorMessage = null, analysis = null)
             }
 
             evaluationRepository
-                .analyzeEvaluation(evaluationId.toLongOrNull() ?: 1L)
+                .analyzeEvaluation(id)
                 .onSuccess { response ->
                     _uiState.update {
-                        it.copy(
-                            isAnalyzing = false,
-                            analysis = response
-                        )
+                        it.copy(isAnalyzing = false, analysis = response)
                     }
                 }
                 .onFailure { error ->
@@ -124,20 +126,12 @@ class EvidenceViewModel @Inject constructor(
 
     fun clearResult() {
         _uiState.update {
-            it.copy(
-                analysis = null,
-                errorMessage = null,
-                isAnalyzing = false
-            )
+            it.copy(analysis = null, errorMessage = null, isAnalyzing = false)
         }
     }
 
     fun openAddDialog(isArea: Boolean) = _uiState.update {
-        it.copy(
-            showAddDialog = true,
-            addDialogIsArea = isArea,
-            addDialogText = ""
-        )
+        it.copy(showAddDialog = true, addDialogIsArea = isArea, addDialogText = "")
     }
 
     fun dismissAddDialog() = _uiState.update {
@@ -153,18 +147,15 @@ class EvidenceViewModel @Inject constructor(
     }
 
     fun confirmAddDialog() {
+        val id = evaluationIdLong ?: return reportMissingEvaluationId()
         val state = _uiState.value
         if (state.addDialogText.isBlank()) return
 
         viewModelScope.launch {
             val result = if (state.addDialogIsArea) {
-                addCustomAreaUseCase(evaluationId, state.addDialogText)
+                addCustomAreaUseCase(id, state.addDialogText)
             } else {
-                addCustomEquipmentUseCase(
-                    evaluationId,
-                    state.addDialogEquipmentType,
-                    state.addDialogText
-                )
+                addCustomEquipmentUseCase(id, state.addDialogEquipmentType, state.addDialogText)
             }
 
             result
@@ -173,88 +164,54 @@ class EvidenceViewModel @Inject constructor(
                     loadChecklist()
                 }
                 .onFailure { error ->
-                    _uiState.update {
-                        it.copy(errorMessage = error.message)
-                    }
+                    _uiState.update { it.copy(errorMessage = error.message) }
                 }
         }
     }
 
-    fun deleteArea(areaId: String) {
+    fun deleteArea(areaId: Long) {
+        val id = evaluationIdLong ?: return reportMissingEvaluationId()
         viewModelScope.launch {
-            deleteAreaUseCase(evaluationId, areaId)
+            deleteAreaUseCase(id, areaId)
                 .onSuccess { loadChecklist() }
-                .onFailure { error ->
-                    _uiState.update {
-                        it.copy(errorMessage = error.message)
-                    }
-                }
+                .onFailure { error -> _uiState.update { it.copy(errorMessage = error.message) } }
         }
     }
 
-    fun deleteEquipment(equipmentId: String) {
+    fun deleteEquipment(equipmentId: Long) {
+        val id = evaluationIdLong ?: return reportMissingEvaluationId()
         viewModelScope.launch {
-            deleteEquipmentUseCase(evaluationId, equipmentId)
+            deleteEquipmentUseCase(id, equipmentId)
                 .onSuccess { loadChecklist() }
-                .onFailure { error ->
-                    _uiState.update {
-                        it.copy(errorMessage = error.message)
-                    }
-                }
+                .onFailure { error -> _uiState.update { it.copy(errorMessage = error.message) } }
         }
     }
 
     fun lockSelection() {
+        val id = evaluationIdLong ?: return reportMissingEvaluationId()
         viewModelScope.launch {
-            _uiState.update {
-                it.copy(
-                    isLoading = true,
-                    errorMessage = null
-                )
-            }
+            _uiState.update { it.copy(isLoading = true, errorMessage = null) }
 
-            lockSelectionUseCase(evaluationId)
+            lockSelectionUseCase(id)
                 .onSuccess { checklist ->
-                    _uiState.update {
-                        it.copy(
-                            isLoading = false,
-                            checklist = checklist
-                        )
-                    }
+                    _uiState.update { it.copy(isLoading = false, checklist = checklist) }
                 }
                 .onFailure { error ->
-                    _uiState.update {
-                        it.copy(
-                            isLoading = false,
-                            errorMessage = error.message
-                        )
-                    }
+                    _uiState.update { it.copy(isLoading = false, errorMessage = error.message) }
                 }
         }
     }
 
-    fun openAreaDetail(areaId: String) = _uiState.update {
-        it.copy(
-            selectedAreaId = areaId,
-            selectedEquipmentId = null,
-            draftComment = ""
-        )
+    fun openAreaDetail(areaId: Long) = _uiState.update {
+        it.copy(selectedAreaId = areaId, selectedEquipmentId = null, draftComment = "")
     }
 
-    fun openEquipmentDetail(equipmentId: String) = _uiState.update {
-        it.copy(
-            selectedEquipmentId = equipmentId,
-            selectedAreaId = null,
-            draftComment = ""
-        )
+    fun openEquipmentDetail(equipmentId: Long) = _uiState.update {
+        it.copy(selectedEquipmentId = equipmentId, selectedAreaId = null, draftComment = "")
     }
 
     fun closeDetail() = _uiState.update {
-        it.copy(
-            selectedAreaId = null,
-            selectedEquipmentId = null,
-            draftComment = ""
-        )
+        it.copy(selectedAreaId = null, selectedEquipmentId = null, draftComment = "")
     }
 
     fun onDraftCommentChange(value: String) = _uiState.update {
@@ -262,6 +219,7 @@ class EvidenceViewModel @Inject constructor(
     }
 
     fun uploadPhotoForSelectedItem(uri: Uri) {
+        val id = evaluationIdLong ?: return reportMissingEvaluationId()
         val state = _uiState.value
         val areaId = state.selectedAreaId
         val equipmentId = state.selectedEquipmentId
@@ -269,59 +227,31 @@ class EvidenceViewModel @Inject constructor(
         if (areaId == null && equipmentId == null) return
 
         viewModelScope.launch {
-            _uiState.update {
-                it.copy(
-                    isUploadingPhoto = true,
-                    errorMessage = null
-                )
-            }
+            _uiState.update { it.copy(isUploadingPhoto = true, errorMessage = null) }
 
             val result = if (areaId != null) {
-                uploadAreaPhotoUseCase(
-                    evaluationId,
-                    areaId,
-                    uri,
-                    state.draftComment.ifBlank { null }
-                )
+                uploadAreaPhotoUseCase(id, areaId, uri, state.draftComment.ifBlank { null })
             } else {
-                uploadEquipmentPhotoUseCase(
-                    evaluationId,
-                    equipmentId!!,
-                    uri,
-                    state.draftComment.ifBlank { null }
-                )
+                uploadEquipmentPhotoUseCase(id, equipmentId!!, uri, state.draftComment.ifBlank { null })
             }
 
             result
                 .onSuccess {
-                    _uiState.update {
-                        it.copy(
-                            isUploadingPhoto = false,
-                            draftComment = ""
-                        )
-                    }
+                    _uiState.update { it.copy(isUploadingPhoto = false, draftComment = "") }
                     loadChecklist()
                 }
                 .onFailure { error ->
-                    _uiState.update {
-                        it.copy(
-                            isUploadingPhoto = false,
-                            errorMessage = error.message
-                        )
-                    }
+                    _uiState.update { it.copy(isUploadingPhoto = false, errorMessage = error.message) }
                 }
         }
     }
 
-    fun deletePhoto(photoId: String) {
+    fun deletePhoto(photoId: Long) {
+        val id = evaluationIdLong ?: return reportMissingEvaluationId()
         viewModelScope.launch {
-            deletePhotoUseCase(evaluationId, photoId)
+            deletePhotoUseCase(id, photoId)
                 .onSuccess { loadChecklist() }
-                .onFailure { error ->
-                    _uiState.update {
-                        it.copy(errorMessage = error.message)
-                    }
-                }
+                .onFailure { error -> _uiState.update { it.copy(errorMessage = error.message) } }
         }
     }
 }
