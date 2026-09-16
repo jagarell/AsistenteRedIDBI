@@ -80,6 +80,11 @@ dependencies {
     implementation("com.squareup.retrofit2:retrofit:2.11.0")
     implementation("com.squareup.retrofit2:converter-moshi:2.11.0")
 
+    // Ver las tramas HTTP en un panel de Android Studio (plugin "OkHttp
+    // Profiler" de JetBrains Marketplace) — solo en debug, nunca en el APK
+    // que se le entrega a alguien fuera del equipo de desarrollo.
+    debugImplementation("io.nerdythings:okhttp-profiler:1.1.1")
+
     implementation("com.squareup.moshi:moshi:1.15.1")
     implementation("com.squareup.moshi:moshi-kotlin:1.15.1")
     // kapt("com.squareup.moshi:moshi-kotlin-codegen:1.15.1")

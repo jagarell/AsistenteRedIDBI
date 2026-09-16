@@ -30,6 +30,7 @@ import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import dagger.multibindings.Multibinds
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
@@ -92,11 +93,13 @@ object AuthModule {
     @Singleton
     fun provideOkHttpClient(
         authInterceptor: Interceptor,
-        loggingInterceptor: HttpLoggingInterceptor
+        loggingInterceptor: HttpLoggingInterceptor,
+        debugInterceptors: Set<@JvmSuppressWildcards Interceptor>
     ): OkHttpClient {
         return OkHttpClient.Builder()
             .addInterceptor(authInterceptor)
             .addInterceptor(loggingInterceptor)
+            .apply { debugInterceptors.forEach { addInterceptor(it) } }
             .connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
             .writeTimeout(30, TimeUnit.SECONDS)
@@ -182,6 +185,17 @@ object AuthModule {
         return retrofit.create(NotificationApiService::class.java)
     }
 
+}
+
+/** Declara el multibinding vacío por defecto — en debug, [DebugNetworkModule]
+ *  (en el sourceSet src/debug) le agrega el interceptor de OkHttp Profiler;
+ *  en release no hay ningún módulo que aporte a este set, y queda vacío. */
+@Module
+@InstallIn(SingletonComponent::class)
+abstract class NetworkBindsModule {
+
+    @Multibinds
+    abstract fun debugInterceptors(): Set<Interceptor>
 }
 
 @Module
