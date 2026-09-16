@@ -38,7 +38,7 @@ import retrofit2.converter.moshi.MoshiConverterFactory
 import java.util.concurrent.TimeUnit
 import javax.inject.Singleton
 
-private const val BASE_URL = "http://10.0.2.2:8080/"
+private const val BASE_URL = "https://asistenteredidbi.up.railway.app/"
 
 @Module
 @InstallIn(SingletonComponent::class)
