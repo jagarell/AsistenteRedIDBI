@@ -301,9 +301,10 @@ class EvidenceFragment : Fragment() {
 
     /** Igual que [showImageOptions], pero para un ítem ya bloqueado (Fase B)
      *  que todavía no tiene ninguna foto: agrega la opción de quitarlo si en
-     *  el local real no aplica (ej. "Rack / Router" cuando no existe un
-     *  rack), en vez de dejar al técnico bloqueado para siempre en
-     *  "Analizar con IA" por un ítem que nunca va a poder fotografiar. */
+     *  el local real no aplica (ej. una zona de WiFi que al final no
+     *  necesitaba cobertura), en vez de dejar al técnico bloqueado para
+     *  siempre en "Analizar con IA" por un ítem que nunca va a poder
+     *  fotografiar. */
     private fun showImageOptionsOrRemove(kind: String, id: Long) {
         AlertDialog.Builder(requireContext())
             .setTitle("Agregar evidencia")
