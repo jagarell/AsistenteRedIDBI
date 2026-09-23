@@ -84,7 +84,15 @@ class EvidenceFragment : Fragment() {
 
     private fun setupRecycler() {
         adapter = EvidenceAdapter { item -> onItemTapped(item) }
-        binding.rvEvidence.layoutManager = GridLayoutManager(requireContext(), 2)
+        // canScrollVertically=false a propósito: rvEvidence vive dentro del
+        // ScrollView de toda la pantalla con layout_height="wrap_content" —
+        // sin esto, GridLayoutManager mide su alto como si pudiera scrollear
+        // internamente y solo dibuja la primera fila (bug conocido de
+        // GridLayoutManager + wrap_content), dejando el resto de los ítems
+        // (equipos) invisibles aunque sí estén en el adapter.
+        binding.rvEvidence.layoutManager = object : GridLayoutManager(requireContext(), 2) {
+            override fun canScrollVertically(): Boolean = false
+        }
         binding.rvEvidence.adapter = adapter
     }
 

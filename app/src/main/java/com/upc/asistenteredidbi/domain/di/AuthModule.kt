@@ -79,10 +79,13 @@ object AuthModule {
 
             val response = chain.proceed(request)
             // 401 = el backend no reconoce el JWT como válido (falta, inválido
-            // o expirado) — dispara el logout automático global. No se hace
-            // para 403, que ahora el gateway reserva para "autenticado pero
+            // o expirado) — dispara el logout automático global. Los endpoints
+            // públicos (login/register/health) nunca devuelven 401 por esta
+            // vía porque son permitAll en Spring Security, así que esto solo
+            // se dispara en llamadas que de verdad necesitaban sesión. No se
+            // hace para 403, que el gateway reserva para "autenticado pero
             // sin el rol requerido" (ver SecurityConfig en idbi-api-gateway).
-            if (response.code == 401 && token != null) {
+            if (response.code == 401) {
                 sessionManager.notifySessionExpired()
             }
             response

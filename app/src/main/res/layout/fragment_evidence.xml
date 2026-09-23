@@ -103,7 +103,7 @@
                 android:textSize="17sp"
                 android:lineSpacingExtra="4dp" />
 
-            <androidx.recyclerview.widget.RecyclerView
+            <com.upc.asistenteredidbi.presentation.evidence.FullHeightRecyclerView
                 android:id="@+id/rvEvidence"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
