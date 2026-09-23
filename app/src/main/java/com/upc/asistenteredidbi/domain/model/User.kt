@@ -14,6 +14,7 @@ data class User(
 
 data class AuthSession(
     val accessToken: String,
+    val refreshToken: String,
     val expiresInMinutes: Int,
     val userId: Long,
     val fullName: String,

@@ -5,6 +5,7 @@ import com.upc.asistenteredidbi.data.remote.dto.ForgotPasswordResponseDto
 import com.upc.asistenteredidbi.data.remote.dto.GenericMessageDto
 import com.upc.asistenteredidbi.data.remote.dto.LoginRequestDto
 import com.upc.asistenteredidbi.data.remote.dto.LoginResponseDto
+import com.upc.asistenteredidbi.data.remote.dto.RefreshRequestDto
 import com.upc.asistenteredidbi.data.remote.dto.RegisterRequestDto
 import com.upc.asistenteredidbi.data.remote.dto.RegisterResponseDto
 import com.upc.asistenteredidbi.data.remote.dto.ResetPasswordRequestDto
@@ -29,6 +30,16 @@ interface AuthApiService {
 
     @GET("api/v1/auth/me")
     suspend fun getCurrentUser(): UserDto
+
+    @POST("api/auth/refresh")
+    suspend fun refresh(
+        @Body request: RefreshRequestDto
+    ): LoginResponseDto
+
+    @POST("api/auth/logout")
+    suspend fun logout(
+        @Body request: RefreshRequestDto
+    )
 
     @POST("api/auth/forgot-password")
     suspend fun forgotPassword(

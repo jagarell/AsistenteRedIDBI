@@ -30,7 +30,9 @@ import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import com.upc.asistenteredidbi.data.remote.TokenAuthenticator
 import dagger.multibindings.Multibinds
+import okhttp3.Authenticator
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
@@ -77,18 +79,10 @@ object AuthModule {
                 }
                 .build()
 
-            val response = chain.proceed(request)
-            // 401 = el backend no reconoce el JWT como válido (falta, inválido
-            // o expirado) — dispara el logout automático global. Los endpoints
-            // públicos (login/register/health) nunca devuelven 401 por esta
-            // vía porque son permitAll en Spring Security, así que esto solo
-            // se dispara en llamadas que de verdad necesitaban sesión. No se
-            // hace para 403, que el gateway reserva para "autenticado pero
-            // sin el rol requerido" (ver SecurityConfig en idbi-api-gateway).
-            if (response.code == 401) {
-                sessionManager.notifySessionExpired()
-            }
-            response
+            // Ya no decide "sesión expirada" acá: un 401 lo maneja el
+            // TokenAuthenticator (intenta renovar con el refresh token antes
+            // de rendirse) — este interceptor solo pone el header.
+            chain.proceed(request)
         }
     }
 
@@ -108,16 +102,61 @@ object AuthModule {
     fun provideOkHttpClient(
         authInterceptor: Interceptor,
         loggingInterceptor: HttpLoggingInterceptor,
+        tokenAuthenticator: TokenAuthenticator,
         debugInterceptors: Set<@JvmSuppressWildcards Interceptor>
     ): OkHttpClient {
         return OkHttpClient.Builder()
             .addInterceptor(authInterceptor)
             .addInterceptor(loggingInterceptor)
+            .authenticator(tokenAuthenticator)
             .apply { debugInterceptors.forEach { addInterceptor(it) } }
             .connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
             .writeTimeout(30, TimeUnit.SECONDS)
             .build()
+    }
+
+    /** Cliente "pelado" (sin AuthInterceptor ni TokenAuthenticator) usado
+     *  únicamente para llamar `/api/auth/refresh` desde [TokenAuthenticator]
+     *  sin recursión ni ciclo de Hilt (ese cliente lleva el Authenticator que
+     *  a su vez necesitaría este mismo cliente). */
+    @Provides
+    @Singleton
+    @RefreshApi
+    fun provideRefreshOkHttpClient(
+        loggingInterceptor: HttpLoggingInterceptor
+    ): OkHttpClient {
+        return OkHttpClient.Builder()
+            .addInterceptor(loggingInterceptor)
+            .connectTimeout(30, TimeUnit.SECONDS)
+            .readTimeout(30, TimeUnit.SECONDS)
+            .writeTimeout(30, TimeUnit.SECONDS)
+            .build()
+    }
+
+    @Provides
+    @Singleton
+    @RefreshApi
+    fun provideRefreshRetrofit(
+        @RefreshApi okHttpClient: OkHttpClient,
+        moshi: Moshi
+    ): Retrofit {
+        return Retrofit.Builder()
+            .baseUrl(BASE_URL)
+            .client(okHttpClient)
+            .addConverterFactory(
+                MoshiConverterFactory.create(moshi)
+            )
+            .build()
+    }
+
+    @Provides
+    @Singleton
+    @RefreshApi
+    fun provideRefreshAuthApiService(
+        @RefreshApi retrofit: Retrofit
+    ): AuthApiService {
+        return retrofit.create(AuthApiService::class.java)
     }
 
     @Provides

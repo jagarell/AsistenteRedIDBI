@@ -98,6 +98,7 @@ class LoginViewModel @Inject constructor(
 
                 sessionManager.saveSession(
                     accessToken = session.accessToken,
+                    refreshToken = session.refreshToken,
                     expiresInMinutes = session.expiresInMinutes,
                     userId = session.userId,
                     fullName = session.fullName,

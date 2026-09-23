@@ -22,6 +22,7 @@ import javax.inject.Singleton
 private val Context.dataStore by preferencesDataStore(name = "network_assistant_session")
 
 private val KEY_ACCESS_TOKEN = stringPreferencesKey("access_token")
+private val KEY_REFRESH_TOKEN = stringPreferencesKey("refresh_token")
 private val KEY_EXPIRES_IN_MINUTES = intPreferencesKey("expires_in_minutes")
 private val KEY_ROLE = stringPreferencesKey("role")
 private val KEY_USER_ID = longPreferencesKey("user_id")
@@ -86,6 +87,7 @@ class SessionManager @Inject constructor(
      */
     suspend fun saveSession(
         accessToken: String,
+        refreshToken: String,
         expiresInMinutes: Int,
         userId: Long,
         fullName: String,
@@ -93,6 +95,7 @@ class SessionManager @Inject constructor(
     ) {
         context.dataStore.edit { prefs ->
             prefs[KEY_ACCESS_TOKEN] = accessToken
+            prefs[KEY_REFRESH_TOKEN] = refreshToken
             prefs[KEY_EXPIRES_IN_MINUTES] = expiresInMinutes
             prefs[KEY_USER_ID] = userId
             prefs[KEY_FULL_NAME] = fullName
@@ -100,8 +103,25 @@ class SessionManager @Inject constructor(
         }
     }
 
+    /** Pisa solo los campos de token tras un refresh exitoso — a diferencia
+     *  de [saveSession], no toca userId/fullName/role (no cambiaron). */
+    suspend fun updateAccessToken(
+        accessToken: String,
+        refreshToken: String,
+        expiresInMinutes: Int
+    ) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_ACCESS_TOKEN] = accessToken
+            prefs[KEY_REFRESH_TOKEN] = refreshToken
+            prefs[KEY_EXPIRES_IN_MINUTES] = expiresInMinutes
+        }
+    }
+
     suspend fun getAccessToken(): String? =
         accessTokenFlow.first()
+
+    suspend fun getRefreshToken(): String? =
+        context.dataStore.data.map { prefs -> prefs[KEY_REFRESH_TOKEN] }.first()
 
     suspend fun getExpiresInMinutes(): Int =
         expiresInMinutesFlow.first()
@@ -121,6 +141,7 @@ class SessionManager @Inject constructor(
     suspend fun clearSession() {
         context.dataStore.edit { prefs ->
             prefs.remove(KEY_ACCESS_TOKEN)
+            prefs.remove(KEY_REFRESH_TOKEN)
             prefs.remove(KEY_EXPIRES_IN_MINUTES)
             prefs.remove(KEY_ROLE)
             prefs.remove(KEY_USER_ID)
@@ -134,5 +155,12 @@ class SessionManager @Inject constructor(
     fun getJwtTokenBlocking(): String? =
         runBlocking {
             getAccessToken()
+        }
+
+    /** Usado por el TokenAuthenticator para leer/comparar el refresh token
+     *  guardado de forma síncrona (mismo patrón que [getJwtTokenBlocking]). */
+    fun getRefreshTokenBlocking(): String? =
+        runBlocking {
+            getRefreshToken()
         }
 }

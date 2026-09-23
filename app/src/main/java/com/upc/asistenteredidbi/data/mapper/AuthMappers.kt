@@ -55,6 +55,7 @@ fun RegisterResponseDto.toRegisterResult(): RegisterResult {
 fun LoginResponseDto.toDomain(): AuthSession {
     return AuthSession(
         accessToken = accessToken,
+        refreshToken = refreshToken,
         expiresInMinutes = expiresInMinutes,
         userId = userId,
         fullName = fullName,

@@ -2,6 +2,8 @@ package com.upc.asistenteredidbi.presentation.main
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.upc.asistenteredidbi.data.remote.AuthApiService
+import com.upc.asistenteredidbi.data.remote.dto.RefreshRequestDto
 import com.upc.asistenteredidbi.data.session.SessionManager
 import com.upc.asistenteredidbi.domain.model.toDisplayLabel
 import com.upc.asistenteredidbi.domain.usecase.GetProfileUseCase
@@ -27,7 +29,8 @@ data class DrawerProfile(
 @HiltViewModel
 class SessionViewModel @Inject constructor(
     private val sessionManager: SessionManager,
-    private val getProfileUseCase: GetProfileUseCase
+    private val getProfileUseCase: GetProfileUseCase,
+    private val authApiService: AuthApiService
 ) : ViewModel() {
 
     private val _destination =
@@ -88,9 +91,21 @@ class SessionViewModel @Inject constructor(
 
     fun logout() {
         viewModelScope.launch {
+            val refreshToken = sessionManager.getRefreshToken()
             sessionManager.clearSession()
             _drawerProfile.value = null
             _destination.value = SessionDestination.Login
+
+            // Revoca el refresh token en el servidor para que uno filtrado no
+            // siga sirviendo tras un logout intencional. Best-effort: si falla
+            // (sin red, backend caído), la sesión local ya se cerró igual.
+            if (!refreshToken.isNullOrBlank()) {
+                try {
+                    authApiService.logout(RefreshRequestDto(refreshToken))
+                } catch (e: Exception) {
+                    // Nada que hacer: la sesión local ya se cerró.
+                }
+            }
         }
     }
 }

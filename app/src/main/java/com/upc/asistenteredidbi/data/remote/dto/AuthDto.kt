@@ -10,11 +10,16 @@ data class LoginRequestDto(
 
 data class LoginResponseDto(
     val accessToken: String,
+    val refreshToken: String,
     val expiresInMinutes: Int,
     val userId: Long,
     val fullName: String,
     val email: String,
     val role: String
+)
+
+data class RefreshRequestDto(
+    val refreshToken: String
 )
 
 @JsonClass(generateAdapter = true)
