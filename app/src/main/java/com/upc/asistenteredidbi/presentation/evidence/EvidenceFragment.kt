@@ -276,13 +276,20 @@ class EvidenceFragment : Fragment() {
         val checklist = state.checklist ?: return
         val items = mutableListOf<EvidenceItem>()
 
-        checklist.areas.forEach { area -> items += area.toDisplayItem(checklist.selectionLocked) }
+        // El área "Plano y Topología" ya tiene sus propias tarjetas dedicadas
+        // más abajo (cardLocalPlan / cardTopology) — no se repite acá en la
+        // grilla para no mostrar el mismo requisito 3 veces en la pantalla.
+        val planAreaId = checklist.planTopologyAreaId()
+        checklist.areas.forEach { area ->
+            if (area.id != planAreaId) items += area.toDisplayItem(checklist.selectionLocked)
+        }
         checklist.equipment.forEach { equipment -> items += equipment.toDisplayItem(checklist.selectionLocked) }
 
         adapter.submitList(items)
 
-        val captured = items.count { it.captured }
-        val total = items.size
+        val captured = checklist.areas.count { it.photos.isNotEmpty() } +
+            checklist.equipment.count { it.photos.isNotEmpty() }
+        val total = checklist.areas.size + checklist.equipment.size
         val percent = if (total > 0) ((captured.toFloat() / total) * 100).toInt() else 0
 
         binding.tvCounter.text = "$captured de $total fotos capturadas"
@@ -295,7 +302,6 @@ class EvidenceFragment : Fragment() {
         // foto en cualquiera de las dos cuenta para el mismo requisito. Se
         // muestra el mismo contador combinado en ambas tarjetas para que no
         // parezca que subir a "topología" está sumando fotos a "plano".
-        val planAreaId = checklist.planTopologyAreaId()
         val planArea = checklist.areas.firstOrNull { it.id == planAreaId }
         val planTopologyCount = planArea?.photos?.size ?: 0
         val hasPlanTopologyPhotos = planTopologyCount > 0
