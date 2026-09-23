@@ -29,6 +29,7 @@ data class TechnicalChatUiState(
     val currentStep: Int = 0,
     val currentInputType: TechnicalChatInputType = TechnicalChatInputType.TEXT,
     val currentOptions: List<String> = emptyList(),
+    val currentUnit: String? = null,
     val answeredQuestions: Int = 0,
     val totalQuestions: Int = 0,
     val progressPercent: Int = 0,
@@ -83,6 +84,7 @@ class TechnicalChatViewModel @Inject constructor(
                             currentStep = saved.currentStep,
                             currentInputType = saved.currentInputType,
                             currentOptions = saved.currentOptions,
+                            currentUnit = saved.currentUnit,
                             answeredQuestions = saved.answeredQuestions,
                             totalQuestions = saved.totalQuestions,
                             progressPercent = saved.progressPercent,
@@ -112,6 +114,7 @@ class TechnicalChatViewModel @Inject constructor(
                     currentStep = state.currentStep,
                     currentInputType = state.currentInputType,
                     currentOptions = state.currentOptions,
+                    currentUnit = state.currentUnit,
                     answeredQuestions = state.answeredQuestions,
                     totalQuestions = state.totalQuestions,
                     progressPercent = state.progressPercent,
@@ -144,6 +147,7 @@ class TechnicalChatViewModel @Inject constructor(
                         stepIndex = response.currentStep,
                         inputType = response.currentInputType,
                         options = response.currentOptions,
+                        unit = response.currentUnit,
                         answersSnapshot = response.answers
                     )
 
@@ -154,6 +158,7 @@ class TechnicalChatViewModel @Inject constructor(
                             currentStep = response.currentStep,
                             currentInputType = response.currentInputType,
                             currentOptions = response.currentOptions,
+                            currentUnit = response.currentUnit,
                             answeredQuestions = response.answeredQuestions,
                             totalQuestions = response.totalQuestions,
                             progressPercent = response.progressPercent,
@@ -238,6 +243,7 @@ class TechnicalChatViewModel @Inject constructor(
                                     stepIndex = response.currentStep,
                                     inputType = response.currentInputType,
                                     options = response.currentOptions,
+                                    unit = response.currentUnit,
                                     answersSnapshot = response.answers
                                 )
                             )
@@ -251,6 +257,7 @@ class TechnicalChatViewModel @Inject constructor(
                         currentStep = response.currentStep,
                         currentInputType = response.currentInputType,
                         currentOptions = response.currentOptions,
+                        currentUnit = response.currentUnit,
                         answeredQuestions = response.answeredQuestions,
                         totalQuestions = response.totalQuestions,
                         progressPercent = response.progressPercent,
@@ -303,6 +310,7 @@ class TechnicalChatViewModel @Inject constructor(
                 currentStep = step,
                 currentInputType = inputType,
                 currentOptions = question.options,
+                currentUnit = question.unit,
                 answers = question.answersSnapshot,
                 completed = false,
                 proposal = null,

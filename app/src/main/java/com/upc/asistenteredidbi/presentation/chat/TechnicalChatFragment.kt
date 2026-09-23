@@ -232,6 +232,14 @@ class TechnicalChatFragment : Fragment() {
         binding.etTextInput.isVisible = needsTextInput
         binding.containerTextRow.isVisible = showTextRow
 
+        // La unidad (ej. "metros", "Mbps") viene del backend — antes se
+        // calculaba pero nunca se mandaba al cliente, así que preguntas
+        // como "¿qué distancia hay...?" no dejaban claro en qué unidad
+        // responder salvo que el texto de la pregunta la mencionara a mano.
+        val unit = state.currentUnit?.takeIf { it.isNotBlank() && needsTextInput }
+        binding.tvInputUnit.isVisible = unit != null
+        binding.tvInputUnit.text = unit
+
         if (!canAnswer) {
             binding.scrollQuickReplies.isVisible = false
             return

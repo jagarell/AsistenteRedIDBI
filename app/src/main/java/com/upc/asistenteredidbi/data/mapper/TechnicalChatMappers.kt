@@ -20,6 +20,7 @@ fun TechnicalChatResponseDto.toDomain(): TechnicalChatProgress {
         currentQuestion = currentQuestion,
         currentInputType = TechnicalChatInputType.fromApiValue(currentInputType),
         currentOptions = currentOptions.orEmpty(),
+        currentUnit = currentUnit,
         answeredQuestions = answeredQuestions,
         totalQuestions = totalQuestions,
         progressPercent = progressPercent,

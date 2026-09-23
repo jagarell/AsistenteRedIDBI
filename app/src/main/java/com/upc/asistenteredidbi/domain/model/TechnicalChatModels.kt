@@ -17,6 +17,7 @@ data class TechnicalChatProgress(
     val currentQuestion: String?,
     val currentInputType: TechnicalChatInputType = TechnicalChatInputType.TEXT,
     val currentOptions: List<String> = emptyList(),
+    val currentUnit: String? = null,
     val answeredQuestions: Int,
     val totalQuestions: Int,
     val progressPercent: Int,

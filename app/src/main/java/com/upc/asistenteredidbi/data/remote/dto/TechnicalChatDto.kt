@@ -14,6 +14,7 @@ data class TechnicalChatResponseDto(
     val currentQuestion: String?,
     val currentInputType: String? = null,
     val currentOptions: List<String>? = null,
+    val currentUnit: String? = null,
     val answeredQuestions: Int,
     val totalQuestions: Int,
     val progressPercent: Int,

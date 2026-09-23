@@ -25,6 +25,7 @@ data class ChatMessage(
     val stepIndex: Int? = null,
     val inputType: TechnicalChatInputType? = null,
     val options: List<String> = emptyList(),
+    val unit: String? = null,
     val answersSnapshot: Map<String, String> = emptyMap(),
     /** Puede editarse si es la respuesta a una pregunta reabrible (no aplica
      * a mensajes del bot ni al mensaje final de cierre). */

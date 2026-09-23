@@ -21,6 +21,7 @@ data class ChatProgressSnapshot(
     val currentStep: Int,
     val currentInputType: TechnicalChatInputType,
     val currentOptions: List<String>,
+    val currentUnit: String? = null,
     val answeredQuestions: Int,
     val totalQuestions: Int,
     val progressPercent: Int,
