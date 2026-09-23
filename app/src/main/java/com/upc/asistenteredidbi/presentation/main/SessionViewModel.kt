@@ -41,6 +41,17 @@ class SessionViewModel @Inject constructor(
 
     private var sessionChecked = false
 
+    init {
+        // El AuthInterceptor de OkHttp avisa acá cuando el backend rechaza el
+        // JWT (401) desde cualquier pantalla — se reusa el mismo logout()
+        // que ya usa el botón manual del drawer, para no duplicar lógica.
+        viewModelScope.launch {
+            sessionManager.sessionExpiredEvents.collect {
+                logout()
+            }
+        }
+    }
+
     fun checkSession() {
         if (sessionChecked) return
 

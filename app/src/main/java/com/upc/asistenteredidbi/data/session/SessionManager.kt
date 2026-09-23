@@ -8,7 +8,11 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.upc.asistenteredidbi.domain.model.Role
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.runBlocking
@@ -51,6 +55,20 @@ class SessionManager @Inject constructor(
 
     val fullNameFlow: Flow<String?> =
         context.dataStore.data.map { prefs -> prefs[KEY_FULL_NAME] }
+
+    /** Emite cuando el AuthInterceptor detecta un 401 (backend rechaza el JWT
+     *  por inválido/expirado) — [SessionViewModel] lo escucha para cerrar la
+     *  sesión sola y mandar al técnico de vuelta a Login, en vez de dejarlo
+     *  atascado en una pantalla donde todo le va a seguir fallando. */
+    private val _sessionExpiredEvents = MutableSharedFlow<Unit>(
+        extraBufferCapacity = 1,
+        onBufferOverflow = BufferOverflow.DROP_OLDEST
+    )
+    val sessionExpiredEvents: SharedFlow<Unit> = _sessionExpiredEvents.asSharedFlow()
+
+    fun notifySessionExpired() {
+        _sessionExpiredEvents.tryEmit(Unit)
+    }
 
     /**
      * Guarda únicamente el JWT.

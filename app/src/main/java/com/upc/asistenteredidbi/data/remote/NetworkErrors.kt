@@ -7,10 +7,14 @@ import java.io.IOException
 /**
  * Traduce cualquier excepción de red/HTTP a un mensaje que el técnico pueda
  * entender, en vez de dejar pasar texto crudo tipo "HTTP 403" hasta un
- * Toast — el JWT dura 60 minutos, así que un 401/403 en cualquier pantalla
- * después de haber iniciado sesión casi siempre significa sesión expirada,
- * no falta de permisos. El mensaje que mande el backend en el error body
+ * Toast. El mensaje que mande el backend en el error body
  * ({"message": "..."}) tiene prioridad sobre el default por código.
+ *
+ * 401 vs 403: el gateway (ver SecurityConfig en idbi-api-gateway) devuelve
+ * 401 cuando el JWT falta/es inválido/expiró (no autenticado) y 403 cuando
+ * sí hay sesión válida pero falta el rol requerido (ej. validar una minuta,
+ * solo SUPERVISOR) — AuthInterceptor solo dispara el logout automático en
+ * 401, nunca en 403.
  */
 fun Throwable.toFriendlyMessage(codeOverrides: Map<Int, String> = emptyMap()): String = when (this) {
     is HttpException -> extractBackendMessage() ?: codeOverrides[code()] ?: defaultMessageForCode(code())
@@ -26,7 +30,8 @@ private fun HttpException.extractBackendMessage(): String? = try {
 }
 
 private fun defaultMessageForCode(code: Int): String = when (code) {
-    401, 403 -> "Tu sesión expiró. Cierra sesión y vuelve a iniciar sesión."
+    401 -> "Tu sesión expiró, vuelve a iniciar sesión."
+    403 -> "No tienes permisos para realizar esta acción."
     404 -> "No se encontró lo que buscabas."
     409 -> "Los datos ingresados ya existen."
     in 500..599 -> "El servidor tuvo un problema. Intenta de nuevo en unos segundos."

@@ -77,7 +77,15 @@ object AuthModule {
                 }
                 .build()
 
-            chain.proceed(request)
+            val response = chain.proceed(request)
+            // 401 = el backend no reconoce el JWT como válido (falta, inválido
+            // o expirado) — dispara el logout automático global. No se hace
+            // para 403, que ahora el gateway reserva para "autenticado pero
+            // sin el rol requerido" (ver SecurityConfig en idbi-api-gateway).
+            if (response.code == 401 && token != null) {
+                sessionManager.notifySessionExpired()
+            }
+            response
         }
     }
 
