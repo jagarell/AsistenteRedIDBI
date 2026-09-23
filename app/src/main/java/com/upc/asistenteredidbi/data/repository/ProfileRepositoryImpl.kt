@@ -5,6 +5,7 @@ import android.net.Uri
 import com.upc.asistenteredidbi.data.mapper.toDomain
 import com.upc.asistenteredidbi.data.remote.ProfileApiService
 import com.upc.asistenteredidbi.data.remote.dto.UpdateProfileRequestDto
+import com.upc.asistenteredidbi.data.remote.toFriendlyMessage
 import com.upc.asistenteredidbi.data.util.MultipartUtils
 import com.upc.asistenteredidbi.domain.model.BrandAsset
 import com.upc.asistenteredidbi.domain.model.ProfileStats
@@ -43,7 +44,7 @@ class ProfileRepositoryImpl @Inject constructor(
         try {
             Result.success(block())
         } catch (e: Exception) {
-            Result.failure(e)
+            Result.failure(Exception(e.toFriendlyMessage(), e))
         }
     }
 }

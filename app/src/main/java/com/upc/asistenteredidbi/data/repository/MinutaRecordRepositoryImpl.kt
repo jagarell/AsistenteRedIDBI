@@ -3,6 +3,7 @@ package com.upc.asistenteredidbi.data.repository
 import com.upc.asistenteredidbi.data.mapper.toDomain
 import com.upc.asistenteredidbi.data.remote.MinutaApiService
 import com.upc.asistenteredidbi.data.remote.dto.MinutaRecordRequestDto
+import com.upc.asistenteredidbi.data.remote.toFriendlyMessage
 import com.upc.asistenteredidbi.domain.model.MinutaRecord
 import com.upc.asistenteredidbi.domain.repository.MinutaRecordRepository
 import kotlinx.coroutines.Dispatchers
@@ -73,7 +74,7 @@ class MinutaRecordRepositoryImpl @Inject constructor(
         try {
             Result.success(block())
         } catch (e: Exception) {
-            Result.failure(e)
+            Result.failure(Exception(e.toFriendlyMessage(), e))
         }
     }
 }

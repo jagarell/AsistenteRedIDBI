@@ -7,6 +7,7 @@ import com.upc.asistenteredidbi.data.remote.dto.ForgotPasswordRequestDto
 import com.upc.asistenteredidbi.data.remote.dto.LoginRequestDto
 import com.upc.asistenteredidbi.data.remote.dto.RegisterRequestDto
 import com.upc.asistenteredidbi.data.remote.dto.ResetPasswordRequestDto
+import com.upc.asistenteredidbi.data.remote.toFriendlyMessage
 import com.upc.asistenteredidbi.domain.model.AuthSession
 import com.upc.asistenteredidbi.domain.model.ForgotPasswordResult
 import com.upc.asistenteredidbi.domain.model.RegisterResult
@@ -15,8 +16,6 @@ import com.upc.asistenteredidbi.domain.model.User
 import com.upc.asistenteredidbi.domain.repository.AuthRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import org.json.JSONObject
-import retrofit2.HttpException
 import javax.inject.Inject
 
 class AuthRepositoryImpl @Inject constructor(
@@ -110,47 +109,27 @@ class AuthRepositoryImpl @Inject constructor(
     ): Result<T> = withContext(Dispatchers.IO) {
         try {
             Result.success(block())
-        } catch (exception: HttpException) {
+        } catch (exception: Exception) {
             Result.failure(
                 IllegalArgumentException(
-                    extractErrorMessage(exception)
+                    exception.toFriendlyMessage(codeOverrides = LOGIN_ERROR_OVERRIDES),
+                    exception
                 )
             )
-        } catch (exception: Exception) {
-            Result.failure(exception)
         }
     }
 
-    private fun extractErrorMessage(
-        exception: HttpException
-    ): String {
-        return try {
-            val errorBody = exception.response()
-                ?.errorBody()
-                ?.string()
-
-            if (errorBody.isNullOrBlank()) {
-                defaultErrorMessage(exception.code())
-            } else {
-                JSONObject(errorBody).optString(
-                    "message",
-                    defaultErrorMessage(exception.code())
-                )
-            }
-        } catch (_: Exception) {
-            defaultErrorMessage(exception.code())
-        }
-    }
-
-    private fun defaultErrorMessage(code: Int): String {
-        return when (code) {
-            400 -> "Correo o contraseña incorrectos"
-            401 -> "Tu sesión no está autorizada"
-            403 -> "No tienes permisos para realizar esta acción"
-            404 -> "El servicio solicitado no fue encontrado"
-            409 -> "Los datos ingresados ya existen"
-            500 -> "Ocurrió un error en el servidor"
-            else -> "No se pudo completar la solicitud"
-        }
+    private companion object {
+        // Mensajes específicos del contexto de login/registro — acá un
+        // 401/403 significa credenciales inválidas, no sesión expirada
+        // (todavía no hay sesión), así que no usan el default genérico.
+        val LOGIN_ERROR_OVERRIDES = mapOf(
+            400 to "Correo o contraseña incorrectos",
+            401 to "Tu sesión no está autorizada",
+            403 to "No tienes permisos para realizar esta acción",
+            404 to "El servicio solicitado no fue encontrado",
+            409 to "Los datos ingresados ya existen",
+            500 to "Ocurrió un error en el servidor",
+        )
     }
 }

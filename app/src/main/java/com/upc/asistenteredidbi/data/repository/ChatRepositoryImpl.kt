@@ -3,6 +3,7 @@ package com.upc.asistenteredidbi.data.repository
 import com.upc.asistenteredidbi.data.mapper.toDomain
 import com.upc.asistenteredidbi.data.remote.ChatApiService
 import com.upc.asistenteredidbi.data.remote.dto.TechnicalChatAnswerRequestDto
+import com.upc.asistenteredidbi.data.remote.toFriendlyMessage
 import com.upc.asistenteredidbi.domain.model.TechnicalChatProgress
 import com.upc.asistenteredidbi.domain.repository.ChatRepository
 import kotlinx.coroutines.Dispatchers
@@ -44,7 +45,7 @@ class ChatRepositoryImpl @Inject constructor(
         try {
             Result.success(block())
         } catch (exception: Exception) {
-            Result.failure(exception)
+            Result.failure(Exception(exception.toFriendlyMessage(), exception))
         }
     }
 }

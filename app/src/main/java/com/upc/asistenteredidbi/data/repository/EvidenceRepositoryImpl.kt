@@ -7,6 +7,7 @@ import com.upc.asistenteredidbi.data.remote.EvidenceApiService
 import com.upc.asistenteredidbi.data.remote.dto.CreateCustomAreaRequestDto
 import com.upc.asistenteredidbi.data.remote.dto.CreateCustomEquipmentRequestDto
 import com.upc.asistenteredidbi.data.remote.dto.UpdateEquipmentNotesRequestDto
+import com.upc.asistenteredidbi.data.remote.toFriendlyMessage
 import com.upc.asistenteredidbi.data.util.MultipartUtils
 import com.upc.asistenteredidbi.domain.model.EvidenceAreaItem
 import com.upc.asistenteredidbi.domain.model.EvidenceChecklist
@@ -80,7 +81,7 @@ class EvidenceRepositoryImpl @Inject constructor(
         try {
             Result.success(block())
         } catch (e: Exception) {
-            Result.failure(e)
+            Result.failure(Exception(e.toFriendlyMessage(), e))
         }
     }
 }

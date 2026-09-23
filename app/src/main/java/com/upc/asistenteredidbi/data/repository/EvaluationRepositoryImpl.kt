@@ -5,6 +5,7 @@ import com.upc.asistenteredidbi.data.remote.EvaluationApiService
 import com.upc.asistenteredidbi.data.remote.dto.AnalysisResponseDto
 import com.upc.asistenteredidbi.data.remote.dto.AnalyzeAnswersRequestDto
 import com.upc.asistenteredidbi.data.remote.dto.StartEvaluationRequestDto
+import com.upc.asistenteredidbi.data.remote.toFriendlyMessage
 import com.upc.asistenteredidbi.domain.model.Evaluation
 import com.upc.asistenteredidbi.domain.model.EvaluationFilters
 import com.upc.asistenteredidbi.domain.model.EvaluationStatus
@@ -53,7 +54,7 @@ class EvaluationRepositoryImpl @Inject constructor(
         try {
             Result.success(block())
         } catch (e: Exception) {
-            Result.failure(e)
+            Result.failure(Exception(e.toFriendlyMessage(), e))
         }
     }
 

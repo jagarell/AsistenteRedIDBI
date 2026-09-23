@@ -3,12 +3,11 @@ package com.upc.asistenteredidbi.data.repository
 import com.upc.asistenteredidbi.data.mapper.toDto
 import com.upc.asistenteredidbi.data.remote.PdfApiService
 import com.upc.asistenteredidbi.data.remote.dto.ProposalSendRequestDto
+import com.upc.asistenteredidbi.data.remote.toFriendlyMessage
 import com.upc.asistenteredidbi.domain.model.ProposalPdfData
 import com.upc.asistenteredidbi.domain.repository.PdfRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import org.json.JSONObject
-import retrofit2.HttpException
 import javax.inject.Inject
 
 class PdfRepositoryImpl @Inject constructor(
@@ -41,31 +40,20 @@ class PdfRepositoryImpl @Inject constructor(
         withContext(Dispatchers.IO) {
             try {
                 Result.success(block())
-            } catch (exception: HttpException) {
-                Result.failure(IllegalArgumentException(extractErrorMessage(exception)))
             } catch (exception: Exception) {
-                Result.failure(exception)
+                Result.failure(
+                    IllegalArgumentException(
+                        exception.toFriendlyMessage(codeOverrides = PDF_ERROR_OVERRIDES),
+                        exception
+                    )
+                )
             }
         }
 
-    private fun extractErrorMessage(exception: HttpException): String {
-        return try {
-            val errorBody = exception.response()?.errorBody()?.string()
-            if (errorBody.isNullOrBlank()) {
-                defaultErrorMessage(exception.code())
-            } else {
-                JSONObject(errorBody).optString("message", defaultErrorMessage(exception.code()))
-            }
-        } catch (_: Exception) {
-            defaultErrorMessage(exception.code())
-        }
-    }
-
-    private fun defaultErrorMessage(code: Int): String = when (code) {
-        400 -> "Los datos enviados no son válidos"
-        401 -> "Tu sesión no está autorizada"
-        403 -> "No tienes permisos para realizar esta acción"
-        502 -> "No se pudo completar la operación en el servidor"
-        else -> "No se pudo completar la solicitud"
+    private companion object {
+        val PDF_ERROR_OVERRIDES = mapOf(
+            400 to "Los datos enviados no son válidos",
+            502 to "No se pudo completar la operación en el servidor",
+        )
     }
 }
