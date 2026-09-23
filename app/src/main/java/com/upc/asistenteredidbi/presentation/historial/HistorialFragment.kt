@@ -106,7 +106,7 @@ class HistorialFragment : Fragment() {
 
     private fun EvaluationSummaryItem.toHistoryItem(): HistoryItem = HistoryItem(
         id = id,
-        restaurantName = establishmentName,
+        establishmentName = establishmentName,
         location = createdAt,
         date = "",
         status = when (status) {

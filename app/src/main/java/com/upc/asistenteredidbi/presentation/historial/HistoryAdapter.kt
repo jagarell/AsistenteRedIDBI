@@ -37,7 +37,7 @@ class HistoryAdapter(
         RecyclerView.ViewHolder(binding.root) {
 
         fun bind(item: HistoryItem) {
-            binding.tvTitle.text = item.restaurantName
+            binding.tvTitle.text = item.establishmentName
             binding.tvSubtitle.text = listOf(item.location, item.date)
                 .filter { it.isNotBlank() }
                 .joinToString(" · ")

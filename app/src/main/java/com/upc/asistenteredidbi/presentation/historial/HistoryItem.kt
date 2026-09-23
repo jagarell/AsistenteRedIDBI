@@ -2,7 +2,7 @@ package com.upc.asistenteredidbi.presentation.historial
 
 data class HistoryItem(
     val id: String,
-    val restaurantName: String,
+    val establishmentName: String,
     val location: String,
     val date: String,
     val status: HistoryStatus,

@@ -307,9 +307,14 @@ class MinutaProposalFragment : Fragment() {
 
                     state.minuta?.let { minuta ->
                         binding.tvEstablishmentName.text = minuta.establishmentName
-                        binding.tvEstablishmentAddress.text =
-                            minuta.establishmentAddress?.takeIf { it.isNotBlank() }
-                                ?: "Propuesta de Infraestructura de Red"
+                        val type = minuta.establishmentType?.takeIf { it.isNotBlank() }
+                        val address = minuta.establishmentAddress?.takeIf { it.isNotBlank() }
+                        binding.tvEstablishmentAddress.text = when {
+                            type != null && address != null -> "$type · $address"
+                            type != null -> type
+                            address != null -> address
+                            else -> "Propuesta de Infraestructura de Red"
+                        }
                     }
 
                     state.analysis?.let { analysis ->

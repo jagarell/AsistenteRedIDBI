@@ -2,16 +2,10 @@ package com.upc.asistenteredidbi.domain.model
 
 /** Modelos de dominio para HU02 (onboarding técnico) e Historial. */
 
+/** Traducción real: gatewayStatusToDomain en EvaluationMappers.kt (el
+ *  gateway manda COMPLETADO/BORRADOR/ENVIADO/EN_ANALISIS). */
 enum class EvaluationStatus {
-    BORRADOR, EN_PROGRESO, GENERADA;
-
-    companion object {
-        fun fromApiValue(value: String): EvaluationStatus = when (value.lowercase()) {
-            "en_progreso" -> EN_PROGRESO
-            "generada" -> GENERADA
-            else -> BORRADOR
-        }
-    }
+    BORRADOR, EN_PROGRESO, GENERADA
 }
 
 data class Evaluation(
@@ -43,6 +37,7 @@ data class Minuta(
     val evaluationId: Long,
     val establishmentName: String,
     val establishmentAddress: String?,
+    val establishmentType: String?,
     val conversationResponses: List<ChatAnswerItem>,
     val areas: List<EvidenceAreaItem>,
     val equipment: List<EvidenceEquipmentItem>,
