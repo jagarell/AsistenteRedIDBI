@@ -20,14 +20,17 @@ data class EvaluationDto(
     val createdAt: String
 )
 
-@JsonClass(generateAdapter = true)
+/** Mismo shape real que EvaluationDto (ambos vienen del mismo Evaluation.java
+ *  del gateway) — hasta hace poco tenía nombres @Json en snake_case que no
+ *  coincidían con nada real (contrato nunca probado, la ruta que la usaba
+ *  daba 404 antes de llegar siquiera a deserializar esto). El gateway no
+ *  tiene concepto de "cliente" separado del establecimiento. */
 data class EvaluationListItemDto(
-    @Json(name = "id") val id: String,
-    @Json(name = "establishment_name") val establishmentName: String,
-    @Json(name = "client_name") val clientName: String?,
-    @Json(name = "status") val status: String,
-    @Json(name = "overall_score") val overallScore: Float?,
-    @Json(name = "created_at") val createdAt: String
+    val id: Long,
+    val restaurantName: String,
+    val status: String,
+    val score: Int?,
+    val createdAt: String
 )
 
 data class AnalyzeAnswersRequestDto(

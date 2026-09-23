@@ -16,8 +16,7 @@ interface EvaluationApiService {
     @POST("api/evaluations")
     suspend fun startEvaluation(@Body request: StartEvaluationRequestDto): EvaluationDto
 
-    /** Ruta muerta (api/v1) — el listado de Historial usa datos mock hoy, ver HistorialFragment. */
-    @GET("api/v1/evaluations")
+    @GET("api/evaluations")
     suspend fun listEvaluations(
         @Query("client_name") clientName: String? = null,
         @Query("status") status: String? = null,
