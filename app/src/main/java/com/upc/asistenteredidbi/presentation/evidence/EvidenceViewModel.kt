@@ -7,8 +7,6 @@ import androidx.lifecycle.viewModelScope
 import com.upc.asistenteredidbi.data.remote.dto.AnalysisResponseDto
 import com.upc.asistenteredidbi.domain.model.EvidenceChecklist
 import com.upc.asistenteredidbi.domain.repository.EvaluationRepository
-import com.upc.asistenteredidbi.domain.usecase.AddCustomAreaUseCase
-import com.upc.asistenteredidbi.domain.usecase.AddCustomEquipmentUseCase
 import com.upc.asistenteredidbi.domain.usecase.DeleteAreaUseCase
 import com.upc.asistenteredidbi.domain.usecase.DeleteEquipmentUseCase
 import com.upc.asistenteredidbi.domain.usecase.DeleteEvidencePhotoUseCase
@@ -32,11 +30,6 @@ data class EvidenceUiState(
     val isAnalyzing: Boolean = false,
     val analysis: AnalysisResponseDto? = null,
 
-    val showAddDialog: Boolean = false,
-    val addDialogIsArea: Boolean = true,
-    val addDialogText: String = "",
-    val addDialogEquipmentType: String = "router",
-
     val selectedAreaId: Long? = null,
     val selectedEquipmentId: Long? = null,
     val draftComment: String = "",
@@ -50,9 +43,7 @@ data class EvidenceUiState(
 @HiltViewModel
 class EvidenceViewModel @Inject constructor(
     private val getChecklistUseCase: GetEvidenceChecklistUseCase,
-    private val addCustomAreaUseCase: AddCustomAreaUseCase,
     private val deleteAreaUseCase: DeleteAreaUseCase,
-    private val addCustomEquipmentUseCase: AddCustomEquipmentUseCase,
     private val deleteEquipmentUseCase: DeleteEquipmentUseCase,
     private val lockSelectionUseCase: LockEvidenceSelectionUseCase,
     private val uploadAreaPhotoUseCase: UploadAreaPhotoUseCase,
@@ -77,7 +68,13 @@ class EvidenceViewModel @Inject constructor(
 
     /** Trae el checklist — la primera vez, el backend lo siembra solo a
      * partir de las respuestas reales del chat (ya persistidas al completar
-     * la evaluación), sin que la app tenga que reenviarlas. */
+     * la evaluación), sin que la app tenga que reenviarlas.
+     *
+     * La "Fase A" (curar el checklist antes de fotografiar) ya no se le
+     * muestra al técnico como un paso separado — el checklist sembrado del
+     * chat se confirma solo acá, en cuanto se carga, para que pueda tomar
+     * fotos directo. Si esta llamada falla, [checklist] queda sin bloquear
+     * y el botón "Analizar con IA" reintenta el lock en su próximo tap. */
     fun loadChecklist() {
         val id = evaluationIdLong ?: return reportMissingEvaluationId()
 
@@ -86,8 +83,12 @@ class EvidenceViewModel @Inject constructor(
 
             getChecklistUseCase(id)
                 .onSuccess { checklist ->
-                    _uiState.update {
-                        it.copy(isLoading = false, checklist = checklist)
+                    if (checklist.selectionLocked) {
+                        _uiState.update { it.copy(isLoading = false, checklist = checklist) }
+                    } else {
+                        lockSelectionUseCase(id)
+                            .onSuccess { locked -> _uiState.update { it.copy(isLoading = false, checklist = locked) } }
+                            .onFailure { _uiState.update { it.copy(isLoading = false, checklist = checklist) } }
                     }
                 }
                 .onFailure { error ->
@@ -127,45 +128,6 @@ class EvidenceViewModel @Inject constructor(
     fun clearResult() {
         _uiState.update {
             it.copy(analysis = null, errorMessage = null, isAnalyzing = false)
-        }
-    }
-
-    fun openAddDialog(isArea: Boolean) = _uiState.update {
-        it.copy(showAddDialog = true, addDialogIsArea = isArea, addDialogText = "")
-    }
-
-    fun dismissAddDialog() = _uiState.update {
-        it.copy(showAddDialog = false)
-    }
-
-    fun onAddDialogTextChange(value: String) = _uiState.update {
-        it.copy(addDialogText = value)
-    }
-
-    fun onAddDialogEquipmentTypeChange(type: String) = _uiState.update {
-        it.copy(addDialogEquipmentType = type)
-    }
-
-    fun confirmAddDialog() {
-        val id = evaluationIdLong ?: return reportMissingEvaluationId()
-        val state = _uiState.value
-        if (state.addDialogText.isBlank()) return
-
-        viewModelScope.launch {
-            val result = if (state.addDialogIsArea) {
-                addCustomAreaUseCase(id, state.addDialogText)
-            } else {
-                addCustomEquipmentUseCase(id, state.addDialogEquipmentType, state.addDialogText)
-            }
-
-            result
-                .onSuccess {
-                    _uiState.update { it.copy(showAddDialog = false) }
-                    loadChecklist()
-                }
-                .onFailure { error ->
-                    _uiState.update { it.copy(errorMessage = error.message) }
-                }
         }
     }
 

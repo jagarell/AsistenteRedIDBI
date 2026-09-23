@@ -7,9 +7,6 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ArrayAdapter
-import android.widget.EditText
-import android.widget.Spinner
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.FileProvider
@@ -21,9 +18,9 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.GridLayoutManager
+import com.google.android.material.snackbar.Snackbar
 import com.upc.asistenteredidbi.R
 import com.upc.asistenteredidbi.databinding.FragmentEvidenceBinding
-import com.upc.asistenteredidbi.domain.model.EquipmentTypeCatalog
 import com.upc.asistenteredidbi.domain.model.EvidenceAreaItem
 import com.upc.asistenteredidbi.domain.model.EvidenceChecklist
 import com.upc.asistenteredidbi.domain.model.EvidenceEquipmentItem
@@ -96,16 +93,13 @@ class EvidenceFragment : Fragment() {
             findNavController().navigateUp()
         }
 
-        binding.btnMoreEvidence.setOnClickListener {
-            showAddItemDialog()
-        }
-
         binding.btnAnalyze.setOnClickListener {
-            val checklist = viewModel.uiState.value.checklist
-            if (checklist?.selectionLocked == true) {
-                viewModel.analyzeEvaluation()
-            } else {
-                viewModel.lockSelection()
+            val state = viewModel.uiState.value
+            val checklist = state.checklist ?: return@setOnClickListener
+            when {
+                !checklist.selectionLocked -> viewModel.lockSelection()
+                !state.canAnalyze -> showMissingEvidenceSnackbar(checklist)
+                else -> viewModel.analyzeEvaluation()
             }
         }
 
@@ -125,95 +119,36 @@ class EvidenceFragment : Fragment() {
         showImageOptions()
     }
 
-    /** Fase A: agregar un área o un equipo fuera de lo ya sembrado del chat. */
-    private fun showAddItemDialog() {
-        AlertDialog.Builder(requireContext())
-            .setTitle("¿Qué quieres agregar?")
-            .setItems(arrayOf("Área del local", "Equipo")) { _, which ->
-                if (which == 0) showAddAreaDialog() else showAddEquipmentDialog()
-            }
-            .show()
-    }
-
-    private fun showAddAreaDialog() {
-        val input = EditText(requireContext()).apply { hint = "Ej: Terraza, Almacén..." }
-        AlertDialog.Builder(requireContext())
-            .setTitle("Nueva área")
-            .setView(input)
-            .setPositiveButton("Agregar") { _, _ ->
-                viewModel.openAddDialog(isArea = true)
-                viewModel.onAddDialogTextChange(input.text.toString())
-                viewModel.confirmAddDialog()
-            }
-            .setNegativeButton("Cancelar", null)
-            .show()
-    }
-
-    private fun showAddEquipmentDialog() {
-        val input = EditText(requireContext()).apply { hint = "Ej: Impresora de cocina" }
-        val spinner = Spinner(requireContext()).apply {
-            adapter = ArrayAdapter(
-                requireContext(),
-                android.R.layout.simple_spinner_dropdown_item,
-                EquipmentTypeCatalog.TYPES.map { it.second }
-            )
-        }
-        val container = android.widget.LinearLayout(requireContext()).apply {
-            orientation = android.widget.LinearLayout.VERTICAL
-            setPadding(48, 24, 48, 0)
-            addView(spinner)
-            addView(input)
-        }
-
-        AlertDialog.Builder(requireContext())
-            .setTitle("Nuevo equipo")
-            .setView(container)
-            .setPositiveButton("Agregar") { _, _ ->
-                val type = EquipmentTypeCatalog.TYPES[spinner.selectedItemPosition].first
-                viewModel.openAddDialog(isArea = false)
-                viewModel.onAddDialogEquipmentTypeChange(type)
-                viewModel.onAddDialogTextChange(input.text.toString())
-                viewModel.confirmAddDialog()
-            }
-            .setNegativeButton("Cancelar", null)
-            .show()
-    }
-
     private fun onItemTapped(item: EvidenceItem) {
         val checklist = viewModel.uiState.value.checklist ?: return
         val (kind, rawId) = item.id.split(":", limit = 2)
         val id = rawId.toLongOrNull() ?: return
 
-        if (checklist.selectionLocked) {
-            if (kind == "area") viewModel.openAreaDetail(id) else viewModel.openEquipmentDetail(id)
+        if (kind == "area") viewModel.openAreaDetail(id) else viewModel.openEquipmentDetail(id)
 
-            val hasPhotos = if (kind == "area") {
-                checklist.areas.firstOrNull { it.id == id }?.photos?.isNotEmpty() == true
-            } else {
-                checklist.equipment.firstOrNull { it.id == id }?.photos?.isNotEmpty() == true
-            }
-
-            if (hasPhotos) {
-                showImageOptions()
-            } else {
-                showImageOptionsOrRemove(kind, id)
-            }
+        val hasPhotos = if (kind == "area") {
+            checklist.areas.firstOrNull { it.id == id }?.photos?.isNotEmpty() == true
         } else {
-            val name = if (kind == "area") {
-                checklist.areas.firstOrNull { it.id == id }?.name
-            } else {
-                checklist.equipment.firstOrNull { it.id == id }?.label
-            } ?: "este ítem"
-
-            AlertDialog.Builder(requireContext())
-                .setTitle("¿Quitar $name?")
-                .setMessage("Todavía estás en la selección (Fase A) — puedes quitarlo o agregarlo de nuevo después.")
-                .setPositiveButton("Quitar") { _, _ ->
-                    if (kind == "area") viewModel.deleteArea(id) else viewModel.deleteEquipment(id)
-                }
-                .setNegativeButton("Cancelar", null)
-                .show()
+            checklist.equipment.firstOrNull { it.id == id }?.photos?.isNotEmpty() == true
         }
+
+        if (hasPhotos) {
+            showImageOptions()
+        } else {
+            showImageOptionsOrRemove(kind, id)
+        }
+    }
+
+    /** El botón "Analizar con IA" ya no se bloquea cuando falta evidencia —
+     *  en vez de eso, le dice al técnico exactamente qué le falta subir. */
+    private fun showMissingEvidenceSnackbar(checklist: EvidenceChecklist) {
+        val missing = missingItemNames(checklist)
+        val message = if (missing.isEmpty()) {
+            "Todavía se está preparando el checklist, intenta de nuevo."
+        } else {
+            "Falta foto de: ${missing.joinToString(", ")}"
+        }
+        Snackbar.make(binding.root, message, Snackbar.LENGTH_LONG).show()
     }
 
     private fun observeViewModel() {
@@ -222,23 +157,11 @@ class EvidenceFragment : Fragment() {
                 viewModel.uiState.collect { state ->
                     renderChecklist(state)
 
+                    // El botón nunca se bloquea por evidencia faltante — el click
+                    // listener decide qué hacer (bloquear selección, avisar con un
+                    // snackbar, o analizar) según el estado real al momento del tap.
                     binding.btnAnalyze.isEnabled = !state.isLoading && !state.isAnalyzing
-                    binding.btnAnalyze.text = when {
-                        state.isAnalyzing -> "Analizando..."
-                        state.checklist?.selectionLocked != true -> "Confirmar selección"
-                        else -> "Analizar con IA"
-                    }
-                    if (state.checklist?.selectionLocked == true) {
-                        binding.btnAnalyze.alpha = if (state.canAnalyze) 1f else 0.45f
-                        binding.btnAnalyze.isEnabled = state.canAnalyze && !state.isAnalyzing
-                        val missingNames = missingItemNames(state.checklist)
-                        binding.tvMissingHint.isVisible = !state.canAnalyze && missingNames.isNotEmpty()
-                        binding.tvMissingHint.text = "Faltan fotos: ${missingNames.joinToString(", ")}"
-                    } else {
-                        binding.btnAnalyze.alpha = 1f
-                        binding.tvMissingHint.isVisible = false
-                    }
-                    binding.btnMoreEvidence.isVisible = state.checklist?.selectionLocked != true
+                    binding.btnAnalyze.text = if (state.isAnalyzing) "Analizando..." else "Analizar con IA"
 
                     state.analysis?.let { response ->
                         try {
@@ -313,8 +236,8 @@ class EvidenceFragment : Fragment() {
     }
 
     /** Nombres de los ítems del checklist que todavía no tienen ninguna foto
-     *  — para explicar por qué "Analizar con IA" sigue bloqueado en vez de
-     *  dejar solo un botón gris sin motivo aparente. */
+     *  — se le muestran al técnico en el snackbar cuando toca "Analizar con
+     *  IA" sin haber completado el checklist. */
     private fun missingItemNames(checklist: EvidenceChecklist): List<String> {
         val missingAreas = checklist.areas.filter { it.photos.isEmpty() }.map { it.name }
         val missingEquipment = checklist.equipment.filter { it.photos.isEmpty() }.map { it.label }
