@@ -11,7 +11,10 @@ data class EvidencePhoto(
     val id: Long,
     val fileUrl: String,
     val comment: String?,
-    val capturedAt: String
+    val capturedAt: String,
+    /** Descripción libre del análisis de IA para esta foto (null en fotos de
+     *  área, que no pasan por análisis). */
+    val analysisResult: String?
 )
 
 data class EvidenceAreaItem(

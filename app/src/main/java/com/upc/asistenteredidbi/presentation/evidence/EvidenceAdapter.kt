@@ -3,8 +3,10 @@ package com.upc.asistenteredidbi.presentation.evidence
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
+import com.bumptech.glide.Glide
 import com.upc.asistenteredidbi.R
 import com.upc.asistenteredidbi.databinding.ItemEvidenceBinding
+import com.upc.asistenteredidbi.domain.di.BASE_URL
 
 class EvidenceAdapter(
     private val onTakePhoto: (EvidenceItem) -> Unit
@@ -40,6 +42,18 @@ class EvidenceAdapter(
             binding.tvTitle.text = item.title
             binding.tvSubtitle.text = item.subtitle
             binding.ivIcon.setImageResource(item.iconRes)
+
+            if (item.photoUrl != null) {
+                binding.ivIcon.visibility = android.view.View.INVISIBLE
+                binding.ivPhoto.visibility = android.view.View.VISIBLE
+                Glide.with(binding.ivPhoto)
+                    .load(BASE_URL.trimEnd('/') + item.photoUrl)
+                    .centerCrop()
+                    .into(binding.ivPhoto)
+            } else {
+                binding.ivIcon.visibility = android.view.View.VISIBLE
+                binding.ivPhoto.visibility = android.view.View.GONE
+            }
 
             if (item.captured) {
                 binding.root.setBackgroundResource(R.drawable.bg_evidence_card_done)

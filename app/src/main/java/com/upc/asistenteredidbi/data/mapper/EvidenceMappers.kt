@@ -16,7 +16,7 @@ import com.upc.asistenteredidbi.domain.model.EvidencePhoto
 import com.upc.asistenteredidbi.domain.model.Minuta
 
 fun EvidencePhotoDto.toDomain(): EvidencePhoto = EvidencePhoto(
-    id = id, fileUrl = fileUrl, comment = comment, capturedAt = capturedAt
+    id = id, fileUrl = fileUrl, comment = comment, capturedAt = capturedAt, analysisResult = analysisResult
 )
 
 fun EvidenceAreaItemDto.toDomain(): EvidenceAreaItem = EvidenceAreaItem(
@@ -50,6 +50,7 @@ fun MinutaDto.toDomain(): Minuta = Minuta(
     evaluationId = evaluationId,
     establishmentName = establishmentName,
     establishmentAddress = establishmentAddress,
+    establishmentType = establishmentType,
     conversationResponses = conversationResponses.map { it.toDomain() },
     areas = areas.map { it.toDomain() },
     equipment = equipment.map { it.toDomain() },

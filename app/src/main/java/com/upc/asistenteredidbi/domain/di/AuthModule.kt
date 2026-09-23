@@ -39,7 +39,10 @@ import retrofit2.converter.moshi.MoshiConverterFactory
 import java.util.concurrent.TimeUnit
 import javax.inject.Singleton
 
-private const val BASE_URL = "https://asistenteredidbi.up.railway.app/"
+/** Sin `private`: EvidenceAdapter la usa para resolver las URLs relativas
+ *  de fotos (`/uploads/evidence/...`) que manda el gateway contra este mismo
+ *  host, para poder mostrarlas con Glide. */
+const val BASE_URL = "https://asistenteredidbi.up.railway.app/"
 
 @Module
 @InstallIn(SingletonComponent::class)

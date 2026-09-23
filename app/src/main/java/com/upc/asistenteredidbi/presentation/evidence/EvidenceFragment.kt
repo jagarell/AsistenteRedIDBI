@@ -324,22 +324,29 @@ class EvidenceFragment : Fragment() {
             else -> "Toca para quitar"
         },
         iconRes = R.drawable.ic_people,
-        captured = photos.isNotEmpty()
+        captured = photos.isNotEmpty(),
+        photoUrl = photos.firstOrNull()?.fileUrl
     )
 
     private fun EvidenceEquipmentItem.toDisplayItem(locked: Boolean): EvidenceItem {
         val specsText = extractedSpecs?.values?.filterNotNull()?.joinToString(" ")?.takeIf { it.isNotBlank() }
+        // Lo que detectó la IA en la última foto — antes se calculaba en el
+        // backend pero nunca se le mostraba al técnico en ningún lado.
+        val analysisText = photos.lastOrNull()?.analysisResult?.takeIf { it.isNotBlank() }
         return EvidenceItem(
             id = "equipment:$id",
             title = label,
             subtitle = when {
+                specsText != null && analysisText != null -> "$specsText — $analysisText"
                 specsText != null -> specsText
+                analysisText != null -> analysisText
                 photos.isNotEmpty() -> "${photos.size} foto(s)"
                 locked -> "Toca para agregar foto"
                 else -> "Toca para quitar"
             },
             iconRes = iconForEquipmentType(equipmentType),
-            captured = photos.isNotEmpty()
+            captured = photos.isNotEmpty(),
+            photoUrl = photos.firstOrNull()?.fileUrl
         )
     }
 

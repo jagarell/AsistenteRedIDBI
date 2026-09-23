@@ -28,18 +28,18 @@ object MultipartUtils {
     private const val MAX_DIMENSION = 2048
     private const val JPEG_QUALITY = 90
 
+    /** @throws PhotoProcessingException si la imagen no se pudo decodificar/
+     *  comprimir — antes esto silenciosamente subía el archivo original tal
+     *  cual, pero etiquetado como `image/jpeg` sin importar qué fuera
+     *  realmente (HEIC, un archivo corrupto, etc.), sin que nadie lo
+     *  validara ni en el backend ni en el análisis de IA. Mejor fallar acá
+     *  con un mensaje claro que el técnico pueda entender. */
     fun uriToTempFile(context: Context, uri: Uri, prefix: String = "upload_"): File {
-        val tempFile = File.createTempFile(prefix, ".jpg", context.cacheDir)
         val compressed = runCatching { compressToJpeg(context, uri) }.getOrNull()
-        if (compressed != null) {
-            tempFile.outputStream().use { it.write(compressed) }
-        } else {
-            // No se pudo decodificar/comprimir (formato raro, poca memoria):
-            // se sube el archivo original tal cual en vez de fallar el flujo.
-            context.contentResolver.openInputStream(uri)?.use { input ->
-                tempFile.outputStream().use { output -> input.copyTo(output) }
-            }
-        }
+            ?: throw PhotoProcessingException("No se pudo procesar esta foto, intenta con otra.")
+
+        val tempFile = File.createTempFile(prefix, ".jpg", context.cacheDir)
+        tempFile.outputStream().use { it.write(compressed) }
         return tempFile
     }
 
@@ -127,3 +127,5 @@ object MultipartUtils {
 
     fun textPart(value: String) = value.toRequestBody("text/plain".toMediaTypeOrNull())
 }
+
+class PhotoProcessingException(message: String) : Exception(message)

@@ -35,6 +35,15 @@
                 android:layout_height="34dp"
                 android:layout_gravity="center"
                 app:tint="#1565C0" />
+
+            <ImageView
+                android:id="@+id/ivPhoto"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@drawable/bg_stat_blue"
+                android:clipToOutline="true"
+                android:scaleType="centerCrop"
+                android:visibility="gone" />
         </FrameLayout>
 
         <TextView

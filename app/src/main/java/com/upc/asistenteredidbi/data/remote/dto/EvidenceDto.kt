@@ -14,7 +14,8 @@ data class EvidencePhotoDto(
     val id: Long,
     val fileUrl: String,
     val comment: String?,
-    val capturedAt: String
+    val capturedAt: String,
+    val analysisResult: String?
 )
 
 @JsonClass(generateAdapter = true)
@@ -71,6 +72,7 @@ data class MinutaDto(
     val evaluationId: Long,
     val establishmentName: String,
     val establishmentAddress: String?,
+    val establishmentType: String?,
     val conversationResponses: List<ChatAnswerDto>,
     val areas: List<EvidenceAreaItemDto>,
     val equipment: List<EvidenceEquipmentItemDto>,
