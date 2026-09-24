@@ -227,7 +227,7 @@ class MinutaProposalFragment : Fragment() {
         }
 
         val hasGraph = topology != null && topology.nodes.isNotEmpty()
-        binding.scrollTopologyGraph.isVisible = hasGraph
+        binding.topologyGraphView.isVisible = hasGraph
         binding.tvTopologyLegend.isVisible = hasGraph
         if (hasGraph) {
             binding.topologyGraphView.setTopology(topology)

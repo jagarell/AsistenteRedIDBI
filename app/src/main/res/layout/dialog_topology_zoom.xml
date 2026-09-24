@@ -20,7 +20,7 @@
         android:background="#F5F7FB"
         android:gravity="center"
         android:padding="8dp"
-        android:text="Pellizcá para acercar/alejar · arrastrá para mover"
+        android:text="Pellizcá para acercar/alejar · arrastrá para mover · doble tap para ver todo"
         android:textColor="#6B7280"
         android:textSize="12sp" />
 

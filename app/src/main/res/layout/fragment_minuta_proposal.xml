@@ -243,23 +243,15 @@
                         android:textSize="12sp" />
                 </LinearLayout>
 
-                <HorizontalScrollView
-                    android:id="@+id/scrollTopologyGraph"
+                <com.upc.asistenteredidbi.presentation.common.TopologyGraphView
+                    android:id="@+id/topologyGraphView"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="16dp"
-                    android:scrollbars="horizontal"
-                    android:visibility="gone">
-
-                    <com.upc.asistenteredidbi.presentation.common.TopologyGraphView
-                        android:id="@+id/topologyGraphView"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:clickable="true"
-                        android:focusable="true"
-                        android:foreground="?attr/selectableItemBackground" />
-
-                </HorizontalScrollView>
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:foreground="?attr/selectableItemBackground"
+                    android:visibility="gone" />
 
                 <TextView
                     android:id="@+id/tvTopologyLegend"
