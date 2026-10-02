@@ -2,6 +2,7 @@ package com.upc.asistenteredidbi.data.repository
 
 import com.upc.asistenteredidbi.data.mapper.toDto
 import com.upc.asistenteredidbi.data.remote.PdfApiService
+import com.upc.asistenteredidbi.data.remote.dto.MinutaSendRequestDto
 import com.upc.asistenteredidbi.data.remote.dto.ProposalSendRequestDto
 import com.upc.asistenteredidbi.data.remote.toFriendlyMessage
 import com.upc.asistenteredidbi.domain.model.ProposalPdfData
@@ -16,6 +17,20 @@ class PdfRepositoryImpl @Inject constructor(
 
     override suspend fun generateProposalPdf(data: ProposalPdfData): Result<ByteArray> = safeCall {
         api.generateProposalPdf(data.toDto()).use { it.bytes() }
+    }
+
+    override suspend fun generateMinutaPdf(evaluationId: Long): Result<ByteArray> = safeCall {
+        api.generateMinutaPdf(evaluationId).use { it.bytes() }
+    }
+
+    override suspend fun sendMinuta(
+        evaluationId: Long,
+        to: String,
+        cc: String?,
+        subject: String,
+        message: String
+    ): Result<String> = safeCall {
+        api.sendMinuta(evaluationId, MinutaSendRequestDto(to, cc, subject, message)).message
     }
 
     override suspend fun sendProposal(

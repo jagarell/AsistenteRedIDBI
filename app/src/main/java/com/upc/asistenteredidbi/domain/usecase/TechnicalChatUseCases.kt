@@ -1,8 +1,8 @@
 package com.upc.asistenteredidbi.domain.usecase
 
-import android.net.Uri
 import com.upc.asistenteredidbi.domain.model.TechnicalChatProgress
 import com.upc.asistenteredidbi.domain.repository.ChatRepository
+import java.io.File
 import javax.inject.Inject
 
 class StartTechnicalChatUseCase @Inject constructor(
@@ -22,34 +22,47 @@ class AnswerTechnicalChatUseCase @Inject constructor(
 
     suspend operator fun invoke(
         evaluationId: Long,
-        currentStep: Int,
-        answer: String,
-        answers: Map<String, String>
+        state: String,
+        answer: String
     ): Result<TechnicalChatProgress> {
         return repository.answerTechnicalChat(
             evaluationId = evaluationId,
-            currentStep = currentStep,
-            answer = answer,
-            answers = answers
+            state = state,
+            answer = answer
         )
     }
 }
 
-class AnswerTechnicalChatWithPhotoUseCase @Inject constructor(
+class AnswerTechnicalChatWithPhotosUseCase @Inject constructor(
     private val repository: ChatRepository
 ) {
 
     suspend operator fun invoke(
         evaluationId: Long,
-        currentStep: Int,
-        answers: Map<String, String>,
-        photoUri: Uri
+        state: String,
+        photos: List<File>
     ): Result<TechnicalChatProgress> {
-        return repository.answerTechnicalChatWithPhoto(
+        return repository.answerTechnicalChatWithPhotos(
             evaluationId = evaluationId,
-            currentStep = currentStep,
-            answers = answers,
-            photoUri = photoUri
+            state = state,
+            photos = photos
         )
     }
+}
+
+class AmendTechnicalChatUseCase @Inject constructor(
+    private val repository: ChatRepository
+) {
+
+    suspend operator fun invoke(
+        evaluationId: Long,
+        state: String,
+        evidenceCode: String? = null,
+        evidenceScope: String? = null,
+        fields: Map<String, Any?> = emptyMap(),
+        clarificationKey: String? = null,
+        clarificationAnswer: String? = null
+    ): Result<TechnicalChatProgress> = repository.amendTechnicalChat(
+        evaluationId, state, evidenceCode, evidenceScope, fields, clarificationKey, clarificationAnswer
+    )
 }

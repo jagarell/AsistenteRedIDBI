@@ -28,3 +28,12 @@ data class ProposalSendRequestDto(
     val message: String,
     val proposal: ProposalPdfRequestDto
 )
+
+
+/** Refleja `MinutaPdfController.SendRequest` del gateway — envía la minuta técnica por correo. */
+data class MinutaSendRequestDto(
+    val to: String,
+    val cc: String?,
+    val subject: String,
+    val message: String
+)

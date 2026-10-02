@@ -5,8 +5,10 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.squareup.moshi.Moshi
-import com.upc.asistenteredidbi.domain.model.TechnicalChatInputType
+import com.upc.asistenteredidbi.domain.model.ChatNodePrompt
+import com.upc.asistenteredidbi.domain.model.TechnicalChatProgress
 import com.upc.asistenteredidbi.domain.model.TechnicalChatProposal
+import com.upc.asistenteredidbi.presentation.chat.ChatEvidenceItem
 import com.upc.asistenteredidbi.presentation.chat.ChatMessage
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.first
@@ -18,21 +20,25 @@ private val Context.chatProgressDataStore by preferencesDataStore(name = "techni
 /** Todo lo necesario para redibujar el chat exactamente donde se dejó. */
 data class ChatProgressSnapshot(
     val messages: List<ChatMessage>,
-    val currentStep: Int,
-    val currentInputType: TechnicalChatInputType,
-    val currentOptions: List<String>,
-    val currentUnit: String? = null,
+    /** Estado opaco del flujo (ver app/chat/flow_engine.py) tal como lo devolvió el motor. */
+    val state: String?,
+    /** Nodo que toca responder ahora; null si el flujo ya terminó. */
+    val node: ChatNodePrompt?,
     val answeredQuestions: Int,
     val totalQuestions: Int,
     val progressPercent: Int,
     val answers: Map<String, String>,
     val completed: Boolean,
     val proposal: TechnicalChatProposal?,
-    val minutaId: Long?
+    val minutaId: Long?,
+    /** Respuesta del motor a una evidencia que el técnico aún no confirmó ("Sí, es correcto"). */
+    val pending: TechnicalChatProgress? = null,
+    /** Evidencias subidas u omitidas hasta ahora (resumen y galería). */
+    val evidences: List<ChatEvidenceItem> = emptyList()
 )
 
 /**
- * Guarda el progreso del chat técnico (20 nodos) localmente en el dispositivo
+ * Guarda el progreso del chat técnico (flujo de nodos) localmente en el dispositivo
  * mientras la propuesta no termina de generarse. El motor de FastAPI/gateway
  * es sin estado (`/chat/start` siempre arranca en el nodo 0), así que si no
  * se guarda nada aquí, salir del fragmento o matar el proceso reinicia la

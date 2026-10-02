@@ -13,6 +13,7 @@ import com.squareup.moshi.Moshi
 import com.upc.asistenteredidbi.R
 import com.upc.asistenteredidbi.databinding.FragmentSendDraftBinding
 import com.upc.asistenteredidbi.domain.model.ProposalPdfData
+import com.upc.asistenteredidbi.domain.usecase.SendMinutaUseCase
 import com.upc.asistenteredidbi.domain.usecase.SendProposalUseCase
 import com.upc.asistenteredidbi.presentation.common.PdfFileUtils
 import dagger.hilt.android.AndroidEntryPoint
@@ -32,6 +33,12 @@ class SendDraftFragment : Fragment() {
 
     @Inject
     lateinit var sendProposalUseCase: SendProposalUseCase
+
+    @Inject
+    lateinit var sendMinutaUseCase: SendMinutaUseCase
+
+    /** El PDF adjunto es la minuta técnica (se envía con el endpoint de minuta). */
+    private val isMinutaPdf: Boolean by lazy { arguments?.getBoolean("isMinutaPdf", false) ?: false }
 
     /** El PDF real ya generado en la pantalla de propuesta (bytes del gateway). */
     private val pdfFile: File? by lazy {
@@ -71,15 +78,14 @@ class SendDraftFragment : Fragment() {
     private fun setupInitialData() {
         val establishment = proposalData?.establishmentName?.takeIf { it.isNotBlank() }
 
-        binding.etSubject.setText(
-            if (establishment != null) {
-                "Propuesta de Infraestructura de Red - $establishment"
-            } else {
-                "Propuesta de Infraestructura de Red"
-            }
-        )
+        val document = if (isMinutaPdf) "Minuta técnica de red" else "Propuesta de Infraestructura de Red"
+        binding.etSubject.setText(if (establishment != null) "$document - $establishment" else document)
         binding.etMessage.setText(
-            "Estimado cliente,\n\nAdjunto encontrará nuestra propuesta técnica de infraestructura de red para su establecimiento."
+            if (isMinutaPdf) {
+                "Estimado cliente,\n\nAdjunto encontrará la minuta técnica de red de la visita a su establecimiento."
+            } else {
+                "Estimado cliente,\n\nAdjunto encontrará nuestra propuesta técnica de infraestructura de red para su establecimiento."
+            }
         )
 
         val file = pdfFile
@@ -149,13 +155,19 @@ class SendDraftFragment : Fragment() {
         binding.btnSendProposal.text = "Enviando..."
 
         viewLifecycleOwner.lifecycleScope.launch {
-            sendProposalUseCase(
-                to = to,
-                cc = cc.ifBlank { null },
-                subject = subject,
-                message = message,
-                data = data
-            ).onSuccess {
+            val evaluationId = arguments?.getString("evaluationId")?.toLongOrNull()
+            val sent = if (isMinutaPdf && evaluationId != null) {
+                sendMinutaUseCase(evaluationId, to, cc.ifBlank { null }, subject, message)
+            } else {
+                sendProposalUseCase(
+                    to = to,
+                    cc = cc.ifBlank { null },
+                    subject = subject,
+                    message = message,
+                    data = data
+                )
+            }
+            sent.onSuccess {
                 binding.contentForm.visibility = View.GONE
                 binding.contentSuccess.visibility = View.VISIBLE
             }.onFailure { error ->

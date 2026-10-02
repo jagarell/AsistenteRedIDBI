@@ -2,32 +2,73 @@ package com.upc.asistenteredidbi.data.remote.dto
 
 data class TechnicalChatAnswerRequestDto(
     val evaluationId: String,
-    val currentStep: Int,
-    val answer: String,
-    val answers: Map<String, String>
+    val state: String,
+    val answer: String
+)
+
+/** Corrige lo leído en una evidencia y/o responde una confirmación (ver ChatController.amend). */
+data class ChatAmendRequestDto(
+    val evaluationId: String,
+    val state: String,
+    val evidenceCode: String? = null,
+    val evidenceScope: String? = null,
+    val fields: Map<String, Any?> = emptyMap(),
+    val clarificationKey: String? = null,
+    val clarificationAnswer: String? = null
+)
+
+data class ChatFollowUpDto(
+    val key: String,
+    val text: String,
+    val options: List<String>? = null
+)
+
+data class ChatOptionDto(val value: String, val label: String)
+
+data class ChatNodeDto(
+    val nodeId: String,
+    val scope: String? = null,
+    val kind: String,
+    val inputType: String,
+    val text: String,
+    val options: List<ChatOptionDto>? = null,
+    val required: Boolean? = null,
+    val validation: Map<String, Any?>? = null,
+    val block: String? = null,
+    val blockLabel: String? = null,
+    val blockIndex: Int? = null,
+    val blockCount: Int? = null,
+    val defaultValue: String? = null,
+    val evidenceCode: String? = null,
+    val maxFiles: Int? = null,
+    val severity: String? = null
+)
+
+data class ChatEvidenceDto(
+    val code: String,
+    val scope: String? = null,
+    val area: String? = null,
+    val equipo: String? = null,
+    val count: Int? = null,
+    val extracted: Map<String, Any?>? = null
 )
 
 data class TechnicalChatResponseDto(
     val evaluationId: String,
-    val currentStep: Int,
-    val currentQuestionKey: String?,
-    val currentQuestion: String?,
-    val currentInputType: String? = null,
-    val currentOptions: List<String>? = null,
-    val currentUnit: String? = null,
     val answeredQuestions: Int,
     val totalQuestions: Int,
     val progressPercent: Int,
     val completed: Boolean,
     val answers: Map<String, String>,
     val proposal: TechnicalChatProposalDto?,
-    /** Campos leídos por IA de la foto recién respondida (ej. Mbps/ping/ISP
-     *  de una captura de speedtest) — solo viene poblado justo después de
-     *  responder un nodo PHOTO. */
-    val lastPhotoResult: Map<String, Any?>? = null,
-    /** Aviso cuando lo leído en la foto no coincide con lo ya respondido
-     *  antes en el chat (ej. ISP de la captura vs. proveedor tecleado). */
-    val crossValidationWarning: String? = null
+    val state: String? = null,
+    val node: ChatNodeDto? = null,
+    val validationError: String? = null,
+    val lastEvidence: ChatEvidenceDto? = null,
+    val crossChecks: List<String>? = null,
+    val followUps: List<ChatFollowUpDto>? = null,
+    /** Solo E3: fotos con las credenciales ya desenfocadas (base64). */
+    val processedImages: List<String>? = null
 )
 
 data class TechnicalChatProposalDto(
@@ -58,7 +99,9 @@ data class TopologyNodeDto(
     val id: String,
     val label: String,
     val type: String,
-    val level: Int
+    val level: Int,
+    val detail: String? = null,
+    val pending: Boolean? = null
 )
 
 data class TopologyLinkDto(

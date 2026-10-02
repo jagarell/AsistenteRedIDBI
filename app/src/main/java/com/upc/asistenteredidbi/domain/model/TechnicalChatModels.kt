@@ -1,8 +1,8 @@
 package com.upc.asistenteredidbi.domain.model
 
-/** Tipos de nodo del motor de 20 nodos (ver `app/chat/nodes.py` en idbi-fastapi). */
+/** Tipos de nodo del flujo de minuta técnica (ver `app/chat/flow_engine.py` en idbi-fastapi). */
 enum class TechnicalChatInputType {
-    TEXT, NUMBER, CHOICE, MULTI_SELECT, YES_NO, PHOTO, LOCATION, CONNECTION_MAP;
+    TEXT, NUMBER, CHOICE, MULTI_SELECT, YES_NO, EVIDENCE, ALERT, SUMMARY;
 
     companion object {
         fun fromApiValue(value: String?): TechnicalChatInputType =
@@ -10,25 +10,70 @@ enum class TechnicalChatInputType {
     }
 }
 
+/** Opción de una pregunta: `value` es lo que se manda al motor, `label` lo que se muestra. */
+data class ChatOption(val value: String, val label: String)
+
+/** Nodo que el motor pide responder ahora (pregunta, evidencia, aviso o resumen). */
+data class ChatNodePrompt(
+    val nodeId: String,
+    val scope: String = "",
+    val kind: String,
+    val inputType: TechnicalChatInputType,
+    val text: String,
+    val options: List<ChatOption> = emptyList(),
+    val required: Boolean = true,
+    val block: String = "",
+    val blockLabel: String = "",
+    val blockIndex: Int = 0,
+    val blockCount: Int = 0,
+    /** Prefill (ej. fecha de hoy en P06, técnico en P07). */
+    val defaultValue: String? = null,
+    val evidenceCode: String? = null,
+    val maxFiles: Int = 3,
+    /** Para avisos: "warning" / "info". */
+    val severity: String? = null,
+    /** Mínimo de opciones a elegir en MULTI_SELECT (validation.minSelected). */
+    val minSelected: Int = 0
+)
+
+/** Pregunta de confirmación del asistente tras leer una evidencia (ej. "¿cuál es el proveedor correcto?"). */
+data class ChatFollowUp(
+    val key: String,
+    val text: String,
+    val options: List<String> = emptyList()
+)
+
+/** Lo que la IA leyó de la evidencia recién subida. */
+data class ChatEvidenceResult(
+    val code: String,
+    val scope: String = "",
+    val area: String? = null,
+    val equipo: String? = null,
+    val count: Int = 0,
+    val extracted: Map<String, Any?> = emptyMap()
+)
+
 data class TechnicalChatProgress(
     val evaluationId: String,
-    val currentStep: Int,
-    val currentQuestionKey: String?,
-    val currentQuestion: String?,
-    val currentInputType: TechnicalChatInputType = TechnicalChatInputType.TEXT,
-    val currentOptions: List<String> = emptyList(),
-    val currentUnit: String? = null,
+    /** Estado opaco del flujo: se devuelve tal cual en la siguiente respuesta. */
+    val state: String?,
+    /** Nodo actual; null cuando el flujo terminó. */
+    val node: ChatNodePrompt?,
     val answeredQuestions: Int,
     val totalQuestions: Int,
     val progressPercent: Int,
     val completed: Boolean,
     val answers: Map<String, String>,
     val proposal: TechnicalChatProposal?,
-    /** Transitorio: solo se usa una vez, justo al recibir la respuesta a un
-     *  nodo PHOTO, para armar la tarjeta "Esto leí en la captura" en el
-     *  chat — no forma parte del estado persistido (ver TechnicalChatViewModel). */
-    val lastPhotoResult: Map<String, Any?>? = null,
-    val crossValidationWarning: String? = null
+    /** Si no es null, la respuesta no era válida y el nodo no avanzó. */
+    val validationError: String? = null,
+    val lastEvidence: ChatEvidenceResult? = null,
+    /** Avisos de validación cruzada tras subir una evidencia. */
+    val crossChecks: List<String> = emptyList(),
+    val followUps: List<ChatFollowUp> = emptyList(),
+    /** Solo E3: fotos con credenciales desenfocadas (base64). Transitorio: el
+     *  ViewModel las escribe a disco y las quita antes de guardar el snapshot. */
+    val processedImages: List<String> = emptyList()
 )
 
 data class TechnicalChatProposal(
@@ -59,7 +104,9 @@ data class ChatTopologyNode(
     val id: String,
     val label: String,
     val type: String,
-    val level: Int
+    val level: Int,
+    val detail: String? = null,
+    val pending: Boolean = false
 )
 
 data class ChatTopologyLink(

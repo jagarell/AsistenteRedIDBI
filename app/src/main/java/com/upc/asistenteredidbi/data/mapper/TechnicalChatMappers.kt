@@ -1,9 +1,14 @@
 package com.upc.asistenteredidbi.data.mapper
 
+import com.upc.asistenteredidbi.data.remote.dto.ChatNodeDto
 import com.upc.asistenteredidbi.data.remote.dto.TechnicalChatProposalDto
 import com.upc.asistenteredidbi.data.remote.dto.TechnicalChatResponseDto
 import com.upc.asistenteredidbi.data.remote.dto.TechnicalEquipmentRecommendationDto
 import com.upc.asistenteredidbi.data.remote.dto.TopologyDto
+import com.upc.asistenteredidbi.domain.model.ChatEvidenceResult
+import com.upc.asistenteredidbi.domain.model.ChatFollowUp
+import com.upc.asistenteredidbi.domain.model.ChatNodePrompt
+import com.upc.asistenteredidbi.domain.model.ChatOption
 import com.upc.asistenteredidbi.domain.model.ChatTopology
 import com.upc.asistenteredidbi.domain.model.ChatTopologyLink
 import com.upc.asistenteredidbi.domain.model.ChatTopologyNode
@@ -15,22 +20,50 @@ import com.upc.asistenteredidbi.domain.model.TechnicalEquipmentRecommendation
 fun TechnicalChatResponseDto.toDomain(): TechnicalChatProgress {
     return TechnicalChatProgress(
         evaluationId = evaluationId,
-        currentStep = currentStep,
-        currentQuestionKey = currentQuestionKey,
-        currentQuestion = currentQuestion,
-        currentInputType = TechnicalChatInputType.fromApiValue(currentInputType),
-        currentOptions = currentOptions.orEmpty(),
-        currentUnit = currentUnit,
+        state = state,
+        node = node?.toDomain(),
         answeredQuestions = answeredQuestions,
         totalQuestions = totalQuestions,
         progressPercent = progressPercent,
         completed = completed,
         answers = answers,
         proposal = proposal?.toDomain(),
-        lastPhotoResult = lastPhotoResult,
-        crossValidationWarning = crossValidationWarning
+        validationError = validationError,
+        lastEvidence = lastEvidence?.let {
+            ChatEvidenceResult(
+                code = it.code,
+                scope = it.scope.orEmpty(),
+                area = it.area,
+                equipo = it.equipo,
+                count = it.count ?: 0,
+                extracted = it.extracted.orEmpty()
+            )
+        },
+        crossChecks = crossChecks.orEmpty(),
+        followUps = followUps.orEmpty().map { ChatFollowUp(it.key, it.text, it.options.orEmpty()) },
+        processedImages = processedImages.orEmpty()
     )
 }
+
+fun ChatNodeDto.toDomain(): ChatNodePrompt = ChatNodePrompt(
+    nodeId = nodeId,
+    scope = scope.orEmpty(),
+    kind = kind,
+    inputType = TechnicalChatInputType.fromApiValue(inputType),
+    text = text,
+    options = options.orEmpty().map { ChatOption(it.value, it.label) },
+    required = required ?: true,
+    block = block.orEmpty(),
+    blockLabel = blockLabel.orEmpty(),
+    blockIndex = blockIndex ?: 0,
+    blockCount = blockCount ?: 0,
+    defaultValue = defaultValue,
+    evidenceCode = evidenceCode,
+    maxFiles = maxFiles ?: 3,
+    severity = severity,
+    // Moshi decodifica los números de un Map<String, Any?> como Double.
+    minSelected = (validation?.get("minSelected") as? Number)?.toInt() ?: 0
+)
 
 fun TechnicalChatProposalDto.toDomain(): TechnicalChatProposal {
     return TechnicalChatProposal(
@@ -58,6 +91,6 @@ fun TechnicalEquipmentRecommendationDto.toDomain():
 }
 
 fun TopologyDto.toDomain(): ChatTopology = ChatTopology(
-    nodes = nodes.map { ChatTopologyNode(it.id, it.label, it.type, it.level) },
+    nodes = nodes.map { ChatTopologyNode(it.id, it.label, it.type, it.level, it.detail, it.pending ?: false) },
     links = links.map { ChatTopologyLink(it.source, it.target, it.connectionType, it.status) }
 )

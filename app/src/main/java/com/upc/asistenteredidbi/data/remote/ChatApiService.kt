@@ -1,5 +1,6 @@
 package com.upc.asistenteredidbi.data.remote
 
+import com.upc.asistenteredidbi.data.remote.dto.ChatAmendRequestDto
 import com.upc.asistenteredidbi.data.remote.dto.TechnicalChatAnswerRequestDto
 import com.upc.asistenteredidbi.data.remote.dto.TechnicalChatResponseDto
 import okhttp3.MultipartBody
@@ -23,14 +24,19 @@ interface ChatApiService {
         @Body request: TechnicalChatAnswerRequestDto
     ): TechnicalChatResponseDto
 
-    /** Responder un nodo PHOTO (ej. captura de speedtest) — ver
-     * ChatController.answerWithPhoto en el gateway. */
-    @Multipart
-    @POST("api/evaluations/{evaluationId}/chat/answer-photo")
-    suspend fun answerTechnicalChatWithPhoto(
+    @POST("api/evaluations/{evaluationId}/chat/amend")
+    suspend fun amendTechnicalChat(
         @Path("evaluationId") evaluationId: Long,
-        @Part("currentStep") currentStep: RequestBody,
-        @Part("answersJson") answersJson: RequestBody,
-        @Part file: MultipartBody.Part
+        @Body request: ChatAmendRequestDto
+    ): TechnicalChatResponseDto
+
+    /** Responder un nodo EVIDENCE con 1 a 3 fotos — ver
+     * ChatController.answerWithPhotos en el gateway. */
+    @Multipart
+    @POST("api/evaluations/{evaluationId}/chat/answer-photos")
+    suspend fun answerTechnicalChatWithPhotos(
+        @Path("evaluationId") evaluationId: Long,
+        @Part("state") state: RequestBody,
+        @Part files: List<MultipartBody.Part>
     ): TechnicalChatResponseDto
 }

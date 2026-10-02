@@ -24,6 +24,7 @@ import com.upc.asistenteredidbi.domain.model.ChatTopology
 import com.upc.asistenteredidbi.presentation.common.TopologyGraphView
 import com.upc.asistenteredidbi.domain.model.ProposalPdfData
 import com.upc.asistenteredidbi.domain.model.TechnicalEquipmentRecommendation
+import com.upc.asistenteredidbi.domain.usecase.GenerateMinutaPdfUseCase
 import com.upc.asistenteredidbi.domain.usecase.GenerateProposalPdfUseCase
 import com.upc.asistenteredidbi.presentation.common.PdfFileUtils
 import com.upc.asistenteredidbi.presentation.common.toExplainedText
@@ -56,6 +57,9 @@ class MinutaProposalFragment : Fragment() {
     @Inject
     lateinit var generateProposalPdfUseCase: GenerateProposalPdfUseCase
 
+    @Inject
+    lateinit var generateMinutaPdfUseCase: GenerateMinutaPdfUseCase
+
     /** Mismo evaluationId que ya resuelve el ViewModel desde SavedStateHandle — se
      *  reutiliza aquí en vez de re-parsear `arguments` con un fallback propio. */
     private val evaluationId: String get() = viewModel.evaluationId
@@ -67,6 +71,9 @@ class MinutaProposalFragment : Fragment() {
     private var currentEquipment: List<TechnicalEquipmentRecommendation> = emptyList()
     private var currentRecommendations: List<String> = emptyList()
     private var generatedPdfFile: File? = null
+
+    /** El PDF generado es la minuta técnica (flujo nuevo) y no la propuesta del flujo anterior. */
+    private var generatedPdfIsMinuta = false
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -136,6 +143,7 @@ class MinutaProposalFragment : Fragment() {
                     putString("evaluationId", evaluationId)
                     putString("pdfPath", generatedPdfFile?.absolutePath.orEmpty())
                     putString("proposalDataJson", dataJson)
+                    putBoolean("isMinutaPdf", generatedPdfIsMinuta)
                 }
             )
         }
@@ -157,7 +165,12 @@ class MinutaProposalFragment : Fragment() {
         topologyText = binding.tvTopologyDetail.text.toString()
     )
 
-    /** Pide al gateway el PDF real (bytes) y lo guarda/abre localmente. */
+    /**
+     * Pide al gateway la minuta técnica de la evaluación (la que arma el chat
+     * nuevo) y la abre. Las evaluaciones hechas con el flujo anterior no tienen
+     * los datos para la minuta (el gateway responde error): ahí se genera el PDF
+     * de la propuesta de siempre.
+     */
     private fun generatePdf() {
         val data = buildProposalPdfData()
 
@@ -165,12 +178,16 @@ class MinutaProposalFragment : Fragment() {
         binding.btnGeneratePdf.text = "Generando..."
 
         viewLifecycleOwner.lifecycleScope.launch {
-            generateProposalPdfUseCase(data)
+            val minuta = evaluationId.toLongOrNull()?.let { generateMinutaPdfUseCase(it).getOrNull() }
+            generatedPdfIsMinuta = minuta != null
+
+            val result = if (minuta != null) Result.success(minuta) else generateProposalPdfUseCase(data)
+            result
                 .onSuccess { bytes ->
                     val file = PdfFileUtils.saveToCache(
                         requireContext(),
                         bytes,
-                        "propuesta_$evaluationId.pdf"
+                        (if (generatedPdfIsMinuta) "minuta_" else "propuesta_") + "$evaluationId.pdf"
                     )
                     generatedPdfFile = file
                     findNavController().navigate(
