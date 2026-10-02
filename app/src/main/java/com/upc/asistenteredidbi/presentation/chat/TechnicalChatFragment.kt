@@ -1,5 +1,8 @@
 package com.upc.asistenteredidbi.presentation.chat
 
+import android.Manifest
+import android.app.AlertDialog
+import android.net.Uri
 import android.os.Bundle
 import android.text.InputType
 import android.view.LayoutInflater
@@ -7,7 +10,9 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.inputmethod.EditorInfo
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
+import androidx.core.content.FileProvider
 import androidx.core.os.bundleOf
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
@@ -29,6 +34,7 @@ import com.upc.asistenteredidbi.domain.model.TechnicalEquipmentRecommendation
 import com.upc.asistenteredidbi.presentation.common.toHierarchicalText
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
+import java.io.File
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -55,6 +61,30 @@ class TechnicalChatFragment : Fragment() {
 
     @Inject
     lateinit var moshi: Moshi
+
+    // --- Captura de foto para preguntas tipo PHOTO (ej. speedtest) — mismo
+    // patrón de EvidenceFragment.kt (cámara/galería/compresión reusados). ---
+
+    private val requestCameraPermission =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+            if (granted) openCamera()
+            else Toast.makeText(requireContext(), "Permiso de cámara denegado", Toast.LENGTH_SHORT).show()
+        }
+
+    private var photoUri: Uri? = null
+    private var currentPhotoFile: File? = null
+
+    private val takePicture =
+        registerForActivityResult(ActivityResultContracts.TakePicture()) { success ->
+            if (success && photoUri != null) {
+                viewModel.sendPhotoAnswer(photoUri!!)
+            }
+        }
+
+    private val pickImage =
+        registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+            if (uri != null) viewModel.sendPhotoAnswer(uri)
+        }
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -228,7 +258,8 @@ class TechnicalChatFragment : Fragment() {
         val needsTextInput = state.currentInputType == TechnicalChatInputType.TEXT ||
             state.currentInputType == TechnicalChatInputType.NUMBER
         val showTextRow = state.currentInputType != TechnicalChatInputType.YES_NO &&
-            state.currentInputType != TechnicalChatInputType.CHOICE
+            state.currentInputType != TechnicalChatInputType.CHOICE &&
+            state.currentInputType != TechnicalChatInputType.PHOTO
         binding.etTextInput.isVisible = needsTextInput
         binding.containerTextRow.isVisible = showTextRow
 
@@ -263,11 +294,51 @@ class TechnicalChatFragment : Fragment() {
                 }
             }
 
+            TechnicalChatInputType.PHOTO -> {
+                addPhotoCaptureButton()
+            }
+
             else -> Unit
         }
 
         binding.scrollQuickReplies.isVisible =
             binding.containerQuickReplies.childCount > 0
+    }
+
+    private fun addPhotoCaptureButton() {
+        val button = MaterialButton(
+            requireContext(),
+            null,
+            com.google.android.material.R.attr.materialButtonOutlinedStyle
+        ).apply {
+            text = "📷 Tomar foto o elegir de galería"
+            isAllCaps = false
+            textSize = 14f
+            setOnClickListener { showPhotoOptions() }
+        }
+        binding.containerQuickReplies.addView(button)
+        applyEndMargin(button)
+    }
+
+    private fun showPhotoOptions() {
+        AlertDialog.Builder(requireContext())
+            .setTitle("Subir captura")
+            .setItems(arrayOf("Tomar foto", "Seleccionar de galería")) { _, which ->
+                when (which) {
+                    0 -> requestCameraPermission.launch(Manifest.permission.CAMERA)
+                    1 -> pickImage.launch("image/*")
+                }
+            }
+            .show()
+    }
+
+    private fun openCamera() {
+        val file = File.createTempFile("chat_photo_", ".jpg", requireContext().cacheDir)
+        currentPhotoFile = file
+        photoUri = FileProvider.getUriForFile(
+            requireContext(), "${requireContext().packageName}.provider", file
+        )
+        takePicture.launch(photoUri)
     }
 
     private fun addQuickReplyButton(label: String) {

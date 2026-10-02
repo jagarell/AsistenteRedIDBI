@@ -1,5 +1,6 @@
 package com.upc.asistenteredidbi.domain.repository
 
+import android.net.Uri
 import com.upc.asistenteredidbi.domain.model.TechnicalChatProgress
 
 interface ChatRepository {
@@ -13,5 +14,12 @@ interface ChatRepository {
         currentStep: Int,
         answer: String,
         answers: Map<String, String>
+    ): Result<TechnicalChatProgress>
+
+    suspend fun answerTechnicalChatWithPhoto(
+        evaluationId: Long,
+        currentStep: Int,
+        answers: Map<String, String>,
+        photoUri: Uri
     ): Result<TechnicalChatProgress>
 }

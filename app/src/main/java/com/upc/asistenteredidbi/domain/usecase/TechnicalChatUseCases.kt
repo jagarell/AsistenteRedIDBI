@@ -1,5 +1,6 @@
 package com.upc.asistenteredidbi.domain.usecase
 
+import android.net.Uri
 import com.upc.asistenteredidbi.domain.model.TechnicalChatProgress
 import com.upc.asistenteredidbi.domain.repository.ChatRepository
 import javax.inject.Inject
@@ -30,6 +31,25 @@ class AnswerTechnicalChatUseCase @Inject constructor(
             currentStep = currentStep,
             answer = answer,
             answers = answers
+        )
+    }
+}
+
+class AnswerTechnicalChatWithPhotoUseCase @Inject constructor(
+    private val repository: ChatRepository
+) {
+
+    suspend operator fun invoke(
+        evaluationId: Long,
+        currentStep: Int,
+        answers: Map<String, String>,
+        photoUri: Uri
+    ): Result<TechnicalChatProgress> {
+        return repository.answerTechnicalChatWithPhoto(
+            evaluationId = evaluationId,
+            currentStep = currentStep,
+            answers = answers,
+            photoUri = photoUri
         )
     }
 }

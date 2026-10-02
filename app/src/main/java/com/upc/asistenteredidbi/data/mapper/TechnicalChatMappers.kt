@@ -26,7 +26,9 @@ fun TechnicalChatResponseDto.toDomain(): TechnicalChatProgress {
         progressPercent = progressPercent,
         completed = completed,
         answers = answers,
-        proposal = proposal?.toDomain()
+        proposal = proposal?.toDomain(),
+        lastPhotoResult = lastPhotoResult,
+        crossValidationWarning = crossValidationWarning
     )
 }
 

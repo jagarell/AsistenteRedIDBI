@@ -23,7 +23,12 @@ data class TechnicalChatProgress(
     val progressPercent: Int,
     val completed: Boolean,
     val answers: Map<String, String>,
-    val proposal: TechnicalChatProposal?
+    val proposal: TechnicalChatProposal?,
+    /** Transitorio: solo se usa una vez, justo al recibir la respuesta a un
+     *  nodo PHOTO, para armar la tarjeta "Esto leí en la captura" en el
+     *  chat — no forma parte del estado persistido (ver TechnicalChatViewModel). */
+    val lastPhotoResult: Map<String, Any?>? = null,
+    val crossValidationWarning: String? = null
 )
 
 data class TechnicalChatProposal(

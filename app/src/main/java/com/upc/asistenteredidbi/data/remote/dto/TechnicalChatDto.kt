@@ -20,7 +20,14 @@ data class TechnicalChatResponseDto(
     val progressPercent: Int,
     val completed: Boolean,
     val answers: Map<String, String>,
-    val proposal: TechnicalChatProposalDto?
+    val proposal: TechnicalChatProposalDto?,
+    /** Campos leídos por IA de la foto recién respondida (ej. Mbps/ping/ISP
+     *  de una captura de speedtest) — solo viene poblado justo después de
+     *  responder un nodo PHOTO. */
+    val lastPhotoResult: Map<String, Any?>? = null,
+    /** Aviso cuando lo leído en la foto no coincide con lo ya respondido
+     *  antes en el chat (ej. ISP de la captura vs. proveedor tecleado). */
+    val crossValidationWarning: String? = null
 )
 
 data class TechnicalChatProposalDto(

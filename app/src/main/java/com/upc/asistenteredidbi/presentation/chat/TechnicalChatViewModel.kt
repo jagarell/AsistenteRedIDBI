@@ -1,5 +1,6 @@
 package com.upc.asistenteredidbi.presentation.chat
 
+import android.net.Uri
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -12,6 +13,7 @@ import com.upc.asistenteredidbi.domain.model.TechnicalChatInputType
 import com.upc.asistenteredidbi.domain.model.TechnicalChatProposal
 import com.upc.asistenteredidbi.domain.repository.EvaluationRepository
 import com.upc.asistenteredidbi.domain.usecase.AnswerTechnicalChatUseCase
+import com.upc.asistenteredidbi.domain.usecase.AnswerTechnicalChatWithPhotoUseCase
 import com.upc.asistenteredidbi.domain.usecase.CreateMinutaUseCase
 import com.upc.asistenteredidbi.domain.usecase.StartTechnicalChatUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -44,6 +46,7 @@ data class TechnicalChatUiState(
 class TechnicalChatViewModel @Inject constructor(
     private val startTechnicalChatUseCase: StartTechnicalChatUseCase,
     private val answerTechnicalChatUseCase: AnswerTechnicalChatUseCase,
+    private val answerTechnicalChatWithPhotoUseCase: AnswerTechnicalChatWithPhotoUseCase,
     private val evaluationRepository: EvaluationRepository,
     private val createMinutaUseCase: CreateMinutaUseCase,
     private val chatProgressStore: ChatProgressStore,
@@ -283,6 +286,141 @@ class TechnicalChatViewModel @Inject constructor(
                 }
             }
         }
+    }
+
+    /**
+     * Responde una pregunta tipo PHOTO (ej. captura de speedtest) — calca
+     * [sendAnswer] pero sube un archivo por multipart en vez de mandar texto.
+     * Si la respuesta trae `lastPhotoResult`, antes del mensaje de la
+     * siguiente pregunta se agrega una tarjeta con lo que la IA leyó (y el
+     * aviso de validación cruzada, si vino) — mismo orden que muestra el
+     * prototipo: tarjeta primero, pregunta siguiente después.
+     */
+    fun sendPhotoAnswer(uri: Uri) {
+        val state = _uiState.value
+
+        if (state.isLoading || state.isSending || state.completed || validEvaluationId == null) {
+            return
+        }
+
+        val messagesWithUserAnswer =
+            state.messages + ChatMessage(
+                "📷 Captura enviada",
+                true,
+                id = state.messages.size.toLong()
+            )
+
+        _uiState.update {
+            it.copy(
+                isSending = true,
+                messages = messagesWithUserAnswer,
+                errorMessage = null
+            )
+        }
+
+        viewModelScope.launch {
+            answerTechnicalChatWithPhotoUseCase(
+                evaluationId = evaluationId,
+                currentStep = state.currentStep,
+                answers = state.answers,
+                photoUri = uri
+            ).onSuccess { response ->
+
+                val updatedMessages = messagesWithUserAnswer.toMutableList()
+
+                response.lastPhotoResult?.let { photoResult ->
+                    updatedMessages.add(
+                        ChatMessage(
+                            text = "",
+                            isFromUser = false,
+                            id = updatedMessages.size.toLong(),
+                            photoResult = buildPhotoResultCard(photoResult, response.crossValidationWarning)
+                        )
+                    )
+                }
+
+                if (response.completed) {
+                    updatedMessages.add(
+                        ChatMessage(
+                            "Evaluación completada. He procesado tus respuestas y generado una propuesta técnica preliminar.",
+                            false,
+                            id = updatedMessages.size.toLong()
+                        )
+                    )
+                } else {
+                    response.currentQuestion
+                        ?.takeIf { it.isNotBlank() }
+                        ?.let { question ->
+                            updatedMessages.add(
+                                ChatMessage(
+                                    question,
+                                    false,
+                                    id = updatedMessages.size.toLong(),
+                                    stepIndex = response.currentStep,
+                                    inputType = response.currentInputType,
+                                    options = response.currentOptions,
+                                    unit = response.currentUnit,
+                                    answersSnapshot = response.answers
+                                )
+                            )
+                        }
+                }
+
+                _uiState.update {
+                    it.copy(
+                        isSending = false,
+                        messages = updatedMessages,
+                        currentStep = response.currentStep,
+                        currentInputType = response.currentInputType,
+                        currentOptions = response.currentOptions,
+                        currentUnit = response.currentUnit,
+                        answeredQuestions = response.answeredQuestions,
+                        totalQuestions = response.totalQuestions,
+                        progressPercent = response.progressPercent,
+                        answers = response.answers,
+                        completed = response.completed,
+                        proposal = response.proposal,
+                        errorMessage = null
+                    )
+                }
+
+                persistProgress()
+
+                if (response.completed) {
+                    response.proposal?.let { persistMinuta(it) }
+                }
+            }.onFailure { error ->
+                _uiState.update {
+                    it.copy(
+                        isSending = false,
+                        errorMessage = error.message
+                            ?: "No se pudo enviar la foto"
+                    )
+                }
+            }
+        }
+    }
+
+    private fun buildPhotoResultCard(
+        photoResult: Map<String, Any?>,
+        warning: String?
+    ): ChatPhotoResult {
+        val labels = mapOf(
+            "downloadMbps" to "Bajada",
+            "uploadMbps" to "Subida",
+            "pingMs" to "Ping",
+            "isp" to "Proveedor"
+        )
+        val units = mapOf(
+            "downloadMbps" to " Mbps",
+            "uploadMbps" to " Mbps",
+            "pingMs" to " ms"
+        )
+        val fields = labels.mapNotNull { (key, label) ->
+            val value = photoResult[key] ?: return@mapNotNull null
+            ChatResultField(label, "$value${units[key].orEmpty()}")
+        }
+        return ChatPhotoResult(fields = fields, warning = warning)
     }
 
     /**
