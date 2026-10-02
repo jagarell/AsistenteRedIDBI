@@ -141,6 +141,25 @@
             android:id="@+id/action_chat_to_minuta"
             app:destination="@id/minutaFragment" />
 
+        <action
+            android:id="@+id/action_chat_to_topologyEditor"
+            app:destination="@id/topologyEditorFragment" />
+
+    </fragment>
+
+    <!-- ───────────────────────────────────────────────────────
+         EDITOR DEL MAPA DE RED
+    ──────────────────────────────────────────────────────── -->
+
+    <fragment
+        android:id="@+id/topologyEditorFragment"
+        android:name="com.upc.asistenteredidbi.presentation.map.TopologyEditorFragment"
+        android:label="Editar topología">
+
+        <argument
+            android:name="evaluationId"
+            app:argType="string" />
+
     </fragment>
 
     <!-- ───────────────────────────────────────────────────────
@@ -297,6 +316,10 @@
         <action
             android:id="@+id/action_minutaProposalFragment_to_pdfPreview"
             app:destination="@id/pdfPreviewFragment" />
+
+        <action
+            android:id="@+id/action_minutaProposalFragment_to_topologyEditor"
+            app:destination="@id/topologyEditorFragment" />
 
     </fragment>
 

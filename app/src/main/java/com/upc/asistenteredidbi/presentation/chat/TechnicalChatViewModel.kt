@@ -12,6 +12,7 @@ import com.upc.asistenteredidbi.data.util.PhotoProcessingException
 import com.upc.asistenteredidbi.domain.model.ChatNodePrompt
 import com.upc.asistenteredidbi.domain.model.ChatTopology
 import com.upc.asistenteredidbi.domain.model.MinutaContentPayload
+import com.upc.asistenteredidbi.domain.model.NetworkMap
 import com.upc.asistenteredidbi.domain.model.TechnicalChatInputType
 import com.upc.asistenteredidbi.domain.model.TechnicalChatProgress
 import com.upc.asistenteredidbi.domain.model.TechnicalChatProposal
@@ -20,8 +21,14 @@ import com.upc.asistenteredidbi.domain.usecase.AmendTechnicalChatUseCase
 import com.upc.asistenteredidbi.domain.usecase.AnswerTechnicalChatUseCase
 import com.upc.asistenteredidbi.domain.usecase.AnswerTechnicalChatWithPhotosUseCase
 import com.upc.asistenteredidbi.domain.usecase.CreateMinutaUseCase
+import com.upc.asistenteredidbi.domain.usecase.GenerateMapUseCase
+import com.upc.asistenteredidbi.domain.usecase.GetMapUseCase
+import com.upc.asistenteredidbi.domain.usecase.MapCommandUseCase
+import com.upc.asistenteredidbi.domain.usecase.SaveMapUseCase
 import com.upc.asistenteredidbi.domain.usecase.StartTechnicalChatUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.async
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -48,7 +55,9 @@ data class TechnicalChatUiState(
     val errorMessage: String? = null,
     /** Respuesta del motor a una evidencia que el técnico todavía no confirmó. */
     val pending: TechnicalChatProgress? = null,
-    val evidences: List<ChatEvidenceItem> = emptyList()
+    val evidences: List<ChatEvidenceItem> = emptyList(),
+    /** Mapa de red de la evaluación (tras "Generar mapa con IA"); null mientras no exista. */
+    val currentMap: NetworkMap? = null
 )
 
 @HiltViewModel
@@ -57,6 +66,10 @@ class TechnicalChatViewModel @Inject constructor(
     private val answerTechnicalChatUseCase: AnswerTechnicalChatUseCase,
     private val answerWithPhotosUseCase: AnswerTechnicalChatWithPhotosUseCase,
     private val amendUseCase: AmendTechnicalChatUseCase,
+    private val generateMapUseCase: GenerateMapUseCase,
+    private val getMapUseCase: GetMapUseCase,
+    private val saveMapUseCase: SaveMapUseCase,
+    private val mapCommandUseCase: MapCommandUseCase,
     private val evaluationRepository: EvaluationRepository,
     private val createMinutaUseCase: CreateMinutaUseCase,
     private val chatProgressStore: ChatProgressStore,
@@ -119,6 +132,7 @@ class TechnicalChatViewModel @Inject constructor(
         if (validEvaluationId == null) return
         val state = _uiState.value
         viewModelScope.launch {
+            localFiles.saveEvidenceIndex(evaluationId, state.evidences)
             chatProgressStore.save(
                 evaluationId,
                 ChatProgressSnapshot(
@@ -297,6 +311,7 @@ class TechnicalChatViewModel @Inject constructor(
                     return@onSuccess
                 }
                 applyResponse(messagesWithUserAnswer, response)
+                if (response.completed && cleanValue == "GENERAR_MAPA_IA") generateMap()
             }.onFailure { error ->
                 _uiState.update {
                     it.copy(
@@ -322,6 +337,11 @@ class TechnicalChatViewModel @Inject constructor(
                     id = messages.size.toLong()
                 )
             )
+            response.proposal?.let { proposal ->
+                messages.add(
+                    ChatMessage("", false, id = messages.size.toLong(), card = diagnosisCard(proposal))
+                )
+            }
         } else {
             botMessage(messages.size.toLong(), response, evidences)?.let { message ->
                 messages.add(message)
@@ -627,6 +647,143 @@ class TechnicalChatViewModel @Inject constructor(
             }
             minutaPersisted = false
             persistProgress()
+        }
+    }
+
+    // ---- diagnóstico y mapa con IA -----------------------------------------------------------
+    private fun diagnosisCard(proposal: TechnicalChatProposal): ChatCard {
+        val situation = proposal.asIsFindings.take(3)
+        val blocks = listOfNotNull(
+            situation.takeIf { it.isNotEmpty() }?.let { ChatBlock("Situación actual:", it) },
+            proposal.recommendations.take(2).takeIf { it.isNotEmpty() }?.let { ChatBlock("Propuesta:", listOf(it.joinToString(" "))) }
+        )
+        return ChatCard(
+            kind = "DIAGNOSIS",
+            title = "Diagnóstico listo",
+            badge = proposal.score?.let { "$it/100" },
+            blocks = blocks,
+            actions = listOf(
+                ChatAction("✦ Generar mapa con IA", "GENERATE_MAP", "primary", row = 0),
+                ChatAction("Ver propuesta completa", "VIEW_PROPOSAL", "outline", row = 1)
+            )
+        )
+    }
+
+    private fun mapCard(map: NetworkMap): ChatCard = ChatCard(
+        kind = "MAP",
+        title = "Topología propuesta",
+        badge = "+ IA",
+        map = map,
+        text = map.summary(),
+        actions = listOf(
+            ChatAction("✎ Editar", "EDIT_MAP", "outline", row = 0),
+            ChatAction("↻ Regenerar", "REGENERATE_MAP", "outline", row = 0),
+            ChatAction("Ver análisis completo →", "VIEW_ANALYSIS", "primary", row = 1)
+        )
+    )
+
+    private fun progressCard(done: Int, answers: Int, evidences: Int): ChatCard {
+        val labels = listOf(
+            "Leyendo $answers respuestas y $evidences evidencias",
+            "Ubicando los equipos del escáner de IP",
+            "Validando conexiones y puertos",
+            "Dibujando el mapa"
+        )
+        return ChatCard(
+            kind = "PROGRESS",
+            title = "Armando la topología",
+            steps = labels.mapIndexed { i, label ->
+                ChatStep(label, when { i < done -> "done"; i == done -> "active"; else -> "pending" })
+            }
+        )
+    }
+
+    private fun replaceMessage(id: Long, transform: (ChatMessage) -> ChatMessage) {
+        _uiState.update { s -> s.copy(messages = s.messages.map { if (it.id == id) transform(it) else it }) }
+    }
+
+    /** "Generar mapa con IA" / "Regenerar": arma el mapa a partir del chat con una animación de pasos. */
+    fun generateMap() {
+        val state = _uiState.value
+        if (!state.completed || state.isSending || validEvaluationId == null) return
+
+        val user = ChatMessage("Generar mapa con IA", true, id = state.messages.size.toLong())
+        val progressId = user.id + 1
+        val answers = state.answeredQuestions
+        val photos = state.evidences.count { it.status != "missing" }
+        val progress = ChatMessage("", false, id = progressId, card = progressCard(0, answers, photos))
+        _uiState.update { it.copy(isSending = true, messages = it.messages + user + progress, errorMessage = null) }
+
+        viewModelScope.launch {
+            val result = async { generateMapUseCase(evaluationId) }
+            for (done in 1..3) {
+                delay(900)
+                replaceMessage(progressId) { it.copy(card = progressCard(done, answers, photos)) }
+            }
+            result.await()
+                .onSuccess { map ->
+                    replaceMessage(progressId) { it.copy(card = mapCard(map)) }
+                    _uiState.update { it.copy(isSending = false, currentMap = map) }
+                }
+                .onFailure { error ->
+                    replaceMessage(progressId) { it.copy(card = null, text = "No pude armar el mapa: ${error.message ?: "error del servidor"}") }
+                    _uiState.update { it.copy(isSending = false) }
+                }
+        }
+    }
+
+    /** Recarga el mapa guardado (al volver del editor) y actualiza su tarjeta. */
+    fun refreshMapAfterEdit() {
+        if (validEvaluationId == null) return
+        viewModelScope.launch {
+            getMapUseCase(evaluationId).onSuccess { map ->
+                if (map == null) return@onSuccess
+                _uiState.update { s ->
+                    s.copy(
+                        currentMap = map,
+                        messages = s.messages.map { m -> if (m.card?.kind == "MAP") m.copy(card = mapCard(map)) else m }
+                    )
+                }
+            }
+        }
+    }
+
+    /** Texto libre tras completar la evaluación: "Pide un cambio al mapa…". */
+    fun sendFreeText(text: String) {
+        val clean = text.trim()
+        val state = _uiState.value
+        if (clean.isBlank() || !state.completed || state.isSending || validEvaluationId == null) return
+
+        val user = ChatMessage(clean, true, id = state.messages.size.toLong())
+        val map = state.currentMap
+        if (map == null) {
+            _uiState.update {
+                it.copy(
+                    messages = it.messages + user + ChatMessage(
+                        "Primero genera el mapa con «Generar mapa con IA» y después puedes pedirme cambios.",
+                        false, id = user.id + 1
+                    )
+                )
+            }
+            return
+        }
+        _uiState.update { it.copy(isSending = true, messages = it.messages + user) }
+        viewModelScope.launch {
+            mapCommandUseCase(evaluationId, map, clean)
+                .onSuccess { (newMap, reply) ->
+                    saveMapUseCase(evaluationId, newMap)
+                    _uiState.update { s ->
+                        s.copy(
+                            isSending = false,
+                            currentMap = newMap,
+                            messages = s.messages.map { m -> if (m.card?.kind == "MAP") m.copy(card = mapCard(newMap)) else m } +
+                                ChatMessage(reply, false, id = s.messages.size.toLong())
+                        )
+                    }
+                }
+                .onFailure { error ->
+                    _uiState.update { it.copy(isSending = false, errorMessage = error.message ?: "No se pudo aplicar el cambio") }
+                }
         }
     }
 

@@ -3,6 +3,7 @@ package com.upc.asistenteredidbi.data.session
 import android.content.Context
 import android.net.Uri
 import com.upc.asistenteredidbi.data.util.MultipartUtils
+import com.upc.asistenteredidbi.presentation.chat.ChatEvidenceItem
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -22,8 +23,24 @@ import javax.inject.Singleton
  */
 @Singleton
 class ChatLocalFiles @Inject constructor(
-    @ApplicationContext private val context: Context
+    @ApplicationContext private val context: Context,
+    moshi: com.squareup.moshi.Moshi
 ) {
+    private val evidenceListAdapter = moshi.adapter<List<ChatEvidenceItem>>(
+        com.squareup.moshi.Types.newParameterizedType(List::class.java, ChatEvidenceItem::class.java)
+    )
+
+    /** Evidencias de la visita (con sus fotos locales): sigue disponible cuando el chat ya se cerró. */
+    suspend fun saveEvidenceIndex(evaluationId: Long, items: List<ChatEvidenceItem>) = withContext(Dispatchers.IO) {
+        val dir = photosDir(evaluationId).apply { mkdirs() }
+        File(dir, "index.json").writeText(evidenceListAdapter.toJson(items))
+    }
+
+    suspend fun loadEvidenceIndex(evaluationId: Long): List<ChatEvidenceItem> = withContext(Dispatchers.IO) {
+        val file = File(photosDir(evaluationId), "index.json")
+        if (!file.exists()) emptyList() else runCatching { evidenceListAdapter.fromJson(file.readText()) }.getOrNull().orEmpty()
+    }
+
     private fun photosDir(evaluationId: Long) = File(context.filesDir, "chat_photos/$evaluationId")
     private fun statesDir(evaluationId: Long) = File(context.filesDir, "chat_states/$evaluationId")
 

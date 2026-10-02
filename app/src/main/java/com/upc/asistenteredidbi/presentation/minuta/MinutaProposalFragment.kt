@@ -60,6 +60,12 @@ class MinutaProposalFragment : Fragment() {
     @Inject
     lateinit var generateMinutaPdfUseCase: GenerateMinutaPdfUseCase
 
+    @Inject
+    lateinit var getMapUseCase: com.upc.asistenteredidbi.domain.usecase.GetMapUseCase
+
+    @Inject
+    lateinit var chatLocalFiles: com.upc.asistenteredidbi.data.session.ChatLocalFiles
+
     /** Mismo evaluationId que ya resuelve el ViewModel desde SavedStateHandle — se
      *  reutiliza aquí en vez de re-parsear `arguments` con un fallback propio. */
     private val evaluationId: String get() = viewModel.evaluationId
@@ -93,6 +99,87 @@ class MinutaProposalFragment : Fragment() {
 
         viewModel.load()
         viewModel.loadAnalysis()
+        addEditMapButton()
+        showSavedMapIfAny()
+    }
+
+    /** Botón "Editar mapa" bajo la topología: abre el editor (si aún no hay mapa, lo genera). */
+    private fun addEditMapButton() {
+        val card = binding.tvTopologyDetail.parent as android.view.ViewGroup
+        val density = resources.displayMetrics.density
+        val button = android.widget.TextView(requireContext()).apply {
+            text = "✎ Editar mapa"
+            textSize = 14f
+            typeface = android.graphics.Typeface.DEFAULT_BOLD
+            setTextColor(android.graphics.Color.parseColor("#2F6FCB"))
+            gravity = android.view.Gravity.CENTER
+            background = android.graphics.drawable.GradientDrawable().apply {
+                setColor(android.graphics.Color.WHITE)
+                cornerRadius = 22 * density
+                setStroke((1.5f * density).toInt(), android.graphics.Color.parseColor("#2F6FCB"))
+            }
+            layoutParams = android.widget.LinearLayout.LayoutParams(
+                android.view.ViewGroup.LayoutParams.MATCH_PARENT, (44 * density).toInt()
+            ).apply { topMargin = (14 * density).toInt() }
+            setOnClickListener {
+                findNavController().navigate(
+                    R.id.action_minutaProposalFragment_to_topologyEditor,
+                    Bundle().apply { putString("evaluationId", evaluationId) }
+                )
+            }
+        }
+        card.addView(button)
+    }
+
+    /** Si el técnico generó o editó el mapa de red, la propuesta muestra ese mapa en vez del automático. */
+    private fun showSavedMapIfAny() {
+        val id = evaluationId.toLongOrNull() ?: return
+        viewLifecycleOwner.lifecycleScope.launch {
+            val map = getMapUseCase(id).getOrNull()?.takeIf { it.nodes.isNotEmpty() } ?: return@launch
+            val evidences = chatLocalFiles.loadEvidenceIndex(id)
+            val provider: (com.upc.asistenteredidbi.domain.model.MapImageModel) -> android.graphics.Bitmap? = { image ->
+                evidences.firstOrNull { it.code == image.evidenceCode && it.scope == image.scope }
+                    ?.paths?.firstOrNull()
+                    ?.let { com.upc.asistenteredidbi.presentation.map.MapCanvasView.decodeThumb(it) }
+            }
+            val card = binding.topologyGraphView.parent as android.view.ViewGroup
+            binding.topologyGraphView.isVisible = false
+            val index = card.indexOfChild(binding.topologyGraphView)
+            val preview = com.upc.asistenteredidbi.presentation.map.MapCanvasView(requireContext()).apply {
+                staticPreview = true
+                this.map = map
+                imageProvider = provider
+                layoutParams = android.widget.LinearLayout.LayoutParams(
+                    android.view.ViewGroup.LayoutParams.MATCH_PARENT,
+                    (240 * resources.displayMetrics.density).toInt()
+                ).apply { topMargin = (16 * resources.displayMetrics.density).toInt() }
+                setOnClickListener { openMapZoomDialog(map, provider) }
+            }
+            card.addView(preview, index)
+            binding.tvTopologyLegend.isVisible = true
+            binding.tvTopologyDetail.text = map.summary()
+        }
+    }
+
+    private fun openMapZoomDialog(
+        map: com.upc.asistenteredidbi.domain.model.NetworkMap,
+        provider: (com.upc.asistenteredidbi.domain.model.MapImageModel) -> android.graphics.Bitmap?
+    ) {
+        val dialog = Dialog(requireContext(), android.R.style.Theme_Black_NoTitleBar_Fullscreen)
+        dialog.setContentView(R.layout.dialog_topology_zoom)
+        dialog.findViewById<Toolbar>(R.id.toolbar).setNavigationOnClickListener { dialog.dismiss() }
+        val old = dialog.findViewById<TopologyGraphView>(R.id.topologyGraphViewZoom)
+        val host = old.parent as android.view.ViewGroup
+        old.isVisible = false
+        host.addView(
+            com.upc.asistenteredidbi.presentation.map.MapCanvasView(requireContext()).apply {
+                mode = com.upc.asistenteredidbi.presentation.map.MapCanvasView.Mode.VIEW
+                this.map = map
+                imageProvider = provider
+            },
+            android.view.ViewGroup.LayoutParams(android.view.ViewGroup.LayoutParams.MATCH_PARENT, android.view.ViewGroup.LayoutParams.MATCH_PARENT)
+        )
+        dialog.show()
     }
 
     private fun setupRecyclerViews() {

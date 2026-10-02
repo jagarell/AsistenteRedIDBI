@@ -108,6 +108,10 @@ class TechnicalChatFragment : Fragment() {
         setupInitialState()
         setupClicks()
         observeViewModel()
+        // Al volver del editor del mapa se refresca la tarjeta con lo guardado.
+        parentFragmentManager.setFragmentResultListener("map_saved", viewLifecycleOwner) { _, _ ->
+            viewModel.refreshMapAfterEdit()
+        }
     }
 
     private fun setupRecycler() {
@@ -117,6 +121,12 @@ class TechnicalChatFragment : Fragment() {
                 when (action) {
                     "VIEW_ALL" -> showEvidenceGallery(unresolvedOnly = false)
                     "RESOLVE" -> showEvidenceGallery(unresolvedOnly = true)
+                    "GENERATE_MAP", "REGENERATE_MAP" -> viewModel.generateMap()
+                    "EDIT_MAP" -> findNavController().navigate(
+                        R.id.action_chat_to_topologyEditor,
+                        bundleOf("evaluationId" to viewModel.evaluationId.toString())
+                    )
+                    "VIEW_PROPOSAL", "VIEW_ANALYSIS" -> navigateToDiagnosis()
                 }
             }
         )
@@ -158,6 +168,14 @@ class TechnicalChatFragment : Fragment() {
     }
 
     private fun submitAnswer() {
+        if (viewModel.uiState.value.completed) {
+            val text = binding.etTextInput.text?.toString().orEmpty().trim()
+            if (text.isNotBlank()) {
+                viewModel.sendFreeText(text)
+                binding.etTextInput.text?.clear()
+            }
+            return
+        }
         val node = viewModel.uiState.value.node ?: return
         val isMultiSelect = node.inputType == TechnicalChatInputType.MULTI_SELECT
 
@@ -306,11 +324,25 @@ class TechnicalChatFragment : Fragment() {
             lastRenderedKey = key
         }
 
-        val needsTextInput = !confirming &&
-            (type == TechnicalChatInputType.TEXT || type == TechnicalChatInputType.NUMBER)
+        val freeChat = state.completed
+        val needsTextInput = freeChat || (!confirming &&
+            (type == TechnicalChatInputType.TEXT || type == TechnicalChatInputType.NUMBER))
         val showTextRow = needsTextInput
         binding.etTextInput.isVisible = needsTextInput
         binding.containerTextRow.isVisible = showTextRow
+
+        if (freeChat) {
+            // Evaluación terminada: el asistente atiende pedidos de cambio al mapa.
+            if (!state.isSending && state.currentMap != null) {
+                listOf("PC de caja por cable", "Agrega red de invitados", "Agrega tablets").forEach { suggestion ->
+                    addQuickReplyChip(suggestion, compact = true) { viewModel.sendFreeText(suggestion) }
+                }
+            }
+            binding.scrollQuickReplies.isVisible = binding.containerQuickReplies.childCount > 0
+            binding.actionBar.isVisible = false
+            capQuickRepliesHeight()
+            return
+        }
 
         if (!canAnswer) {
             binding.scrollQuickReplies.isVisible = false
@@ -473,7 +505,7 @@ class TechnicalChatFragment : Fragment() {
     }
 
     // ---- chips de respuesta rápida ---------------------------------------------------
-    private fun addQuickReplyChip(label: String, filled: Boolean = false, onClick: () -> Unit) {
+    private fun addQuickReplyChip(label: String, filled: Boolean = false, compact: Boolean = false, onClick: () -> Unit) {
         val blue = Color.parseColor("#2F6FCB")
         val button = MaterialButton(
             requireContext(),
@@ -482,12 +514,13 @@ class TechnicalChatFragment : Fragment() {
         ).apply {
             text = label
             isAllCaps = false
-            textSize = 13f
+            textSize = if (compact) 12f else 13f
             cornerRadius = dp(18)
             insetTop = 0
             insetBottom = 0
             minHeight = 0
-            minimumHeight = dp(36)
+            minimumHeight = dp(if (compact) 30 else 36)
+            if (compact) setPadding(dp(12), 0, dp(12), 0)
             if (filled) {
                 backgroundTintList = ColorStateList.valueOf(blue)
                 setTextColor(Color.WHITE)
@@ -626,7 +659,7 @@ class TechnicalChatFragment : Fragment() {
     }
 
     private fun renderLoading(state: TechnicalChatUiState) {
-        val inputEnabled = !state.isLoading && !state.isSending && !state.completed
+        val inputEnabled = !state.isLoading && !state.isSending
 
         binding.etTextInput.isEnabled = inputEnabled
         binding.btnSubmit.isEnabled = inputEnabled
@@ -634,13 +667,17 @@ class TechnicalChatFragment : Fragment() {
 
         binding.etTextInput.hint = when {
             state.isLoading -> "Iniciando evaluación..."
+            state.isSending && state.completed -> "Espera un momento…"
             state.isSending -> "Procesando respuesta..."
-            state.completed -> "Evaluación completada"
+            state.completed && state.currentMap != null -> "Pide un cambio al mapa…"
+            state.completed -> "Pregúntale algo al asistente…"
             else -> state.node?.hint?.takeIf { it.isNotBlank() } ?: "Escribe tu respuesta..."
         }
 
         binding.tvSubtitle.text = when {
             state.isSending && state.node?.inputType == TechnicalChatInputType.EVIDENCE -> "Analizando imagen…"
+            state.isSending && state.completed -> "Generando mapa…"
+            state.completed && state.currentMap != null -> "Mapa generado"
             state.completed -> "Evaluación completada"
             else -> "Evaluación en curso"
         }
@@ -672,7 +709,7 @@ class TechnicalChatFragment : Fragment() {
     }
 
     private fun renderCompletion(state: TechnicalChatUiState) {
-        binding.btnGoEvidence.isVisible = state.completed
+        binding.btnGoEvidence.isVisible = false
     }
 
     private fun renderError(state: TechnicalChatUiState) {

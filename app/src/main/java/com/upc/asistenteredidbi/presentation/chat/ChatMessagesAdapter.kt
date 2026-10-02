@@ -19,6 +19,8 @@ import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.upc.asistenteredidbi.R
 import com.upc.asistenteredidbi.domain.model.ChatNodePrompt
+import com.upc.asistenteredidbi.domain.model.NetworkMap
+import com.upc.asistenteredidbi.presentation.map.MapCanvasView
 import java.io.File
 
 /** Un dato leído por IA (ej. "Bajada" -> "633.33 Mbps"). No se usa kotlin.Pair
@@ -54,12 +56,23 @@ data class ChatCard(
     val warnings: List<String> = emptyList(),
     val note: String? = null,
     val footer: String? = null,
-    /** Botones dentro de la tarjeta (SUMMARY): cada uno notifica su `id` al fragment. */
-    val actions: List<ChatAction> = emptyList()
+    /** Botones dentro de la tarjeta: cada uno notifica su `id` al fragment. */
+    val actions: List<ChatAction> = emptyList(),
+    /** DIAGNOSIS: bloques con título y viñetas ("Situación actual:", "Propuesta:"). */
+    val blocks: List<ChatBlock> = emptyList(),
+    /** PROGRESS: pasos de "Armando la topología". */
+    val steps: List<ChatStep> = emptyList(),
+    /** MAP: el mapa que se dibuja en miniatura. */
+    val map: NetworkMap? = null
 )
 
+data class ChatBlock(val title: String, val lines: List<String>)
+
+/** Paso de un proceso. `status`: "done", "active" o "pending". */
+data class ChatStep(val label: String, val status: String)
+
 /** Botón de una tarjeta. `style`: "primary" (relleno azul), "outline" (borde azul) o "warn" (borde ámbar). */
-data class ChatAction(val label: String, val id: String, val style: String = "outline")
+data class ChatAction(val label: String, val id: String, val style: String = "outline", val row: Int = 0)
 
 data class ChatMessage(
     val text: String,
@@ -299,7 +312,46 @@ class ChatMessagesAdapter(
         }
 
         card.setBackgroundResource(R.drawable.bg_chat_bot)
-        card.addView(headerRow(context, data.title, data.badge, data.kind == "SUMMARY"))
+        card.addView(headerRow(context, data.title, data.badge, data.kind == "SUMMARY" || data.kind == "DIAGNOSIS"))
+
+        data.blocks.forEach { block ->
+            card.addView(TextView(context).apply {
+                text = block.title
+                textSize = 12.5f
+                typeface = Typeface.DEFAULT_BOLD
+                setTextColor(Color.parseColor("#1F2937"))
+                setPadding(0, 4.dp(context), 0, 2.dp(context))
+            })
+            block.lines.forEach { line ->
+                card.addView(TextView(context).apply {
+                    text = if (block.lines.size > 1 || line.length < 70) "• $line" else line
+                    textSize = 12.5f
+                    setTextColor(Color.parseColor("#374151"))
+                    setLineSpacing(2f, 1f)
+                })
+            }
+        }
+        data.steps.forEach { card.addView(stepRow(context, it)) }
+        if (data.kind == "PROGRESS") {
+            card.addView(TextView(context).apply {
+                text = "Vista previa del mapa…"
+                textSize = 12f
+                gravity = Gravity.CENTER
+                setTextColor(Color.parseColor("#9CA3AF"))
+                background = rounded(Color.parseColor("#EEF1F6"), 10f, context)
+                layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 90.dp(context)).apply { topMargin = 8.dp(context) }
+            })
+        }
+        data.map?.let { map ->
+            card.addView(MapCanvasView(context).apply {
+                staticPreview = true
+                this.map = map
+                imageProvider = { null }
+                background = rounded(Color.parseColor("#F7F8FB"), 10f, context)
+                layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 190.dp(context)).apply { bottomMargin = 6.dp(context) }
+            })
+        }
+        if (data.kind == "MAP") data.text?.let { card.addView(small(context, it, Color.parseColor("#6B7280"))) }
 
         if (data.tiles.isNotEmpty()) card.addView(tiles(context, data.tiles))
         data.rows.forEach { card.addView(keyValueRow(context, it)) }
@@ -310,13 +362,13 @@ class ChatMessagesAdapter(
         data.note?.let { card.addView(box(context, it, "#E8F1FD", "#1F4E9E")) }
         data.footer?.let { card.addView(small(context, it, Color.parseColor("#6B7280"), top = 6)) }
 
-        if (data.actions.isNotEmpty()) {
+        data.actions.groupBy { it.row }.toSortedMap().values.forEach { rowActions ->
             card.addView(LinearLayout(context).apply {
                 orientation = LinearLayout.HORIZONTAL
                 layoutParams = LinearLayout.LayoutParams(
                     ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
                 ).apply { topMargin = 10.dp(context) }
-                data.actions.forEachIndexed { index, action ->
+                rowActions.forEachIndexed { index, action ->
                     val color = Color.parseColor(if (action.style == "warn") "#B45309" else "#2F6FCB")
                     val filled = action.style == "primary"
                     addView(TextView(context).apply {
@@ -336,6 +388,37 @@ class ChatMessagesAdapter(
             })
         }
     }
+
+    private fun stepRow(context: Context, step: ChatStep): View =
+        LinearLayout(context).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(0, 4.dp(context), 0, 4.dp(context))
+            addView(TextView(context).apply {
+                text = when (step.status) { "done" -> "✓"; "active" -> "◔"; else -> "" }
+                textSize = 11f
+                typeface = Typeface.DEFAULT_BOLD
+                gravity = Gravity.CENTER
+                setTextColor(if (step.status == "pending") Color.parseColor("#9CA3AF") else Color.WHITE)
+                background = when (step.status) {
+                    "done" -> oval(Color.parseColor("#2E9E57"))
+                    "active" -> oval(Color.parseColor("#2F6FCB"))
+                    else -> GradientDrawable().apply {
+                        shape = GradientDrawable.OVAL
+                        setColor(Color.WHITE)
+                        setStroke(1.5f.dp(context), Color.parseColor("#C9CFDA"))
+                    }
+                }
+                layoutParams = LinearLayout.LayoutParams(18.dp(context), 18.dp(context)).apply { marginEnd = 8.dp(context) }
+            })
+            addView(TextView(context).apply {
+                text = step.label
+                textSize = 13f
+                setTextColor(Color.parseColor(if (step.status == "pending") "#9CA3AF" else "#1F2937"))
+            })
+        }
+
+    private fun oval(color: Int) = GradientDrawable().apply { shape = GradientDrawable.OVAL; setColor(color) }
 
     private fun headerRow(context: Context, title: String, badge: String?, warnBadge: Boolean): View =
         LinearLayout(context).apply {
@@ -597,5 +680,8 @@ class ChatMessagesAdapter(
     }
 
     private fun Int.dp(context: Context): Int =
+        (this * context.resources.displayMetrics.density).toInt()
+
+    private fun Float.dp(context: Context): Int =
         (this * context.resources.displayMetrics.density).toInt()
 }

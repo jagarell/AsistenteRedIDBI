@@ -8,10 +8,12 @@ import com.upc.asistenteredidbi.data.remote.EvaluationApiService
 import com.upc.asistenteredidbi.data.remote.EvidenceApiService
 import com.upc.asistenteredidbi.data.remote.MinutaApiService
 import com.upc.asistenteredidbi.data.remote.NotificationApiService
+import com.upc.asistenteredidbi.data.remote.MapApiService
 import com.upc.asistenteredidbi.data.remote.PdfApiService
 import com.upc.asistenteredidbi.data.remote.ProfileApiService
 import com.upc.asistenteredidbi.data.repository.AuthRepositoryImpl
 import com.upc.asistenteredidbi.data.repository.ChatRepositoryImpl
+import com.upc.asistenteredidbi.data.repository.MapRepositoryImpl
 import com.upc.asistenteredidbi.data.repository.EvaluationRepositoryImpl
 import com.upc.asistenteredidbi.data.repository.EvidenceRepositoryImpl
 import com.upc.asistenteredidbi.data.repository.MinutaRecordRepositoryImpl
@@ -20,6 +22,7 @@ import com.upc.asistenteredidbi.data.repository.ProfileRepositoryImpl
 import com.upc.asistenteredidbi.data.session.SessionManager
 import com.upc.asistenteredidbi.domain.repository.AuthRepository
 import com.upc.asistenteredidbi.domain.repository.ChatRepository
+import com.upc.asistenteredidbi.domain.repository.MapRepository
 import com.upc.asistenteredidbi.domain.repository.EvaluationRepository
 import com.upc.asistenteredidbi.domain.repository.EvidenceRepository
 import com.upc.asistenteredidbi.domain.repository.MinutaRecordRepository
@@ -232,6 +235,14 @@ object AuthModule {
 
     @Provides
     @Singleton
+    fun provideMapApiService(
+        retrofit: Retrofit
+    ): MapApiService {
+        return retrofit.create(MapApiService::class.java)
+    }
+
+    @Provides
+    @Singleton
     fun provideNotificationApiService(
         retrofit: Retrofit
     ): NotificationApiService {
@@ -266,6 +277,12 @@ abstract class AuthRepositoryModule {
     abstract fun bindEvaluationRepository(
         impl: EvaluationRepositoryImpl
     ): EvaluationRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindMapRepository(
+        impl: MapRepositoryImpl
+    ): MapRepository
 
     @Binds
     @Singleton
