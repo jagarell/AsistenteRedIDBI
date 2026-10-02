@@ -215,6 +215,19 @@ class TechnicalChatFragment : Fragment() {
         Toast.makeText(requireContext(), text, Toast.LENGTH_LONG).show()
     }
 
+    /** P06 (fecha de la visita): calendario en vez de teclear dd/mm/aaaa. */
+    private fun showDatePicker() {
+        val cal = java.util.Calendar.getInstance()
+        android.app.DatePickerDialog(
+            requireContext(),
+            { _, year, month, day ->
+                binding.etTextInput.setText(String.format(java.util.Locale.US, "%02d/%02d/%04d", day, month + 1, year))
+                binding.etTextInput.setSelection(binding.etTextInput.text?.length ?: 0)
+            },
+            cal.get(java.util.Calendar.YEAR), cal.get(java.util.Calendar.MONTH), cal.get(java.util.Calendar.DAY_OF_MONTH)
+        ).show()
+    }
+
     private fun showEvidenceGallery(unresolvedOnly: Boolean) {
         EvidenceGalleryDialog.newInstance(unresolvedOnly).show(childFragmentManager, "evidence_gallery")
     }
@@ -273,11 +286,11 @@ class TechnicalChatFragment : Fragment() {
         val confirming = state.pending != null
         val type = node?.inputType
 
-        binding.etTextInput.inputType = when (type) {
-            TechnicalChatInputType.NUMBER ->
-                InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL
-
-            else -> InputType.TYPE_CLASS_TEXT
+        binding.etTextInput.inputType = when (node?.keyboard) {
+            "number" -> InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL
+            "phone" -> InputType.TYPE_CLASS_PHONE
+            "date" -> InputType.TYPE_CLASS_DATETIME or InputType.TYPE_DATETIME_VARIATION_DATE
+            else -> InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_CAP_SENTENCES
         }
 
         // Texto tipeado para una pregunta abandonada no debe colarse en la siguiente:
@@ -337,6 +350,11 @@ class TechnicalChatFragment : Fragment() {
                     addPrimaryAction("Continuar") { submitAnswer() }
                 }
 
+                TechnicalChatInputType.TEXT, TechnicalChatInputType.NUMBER -> {
+                    if (node?.keyboard == "date") addQuickReplyChip("📅 Elegir fecha") { showDatePicker() }
+                    if (node?.required == false) addQuickReplyChip("Omitir") { viewModel.sendAnswer("", "Omitir") }
+                }
+
                 TechnicalChatInputType.EVIDENCE -> addEvidenceActions(node)
                 TechnicalChatInputType.ALERT -> addPrimaryAction("Entendido") {
                     viewModel.sendAnswer("", "Entendido")
@@ -357,6 +375,18 @@ class TechnicalChatFragment : Fragment() {
 
         binding.scrollQuickReplies.isVisible = binding.containerQuickReplies.childCount > 0
         binding.actionBar.isVisible = binding.actionBar.childCount > 0
+        capQuickRepliesHeight()
+    }
+
+    /** Muchas opciones (13 áreas, 9 tipos de negocio) se acomodan en varias filas, con un tope de alto y scroll. */
+    private fun capQuickRepliesHeight() {
+        val scroll = binding.scrollQuickReplies
+        scroll.post {
+            val content = binding.containerQuickReplies.height
+            scroll.layoutParams = scroll.layoutParams.apply {
+                height = if (content > dp(180)) dp(180) else ViewGroup.LayoutParams.WRAP_CONTENT
+            }
+        }
     }
 
     // ---- evidencias: Tomar foto / Galería / Omitir ---------------------------------
@@ -482,7 +512,6 @@ class TechnicalChatFragment : Fragment() {
             }
         }
         binding.containerQuickReplies.addView(button)
-        applyEndMargin(button)
     }
 
     private fun addMultiSelectChips(options: List<ChatOption>) {
@@ -514,7 +543,6 @@ class TechnicalChatFragment : Fragment() {
                 chipMinHeight = dp(36).toFloat()
             }
             binding.containerQuickReplies.addView(chip)
-            applyEndMargin(chip)
         }
     }
 
@@ -540,14 +568,6 @@ class TechnicalChatFragment : Fragment() {
             .setNegativeButton("Cancelar") { _, _ -> chip.isChecked = false }
             .setOnCancelListener { chip.isChecked = false }
             .show()
-    }
-
-    /** Aplica un margen final a una vista ya agregada a [containerQuickReplies]. */
-    private fun applyEndMargin(view: View) {
-        (view.layoutParams as? ViewGroup.MarginLayoutParams)?.let {
-            it.marginEnd = dp(8)
-            view.layoutParams = it
-        }
     }
 
     private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
@@ -616,7 +636,7 @@ class TechnicalChatFragment : Fragment() {
             state.isLoading -> "Iniciando evaluación..."
             state.isSending -> "Procesando respuesta..."
             state.completed -> "Evaluación completada"
-            else -> "Escribe tu respuesta..."
+            else -> state.node?.hint?.takeIf { it.isNotBlank() } ?: "Escribe tu respuesta..."
         }
 
         binding.tvSubtitle.text = when {

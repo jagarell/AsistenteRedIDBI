@@ -98,6 +98,7 @@ class ChatMessagesAdapter(
         val row: LinearLayout,
         val avatar: FrameLayout,
         val content: LinearLayout,
+        val caption: TextView,
         val bubble: TextView,
         val photoBubble: LinearLayout,
         val card: LinearLayout,
@@ -148,6 +149,15 @@ class ChatMessagesAdapter(
             orientation = LinearLayout.VERTICAL
         }
 
+        // Dónde va el técnico dentro de lo que se repite ("Caja 1 de 2").
+        val caption = TextView(context).apply {
+            textSize = 11f
+            typeface = Typeface.DEFAULT_BOLD
+            setTextColor(Color.parseColor("#2F6FCB"))
+            setPadding(6.dp(context), 0, 0, 3.dp(context))
+            visibility = View.GONE
+        }
+
         val bubble = TextView(context).apply {
             maxWidth = 250.dp(context)
             setPadding(16.dp(context), 11.dp(context), 16.dp(context), 11.dp(context))
@@ -170,6 +180,7 @@ class ChatMessagesAdapter(
             visibility = View.GONE
         }
 
+        content.addView(caption)
         content.addView(bubble)
         content.addView(photoBubble)
         content.addView(card)
@@ -191,7 +202,7 @@ class ChatMessagesAdapter(
         }
         root.addView(editCaption)
 
-        return VH(root, row, avatar, content, bubble, photoBubble, card, editCaption)
+        return VH(root, row, avatar, content, caption, bubble, photoBubble, card, editCaption)
     }
 
     override fun onBindViewHolder(holder: VH, position: Int) {
@@ -199,6 +210,11 @@ class ChatMessagesAdapter(
         val context = holder.root.context
         val hasPhotos = item.imagePaths.isNotEmpty()
         val hasCard = item.card != null
+
+        val contextLabel = item.prompt?.context.orEmpty()
+        holder.caption.text = contextLabel.uppercase()
+        holder.caption.visibility =
+            if (!item.isFromUser && contextLabel.isNotBlank()) View.VISIBLE else View.GONE
 
         holder.bubble.text = item.text
         // Un mensaje "solo tarjeta" o "solo foto" no lleva burbuja de texto.

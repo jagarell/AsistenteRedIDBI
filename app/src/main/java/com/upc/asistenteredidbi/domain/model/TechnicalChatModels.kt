@@ -33,7 +33,13 @@ data class ChatNodePrompt(
     /** Para avisos: "warning" / "info". */
     val severity: String? = null,
     /** Mínimo de opciones a elegir en MULTI_SELECT (validation.minSelected). */
-    val minSelected: Int = 0
+    val minSelected: Int = 0,
+    /** Dónde va dentro de lo que se repite, ej. "Caja 1 de 2" o "Cocina (1 de 2)". */
+    val context: String = "",
+    /** Teclado: "text", "number", "phone" o "date". */
+    val keyboard: String = "text",
+    /** Texto de ayuda del campo (ej. "Número entre 1 y 20"). */
+    val hint: String = ""
 )
 
 /** Pregunta de confirmación del asistente tras leer una evidencia (ej. "¿cuál es el proveedor correcto?"). */

@@ -41,7 +41,10 @@ data class ChatNodeDto(
     val defaultValue: String? = null,
     val evidenceCode: String? = null,
     val maxFiles: Int? = null,
-    val severity: String? = null
+    val severity: String? = null,
+    val context: String? = null,
+    val keyboard: String? = null,
+    val hint: String? = null
 )
 
 data class ChatEvidenceDto(

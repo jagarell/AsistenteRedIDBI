@@ -284,9 +284,15 @@ class TechnicalChatViewModel @Inject constructor(
                 answer = cleanValue
             ).onSuccess { response ->
                 if (response.validationError != null) {
-                    // La respuesta no era válida: el nodo no avanzó, se quita la burbuja.
+                    // La respuesta no era válida: el nodo no avanzó. Se quita la burbuja del
+                    // técnico y el asistente explica qué corregir, como un mensaje más del chat.
                     _uiState.update {
-                        it.copy(isSending = false, messages = state.messages, errorMessage = response.validationError)
+                        it.copy(
+                            isSending = false,
+                            messages = state.messages + ChatMessage(
+                                "⚠ ${response.validationError}", false, id = state.messages.size.toLong()
+                            )
+                        )
                     }
                     return@onSuccess
                 }
@@ -597,7 +603,10 @@ class TechnicalChatViewModel @Inject constructor(
     /** Restaura la pregunta anterior al mensaje de usuario en `userIndex` y descarta lo que le siguió. */
     private fun reopen(userIndex: Int) {
         val state = _uiState.value
-        val question = state.messages[userIndex - 1]
+        // La pregunta es el último mensaje del bot con nodo antes de la respuesta
+        // (puede haber avisos de validación entre ambos).
+        val questionIndex = (userIndex - 1 downTo 0).firstOrNull { state.messages[it].prompt != null } ?: return
+        val question = state.messages[questionIndex]
         val prompt = question.prompt ?: return
 
         viewModelScope.launch {
@@ -605,14 +614,14 @@ class TechnicalChatViewModel @Inject constructor(
             localFiles.dropStatesFrom(evaluationId, question.id + 1)
             _uiState.update {
                 it.copy(
-                    messages = state.messages.subList(0, userIndex),
+                    messages = state.messages.subList(0, questionIndex + 1),
                     node = prompt,
                     flowState = savedState,
                     completed = false,
                     proposal = null,
                     minutaId = null,
                     pending = null,
-                    evidences = state.evidences.filter { e -> e.messageId < userIndex },
+                    evidences = state.evidences.filter { e -> e.messageId < questionIndex + 1 },
                     errorMessage = null
                 )
             }

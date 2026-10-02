@@ -62,7 +62,10 @@ fun ChatNodeDto.toDomain(): ChatNodePrompt = ChatNodePrompt(
     maxFiles = maxFiles ?: 3,
     severity = severity,
     // Moshi decodifica los números de un Map<String, Any?> como Double.
-    minSelected = (validation?.get("minSelected") as? Number)?.toInt() ?: 0
+    minSelected = (validation?.get("minSelected") as? Number)?.toInt() ?: 0,
+    context = context.orEmpty(),
+    keyboard = keyboard ?: "text",
+    hint = hint.orEmpty()
 )
 
 fun TechnicalChatProposalDto.toDomain(): TechnicalChatProposal {
