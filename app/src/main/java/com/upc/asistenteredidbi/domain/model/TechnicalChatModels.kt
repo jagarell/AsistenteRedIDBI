@@ -26,6 +26,11 @@ data class ChatNodePrompt(
     val blockLabel: String = "",
     val blockIndex: Int = 0,
     val blockCount: Int = 0,
+    /** "Pregunta N de T": T es una estimación que crece con los loops. */
+    val questionNumber: Int = 0,
+    val questionTotal: Int = 0,
+    val evidenceNumber: Int = 0,
+    val evidenceTotal: Int = 0,
     /** Prefill (ej. fecha de hoy en P06, técnico en P07). */
     val defaultValue: String? = null,
     val evidenceCode: String? = null,

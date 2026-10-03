@@ -9,6 +9,7 @@ import com.upc.asistenteredidbi.data.session.ChatLocalFiles
 import com.upc.asistenteredidbi.data.session.ChatProgressSnapshot
 import com.upc.asistenteredidbi.data.session.ChatProgressStore
 import com.upc.asistenteredidbi.data.util.PhotoProcessingException
+import com.upc.asistenteredidbi.R
 import com.upc.asistenteredidbi.domain.model.ChatNodePrompt
 import com.upc.asistenteredidbi.domain.model.ChatTopology
 import com.upc.asistenteredidbi.domain.model.MinutaContentPayload
@@ -244,7 +245,7 @@ class TechnicalChatViewModel @Inject constructor(
             text = node.text,
             thumbs = evidences.map {
                 ChatThumb(
-                    label = it.title,
+                    label = EvidencePresentation.shortLabel(it),
                     path = it.paths.firstOrNull(),
                     status = it.status.takeIf { s -> s == "missing" } ?: if (it.status == "warn") "warn" else "ok"
                 )
@@ -254,6 +255,7 @@ class TechnicalChatViewModel @Inject constructor(
                 add(ChatAction("Ver todas", "VIEW_ALL"))
                 val unresolved = evidences.count { it.status != "ok" }
                 if (unresolved > 0) add(ChatAction("Resolver $unresolved", "RESOLVE", "warn"))
+                add(ChatAction("Continuar al diagnóstico →", "CONTINUE_DIAGNOSIS", "primary", row = 1))
             }
         )
     }
@@ -429,7 +431,8 @@ class TechnicalChatViewModel @Inject constructor(
                         ChatEvidenceItem(
                             code = it.code,
                             scope = it.scope,
-                            title = EvidencePresentation.title(it.code) + (it.area?.let { a -> " · $a" } ?: ""),
+                            title = EvidencePresentation.title(it.code) +
+                                (it.area ?: it.equipo?.substringAfter("– ")?.trim())?.takeIf { a -> a.isNotBlank() }?.let { a -> " · $a" }.orEmpty(),
                             section = EvidencePresentation.section(it.code),
                             summary = EvidencePresentation.summary(it),
                             paths = files.map { f -> f.absolutePath },
@@ -655,7 +658,7 @@ class TechnicalChatViewModel @Inject constructor(
         val situation = proposal.asIsFindings.take(3)
         val blocks = listOfNotNull(
             situation.takeIf { it.isNotEmpty() }?.let { ChatBlock("Situación actual:", it) },
-            proposal.recommendations.take(2).takeIf { it.isNotEmpty() }?.let { ChatBlock("Propuesta:", listOf(it.joinToString(" "))) }
+            proposal.recommendations.take(2).takeIf { it.isNotEmpty() }?.let { ChatBlock("Propuesta:", listOf(it.joinToString(" ")), inline = true) }
         )
         return ChatCard(
             kind = "DIAGNOSIS",
@@ -676,8 +679,8 @@ class TechnicalChatViewModel @Inject constructor(
         map = map,
         text = map.summary(),
         actions = listOf(
-            ChatAction("✎ Editar", "EDIT_MAP", "outline", row = 0),
-            ChatAction("↻ Regenerar", "REGENERATE_MAP", "outline", row = 0),
+            ChatAction("Editar", "EDIT_MAP", "outline", row = 0, icon = R.drawable.ic_edit),
+            ChatAction("Regenerar", "REGENERATE_MAP", "outline", row = 0, icon = R.drawable.ic_refresh),
             ChatAction("Ver análisis completo →", "VIEW_ANALYSIS", "primary", row = 1)
         )
     )

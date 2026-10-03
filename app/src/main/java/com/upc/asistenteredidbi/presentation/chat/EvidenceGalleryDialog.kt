@@ -17,6 +17,7 @@ import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.viewModels
 import com.bumptech.glide.Glide
 import com.upc.asistenteredidbi.R
+import com.upc.asistenteredidbi.domain.model.TechnicalChatInputType
 import dagger.hilt.android.AndroidEntryPoint
 import java.io.File
 
@@ -71,17 +72,21 @@ class EvidenceGalleryDialog : DialogFragment() {
             LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f)
         )
 
+        val atSummary = viewModel.uiState.value.node?.inputType == TechnicalChatInputType.SUMMARY
         root.addView(TextView(context).apply {
-            text = "Listo"
+            text = if (atSummary) "Listo, generar diagnóstico" else "Listo"
             textSize = 16f
             typeface = Typeface.DEFAULT_BOLD
             setTextColor(Color.WHITE)
             gravity = Gravity.CENTER
-            background = rounded("#2F6FCB", 28f, context)
+            background = rounded("#1565C0", 28f, context)
             layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(52)).apply {
                 setMargins(dp(16), dp(8), dp(16), dp(20))
             }
-            setOnClickListener { dismiss() }
+            setOnClickListener {
+                dismiss()
+                if (atSummary) viewModel.sendAnswer("GENERAR_MINUTA", "Continuar al diagnóstico")
+            }
         })
 
         render()
@@ -91,7 +96,7 @@ class EvidenceGalleryDialog : DialogFragment() {
     private fun header(context: android.content.Context): View = LinearLayout(context).apply {
         orientation = LinearLayout.HORIZONTAL
         gravity = Gravity.CENTER_VERTICAL
-        setBackgroundColor(Color.parseColor("#2F6FCB"))
+        setBackgroundColor(Color.parseColor("#1976D2"))
         setPadding(dp(8), dp(34), dp(16), dp(14))
         addView(ImageView(context).apply {
             setImageResource(R.drawable.ic_arrow_back)
@@ -109,7 +114,8 @@ class EvidenceGalleryDialog : DialogFragment() {
                 setTextColor(Color.WHITE)
             })
             addView(TextView(context).apply {
-                text = "Se adjuntan a la minuta"
+                val client = viewModel.uiState.value.messages.firstOrNull { it.isFromUser }?.text.orEmpty()
+                text = (if (client.isNotBlank()) "$client · " else "") + "se adjuntan a la minuta"
                 textSize = 13f
                 setTextColor(Color.parseColor("#D9EAFE"))
             })
@@ -124,8 +130,8 @@ class EvidenceGalleryDialog : DialogFragment() {
 
         filterRow.removeAllViews()
         listOf(
-            Triple(Filter.ALL, "Todas ${all.size}", "#2F6FCB"),
-            Triple(Filter.AI, "Con datos IA ${withAi.size}", "#2F6FCB"),
+            Triple(Filter.ALL, "Todas ${all.size}", "#1565C0"),
+            Triple(Filter.AI, "Con datos IA ${withAi.size}", "#1565C0"),
             Triple(Filter.UNRESOLVED, "Por resolver ${unresolved.size}", "#B45309")
         ).forEach { (f, label, color) ->
             filterRow.addView(TextView(context).apply {
@@ -224,7 +230,7 @@ class EvidenceGalleryDialog : DialogFragment() {
                 })
                 addView(TextView(context).apply {
                     text = if (missing) "Falta esta evidencia: la minuta la marca como pendiente."
-                    else if (e.summary.isNotBlank()) "✦ ${e.summary}" else "Foto adjunta"
+                    else if (e.summary.isNotBlank()) highlighted("✦ ${e.summary}") else "Foto adjunta"
                     textSize = 12f
                     setTextColor(Color.parseColor(if (missing) "#B45309" else "#4B5563"))
                 })
@@ -251,6 +257,21 @@ class EvidenceGalleryDialog : DialogFragment() {
                 })
             }
         }
+    }
+
+    /** Los datos entre * van en azul y negrita; el resto, en gris. */
+    private fun highlighted(text: String): CharSequence {
+        val builder = android.text.SpannableStringBuilder()
+        text.split("*").forEachIndexed { index, part ->
+            if (part.isEmpty()) return@forEachIndexed
+            val start = builder.length
+            builder.append(part)
+            if (index % 2 == 1) {
+                builder.setSpan(android.text.style.ForegroundColorSpan(Color.parseColor("#1565C0")), start, builder.length, 0)
+                builder.setSpan(android.text.style.StyleSpan(Typeface.BOLD), start, builder.length, 0)
+            }
+        }
+        return builder
     }
 
     private fun confirmRetake(e: ChatEvidenceItem) {

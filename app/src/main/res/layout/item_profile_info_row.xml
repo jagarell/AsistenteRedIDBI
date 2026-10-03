@@ -17,7 +17,7 @@
         android:id="@+id/tvValue"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_weight="1.2"
+        android:layout_weight="2"
         android:gravity="end"
         android:text="Valor"
         android:textColor="#1F2937"

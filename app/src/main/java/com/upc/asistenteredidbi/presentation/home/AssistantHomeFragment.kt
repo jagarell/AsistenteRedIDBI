@@ -91,7 +91,7 @@ class AssistantHomeFragment : Fragment() {
         }
         return HomeRecentItem(
             title = clientName,
-            date = createdAt?.take(10).orEmpty(),
+            date = com.upc.asistenteredidbi.presentation.common.formatShortDate(createdAt),
             status = statusType.name.lowercase().replaceFirstChar { it.uppercase() },
             statusType = statusType
         )

@@ -67,7 +67,7 @@ class TopologyEditorFragment : Fragment() {
     private var lineStyle = "solid"
     private var sourceId: String? = null
 
-    private val blue = Color.parseColor("#2F6FCB")
+    private val blue = Color.parseColor("#1565C0")
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         val context = requireContext()
@@ -167,7 +167,7 @@ class TopologyEditorFragment : Fragment() {
                         setImageResource(icon)
                         layoutParams = LinearLayout.LayoutParams(dp(24), dp(24))
                     })
-                    addView(TextView(context).apply { text = label; textSize = 11f })
+                    addView(TextView(context).apply { text = label; textSize = 12f; gravity = Gravity.CENTER_HORIZONTAL })
                     setOnClickListener { onToolbar(id) }
                 }
                 toolbar[id] = item
@@ -304,18 +304,26 @@ class TopologyEditorFragment : Fragment() {
         val dialog = BottomSheetDialog(context)
         val box = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(dp(20), dp(8), dp(20), dp(24))
+            setPadding(dp(20), dp(10), dp(20), dp(28))
+            background = GradientDrawable().apply {
+                setColor(Color.WHITE)
+                cornerRadii = floatArrayOf(dp(28).toFloat(), dp(28).toFloat(), dp(28).toFloat(), dp(28).toFloat(), 0f, 0f, 0f, 0f)
+            }
         }
+        box.addView(View(context).apply {
+            background = rounded(Color.parseColor("#E0E3EA"), 3f)
+            layoutParams = LinearLayout.LayoutParams(dp(36), dp(5)).apply { gravity = Gravity.CENTER_HORIZONTAL; bottomMargin = dp(6) }
+        })
         box.addView(TextView(context).apply {
             text = "Agregar al mapa"
-            textSize = 16f
+            textSize = 18f
             typeface = Typeface.DEFAULT_BOLD
             setTextColor(Color.parseColor("#1F2937"))
-            setPadding(0, dp(12), 0, dp(10))
+            setPadding(0, dp(12), 0, dp(12))
         })
         data class Row(val title: String, val subtitle: String, val icon: Int, val tint: String, val bg: String, val action: () -> Unit)
         listOf(
-            Row("Elemento de red", "Router, switch, AP, PC, impresora…", R.drawable.ic_network, "#2F6FCB", "#E3EEFC") { showElementSheet() },
+            Row("Elemento de red", "Router, switch, AP, PC, impresora…", R.drawable.ic_network, "#1565C0", "#E3EEFC") { showElementSheet() },
             Row("Línea recta", "Conexión por cable entre dos elementos", R.drawable.ic_remove, "#546E7A", "#ECEFF1") { lineStyle = "solid"; startTool(Tool.LINE) },
             Row("Línea discontinua", "Enlace WiFi o inalámbrico", R.drawable.ic_more_horiz, "#7E57C2", "#EDE7F6") { lineStyle = "dashed"; startTool(Tool.LINE) },
             Row("Caja de texto", "Nota o etiqueta sobre el mapa", R.drawable.ic_text_fields, "#EF8F00", "#FFF3E0") { addTextBox() },
@@ -323,18 +331,18 @@ class TopologyEditorFragment : Fragment() {
         ).forEach { row ->
             box.addView(LinearLayout(context).apply {
                 gravity = Gravity.CENTER_VERTICAL
-                setPadding(0, dp(8), 0, dp(8))
+                setPadding(0, dp(10), 0, dp(10))
                 addView(ImageView(context).apply {
                     setImageResource(row.icon)
                     setColorFilter(Color.parseColor(row.tint))
-                    background = rounded(Color.parseColor(row.bg), 10f)
-                    setPadding(dp(9), dp(9), dp(9), dp(9))
-                    layoutParams = LinearLayout.LayoutParams(dp(40), dp(40)).apply { marginEnd = dp(14) }
+                    background = rounded(Color.parseColor(row.bg), 14f)
+                    setPadding(dp(10), dp(10), dp(10), dp(10))
+                    layoutParams = LinearLayout.LayoutParams(dp(42), dp(42)).apply { marginEnd = dp(16) }
                 })
                 addView(LinearLayout(context).apply {
                     orientation = LinearLayout.VERTICAL
-                    addView(TextView(context).apply { text = row.title; textSize = 15f; typeface = Typeface.DEFAULT_BOLD; setTextColor(Color.parseColor("#1F2937")) })
-                    addView(TextView(context).apply { text = row.subtitle; textSize = 12f; setTextColor(Color.parseColor("#6B7280")) })
+                    addView(TextView(context).apply { text = row.title; textSize = 16f; typeface = Typeface.DEFAULT_BOLD; setTextColor(Color.parseColor("#1F2937")) })
+                    addView(TextView(context).apply { text = row.subtitle; textSize = 13f; setTextColor(Color.parseColor("#6B7280")) })
                 })
                 setOnClickListener {
                     dialog.dismiss()
@@ -344,6 +352,8 @@ class TopologyEditorFragment : Fragment() {
         }
         dialog.setContentView(box)
         dialog.show()
+        // La hoja de Material tiñe el fondo; el prototipo lo lleva blanco.
+        dialog.findViewById<View>(com.google.android.material.R.id.design_bottom_sheet)?.setBackgroundColor(Color.TRANSPARENT)
     }
 
     /** Hoja "Elemento de red": tipo, nombre y a qué se conecta. */
@@ -541,6 +551,18 @@ class TopologyEditorFragment : Fragment() {
         }
         dialog = AlertDialog.Builder(context).setView(box).create()
         dialog.show()
+        roundDialog(dialog)
+    }
+
+    /** Diálogo de tarjeta redondeada (28dp) con 35dp de margen lateral, como en el prototipo. */
+    private fun roundDialog(dialog: AlertDialog) {
+        dialog.window?.apply {
+            setBackgroundDrawable(GradientDrawable().apply {
+                setColor(Color.WHITE)
+                cornerRadius = dp(28).toFloat()
+            })
+            setLayout(resources.displayMetrics.widthPixels - dp(70), ViewGroup.LayoutParams.WRAP_CONTENT)
+        }
     }
 
     private fun promptRename(node: MapNodeModel) {
@@ -561,11 +583,39 @@ class TopologyEditorFragment : Fragment() {
     }
 
     private fun chooseColor(node: MapNodeModel) {
-        val colors = listOf("Azul" to "#1565C0", "Verde" to "#2E7D32", "Morado" to "#6A1B9A", "Turquesa" to "#00838F", "Naranja" to "#EF6C00", "Rojo" to "#C62828", "Gris" to "#546E7A")
-        AlertDialog.Builder(requireContext()).setTitle("Cambiar color")
-            .setItems(colors.map { it.first }.toTypedArray()) { _, i ->
-                mutate { m -> m.copy(nodes = m.nodes.map { if (it.id == node.id) it.copy(color = colors[i].second) else it }) }
-            }.show()
+        val context = requireContext()
+        val colors = listOf("#1565C0", "#2E7D32", "#6A1B9A", "#00838F", "#EF6C00", "#C62828", "#546E7A", "#263238")
+        lateinit var dialog: AlertDialog
+        val box = LinearLayout(context).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(22), dp(18), dp(22), dp(18))
+        }
+        box.addView(TextView(context).apply {
+            text = "Cambiar color"; textSize = 18f; typeface = Typeface.DEFAULT_BOLD
+            setTextColor(Color.parseColor("#1F2937")); setPadding(0, 0, 0, dp(14))
+        })
+        colors.chunked(4).forEach { rowColors ->
+            box.addView(LinearLayout(context).apply {
+                gravity = Gravity.CENTER
+                rowColors.forEach { hex ->
+                    addView(View(context).apply {
+                        background = GradientDrawable().apply {
+                            shape = GradientDrawable.OVAL
+                            setColor(Color.parseColor(hex))
+                            if (node.color.equals(hex, ignoreCase = true)) setStroke(dp(3), Color.parseColor("#1F2937"))
+                        }
+                        layoutParams = LinearLayout.LayoutParams(dp(48), dp(48)).apply { setMargins(dp(8), dp(6), dp(8), dp(6)) }
+                        setOnClickListener {
+                            dialog.dismiss()
+                            mutate { m -> m.copy(nodes = m.nodes.map { if (it.id == node.id) it.copy(color = hex) else it }) }
+                        }
+                    })
+                }
+            })
+        }
+        dialog = AlertDialog.Builder(context).setView(box).create()
+        dialog.show()
+        roundDialog(dialog)
     }
 
     // ---------------------------------------------------------------------------------------------

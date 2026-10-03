@@ -107,8 +107,8 @@ class HistorialFragment : Fragment() {
     private fun EvaluationSummaryItem.toHistoryItem(): HistoryItem = HistoryItem(
         id = id,
         establishmentName = establishmentName,
-        location = createdAt,
-        date = "",
+        location = "",
+        date = com.upc.asistenteredidbi.presentation.common.formatShortDate(createdAt),
         status = when (status) {
             EvaluationStatus.BORRADOR -> HistoryStatus.BORRADOR
             EvaluationStatus.EN_PROGRESO -> HistoryStatus.EN_ANALISIS

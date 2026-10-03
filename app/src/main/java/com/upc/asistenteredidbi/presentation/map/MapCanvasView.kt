@@ -112,14 +112,8 @@ class MapCanvasView @JvmOverloads constructor(
         color = Color.parseColor("#1F2937"); textSize = 11f * density; typeface = Typeface.DEFAULT_BOLD
         textAlign = Paint.Align.CENTER
     }
-    private val detailPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = Color.parseColor("#6B7280"); textSize = 9f * density; textAlign = Paint.Align.CENTER
-    }
     private val noteTextPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
         color = Color.parseColor("#5A3C0A"); typeface = Typeface.DEFAULT_BOLD
-    }
-    private val observedPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = Color.parseColor("#C62828"); textSize = 9f * density; textAlign = Paint.Align.CENTER
     }
     private val handlePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL }
     private val iconCache = HashMap<String, android.graphics.drawable.Drawable?>()
@@ -169,9 +163,7 @@ class MapCanvasView @JvmOverloads constructor(
     // ---- dibujo ---------------------------------------------------------------------------------
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
-        labelPaint.textSize = 11f * d
-        detailPaint.textSize = 9f * d
-        observedPaint.textSize = 9f * d
+        labelPaint.textSize = (if (staticPreview) 15f else 11f) * d
         canvas.save()
         canvas.translate(tx, ty)
         canvas.scale(scale, scale)
@@ -206,9 +198,6 @@ class MapCanvasView @JvmOverloads constructor(
         }
         canvas.drawLine(a.first, a.second, b.first, b.second, linkPaint)
         linkPaint.pathEffect = null
-        if (l.observed) {
-            canvas.drawText("WiFi: debería ir por cable", (a.first + b.first) / 2 - 24f * d, (a.second + b.second) / 2 - 6f * d, observedPaint)
-        }
     }
 
     private fun drawNode(canvas: Canvas, n: MapNodeModel) {
@@ -242,8 +231,7 @@ class MapCanvasView @JvmOverloads constructor(
             canvas.drawCircle(cx, cy, nodeRadius + 5f * d, ringPaint)
             ringPaint.pathEffect = null
         }
-        canvas.drawText(n.label.take(if (staticPreview) 18 else 26), cx, cy + nodeRadius + 14f * d, labelPaint)
-        n.detail?.takeIf { it.isNotBlank() }?.let { canvas.drawText(it.take(30), cx, cy + nodeRadius + 26f * d, detailPaint) }
+        canvas.drawText(n.label.take(if (staticPreview) 12 else 26), cx, cy + nodeRadius + 14f * d, labelPaint)
     }
 
     private fun drawText(canvas: Canvas, t: MapTextModel) {

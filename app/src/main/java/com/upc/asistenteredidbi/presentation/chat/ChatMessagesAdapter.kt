@@ -66,13 +66,14 @@ data class ChatCard(
     val map: NetworkMap? = null
 )
 
-data class ChatBlock(val title: String, val lines: List<String>)
+/** Bloque de texto de una tarjeta: título en negrita + líneas (viñetas, o en la misma línea si `inline`). */
+data class ChatBlock(val title: String, val lines: List<String>, val inline: Boolean = false)
 
 /** Paso de un proceso. `status`: "done", "active" o "pending". */
 data class ChatStep(val label: String, val status: String)
 
 /** Botón de una tarjeta. `style`: "primary" (relleno azul), "outline" (borde azul) o "warn" (borde ámbar). */
-data class ChatAction(val label: String, val id: String, val style: String = "outline", val row: Int = 0)
+data class ChatAction(val label: String, val id: String, val style: String = "outline", val row: Int = 0, val icon: Int? = null)
 
 data class ChatMessage(
     val text: String,
@@ -95,7 +96,8 @@ data class ChatMessage(
 
 class ChatMessagesAdapter(
     private val onEditClick: (ChatMessage) -> Unit,
-    private val onCardAction: (String) -> Unit = {}
+    private val onCardAction: (String) -> Unit = {},
+    private val onMapClick: (com.upc.asistenteredidbi.domain.model.NetworkMap) -> Unit = {}
 ) : ListAdapter<ChatMessage, ChatMessagesAdapter.VH>(
     object : DiffUtil.ItemCallback<ChatMessage>() {
         override fun areItemsTheSame(oldItem: ChatMessage, newItem: ChatMessage): Boolean =
@@ -106,6 +108,23 @@ class ChatMessagesAdapter(
     }
 ) {
 
+    /** Id de la última respuesta editable: es la que muestra "Toca para editar". */
+    private var lastEditableId: Long? = null
+
+    override fun submitList(list: List<ChatMessage>?, commitCallback: Runnable?) {
+        val newLast = list?.lastOrNull { it.isFromUser && it.isEditable }?.id
+        super.submitList(list) {
+            if (newLast != lastEditableId) {
+                val previous = lastEditableId
+                lastEditableId = newLast
+                currentList.forEachIndexed { index, message ->
+                    if (message.id == previous || message.id == newLast) notifyItemChanged(index)
+                }
+            }
+            commitCallback?.run()
+        }
+    }
+
     inner class VH(
         val root: LinearLayout,
         val row: LinearLayout,
@@ -114,8 +133,7 @@ class ChatMessagesAdapter(
         val caption: TextView,
         val bubble: TextView,
         val photoBubble: LinearLayout,
-        val card: LinearLayout,
-        val editCaption: TextView
+        val card: LinearLayout
     ) : RecyclerView.ViewHolder(root)
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH {
@@ -166,7 +184,7 @@ class ChatMessagesAdapter(
         val caption = TextView(context).apply {
             textSize = 11f
             typeface = Typeface.DEFAULT_BOLD
-            setTextColor(Color.parseColor("#2F6FCB"))
+            setTextColor(Color.parseColor("#1565C0"))
             setPadding(6.dp(context), 0, 0, 3.dp(context))
             visibility = View.GONE
         }
@@ -181,7 +199,7 @@ class ChatMessagesAdapter(
         // Foto subida por el técnico: burbuja azul con la miniatura y el pie "archivo ✓ Subida".
         val photoBubble = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
-            background = rounded(Color.parseColor("#2F6FCB"), 18f, context)
+            background = rounded(Color.parseColor("#1565C0"), 18f, context)
             setPadding(6.dp(context), 6.dp(context), 6.dp(context), 6.dp(context))
             visibility = View.GONE
         }
@@ -201,21 +219,7 @@ class ChatMessagesAdapter(
         row.addView(content)
         root.addView(row)
 
-        val editCaption = TextView(context).apply {
-            layoutParams = LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.WRAP_CONTENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT
-            ).apply {
-                topMargin = 4.dp(context)
-            }
-            text = "✎ Editar respuesta"
-            textSize = 13f
-            setTextColor(0xFF1565C0.toInt())
-            setPadding(4.dp(context), 2.dp(context), 4.dp(context), 2.dp(context))
-        }
-        root.addView(editCaption)
-
-        return VH(root, row, avatar, content, caption, bubble, photoBubble, card, editCaption)
+        return VH(root, row, avatar, content, caption, bubble, photoBubble, card)
     }
 
     override fun onBindViewHolder(holder: VH, position: Int) {
@@ -230,6 +234,8 @@ class ChatMessagesAdapter(
             if (!item.isFromUser && contextLabel.isNotBlank()) View.VISIBLE else View.GONE
 
         holder.bubble.text = item.text
+        holder.bubble.setOnClickListener(null)
+        holder.bubble.isClickable = false
         // Un mensaje "solo tarjeta" o "solo foto" no lleva burbuja de texto.
         holder.bubble.visibility =
             if (item.text.isBlank() || hasPhotos || hasCard) View.GONE else View.VISIBLE
@@ -240,15 +246,23 @@ class ChatMessagesAdapter(
             holder.bubble.setBackgroundResource(R.drawable.bg_chat_user)
             holder.bubble.setTextColor(0xFFFFFFFF.toInt())
 
-            holder.editCaption.visibility = if (item.isEditable) View.VISIBLE else View.GONE
-            (holder.editCaption.layoutParams as LinearLayout.LayoutParams).gravity = Gravity.END
-            holder.editCaption.setOnClickListener { onEditClick(item) }
+            if (item.isEditable) {
+                // Tocar la burbuja reabre la pregunta; la pista solo va en la última respuesta.
+                holder.bubble.setOnClickListener { onEditClick(item) }
+                if (item.id == lastEditableId && item.text.isNotBlank()) {
+                    holder.bubble.text = android.text.SpannableStringBuilder(item.text).apply {
+                        val start = length
+                        append("\nToca para editar")
+                        setSpan(android.text.style.RelativeSizeSpan(0.8f), start, length, 0)
+                        setSpan(android.text.style.ForegroundColorSpan(0xCCFFFFFF.toInt()), start, length, 0)
+                    }
+                }
+            }
         } else {
             holder.row.gravity = Gravity.START
             holder.avatar.visibility = View.VISIBLE
             holder.bubble.setBackgroundResource(R.drawable.bg_chat_bot)
             holder.bubble.setTextColor(0xFF374151.toInt())
-            holder.editCaption.visibility = View.GONE
         }
 
         bindPhotoBubble(holder.photoBubble, item, context)
@@ -315,18 +329,33 @@ class ChatMessagesAdapter(
         card.addView(headerRow(context, data.title, data.badge, data.kind == "SUMMARY" || data.kind == "DIAGNOSIS"))
 
         data.blocks.forEach { block ->
+            val inline = block.lines.size == 1 && block.inline
+            if (inline) {
+                // "Propuesta: texto…" en la misma línea, con el título en negrita.
+                card.addView(TextView(context).apply {
+                    text = android.text.SpannableStringBuilder(block.title + " ").apply {
+                        setSpan(android.text.style.StyleSpan(Typeface.BOLD), 0, block.title.length, 0)
+                        append(block.lines.first())
+                    }
+                    textSize = 13.5f
+                    setTextColor(Color.parseColor("#1F2937"))
+                    setLineSpacing(2f, 1f)
+                    setPadding(0, 4.dp(context), 0, 0)
+                })
+                return@forEach
+            }
             card.addView(TextView(context).apply {
                 text = block.title
-                textSize = 12.5f
+                textSize = 13.5f
                 typeface = Typeface.DEFAULT_BOLD
                 setTextColor(Color.parseColor("#1F2937"))
-                setPadding(0, 4.dp(context), 0, 2.dp(context))
+                setPadding(0, 6.dp(context), 0, 2.dp(context))
             })
             block.lines.forEach { line ->
                 card.addView(TextView(context).apply {
-                    text = if (block.lines.size > 1 || line.length < 70) "• $line" else line
-                    textSize = 12.5f
-                    setTextColor(Color.parseColor("#374151"))
+                    text = "• $line"
+                    textSize = 13.5f
+                    setTextColor(Color.parseColor("#1F2937"))
                     setLineSpacing(2f, 1f)
                 })
             }
@@ -348,7 +377,8 @@ class ChatMessagesAdapter(
                 this.map = map
                 imageProvider = { null }
                 background = rounded(Color.parseColor("#F7F8FB"), 10f, context)
-                layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 190.dp(context)).apply { bottomMargin = 6.dp(context) }
+                layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 220.dp(context)).apply { bottomMargin = 6.dp(context) }
+                setOnClickListener { onMapClick(map) }
             })
         }
         if (data.kind == "MAP") data.text?.let { card.addView(small(context, it, Color.parseColor("#6B7280"))) }
@@ -369,13 +399,21 @@ class ChatMessagesAdapter(
                     ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
                 ).apply { topMargin = 10.dp(context) }
                 rowActions.forEachIndexed { index, action ->
-                    val color = Color.parseColor(if (action.style == "warn") "#B45309" else "#2F6FCB")
+                    val color = Color.parseColor(if (action.style == "warn") "#B45309" else "#1565C0")
                     val filled = action.style == "primary"
                     addView(TextView(context).apply {
                         text = action.label
-                        textSize = 13f
+                        textSize = 14f
                         typeface = Typeface.DEFAULT_BOLD
                         setTextColor(if (filled) Color.WHITE else color)
+                        action.icon?.let { res ->
+                            val icon = androidx.core.content.ContextCompat.getDrawable(context, res)?.mutate()
+                            icon?.setTint(if (filled) Color.WHITE else color)
+                            setCompoundDrawablesRelativeWithIntrinsicBounds(icon, null, null, null)
+                            compoundDrawablePadding = 4.dp(context)
+                            setPadding(8.dp(context), 0, 8.dp(context), 0)
+                            textSize = 13f
+                        }
                         gravity = Gravity.CENTER
                         background = if (filled) rounded(color, 20f, context)
                         else rounded(Color.WHITE, 20f, context, color)
@@ -402,7 +440,7 @@ class ChatMessagesAdapter(
                 setTextColor(if (step.status == "pending") Color.parseColor("#9CA3AF") else Color.WHITE)
                 background = when (step.status) {
                     "done" -> oval(Color.parseColor("#2E9E57"))
-                    "active" -> oval(Color.parseColor("#2F6FCB"))
+                    "active" -> oval(Color.parseColor("#1565C0"))
                     else -> GradientDrawable().apply {
                         shape = GradientDrawable.OVAL
                         setColor(Color.WHITE)
@@ -501,7 +539,10 @@ class ChatMessagesAdapter(
         LinearLayout(context).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
-            setPadding(0, 3.dp(context), 0, 3.dp(context))
+            setPadding(0, 6.dp(context), 0, 6.dp(context))
+            background = android.graphics.drawable.LayerDrawable(arrayOf(
+                android.graphics.drawable.ColorDrawable(Color.parseColor("#E5E7EB"))
+            )).apply { setLayerHeight(0, 1.dp(context)); setLayerGravity(0, Gravity.BOTTOM) }
             addView(TextView(context).apply {
                 text = row.tag
                 textSize = 12f
@@ -516,7 +557,7 @@ class ChatMessagesAdapter(
             })
             if (row.status.isNotEmpty()) {
                 addView(TextView(context).apply {
-                    text = if (row.status == "ok") "✓" else "⚑"
+                    text = if (row.status == "ok") "✓" else "¿?"
                     textSize = 13f
                     typeface = Typeface.DEFAULT_BOLD
                     setTextColor(Color.parseColor(if (row.status == "ok") "#2E7D32" else "#E65100"))

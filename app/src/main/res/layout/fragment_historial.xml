@@ -112,7 +112,8 @@
                     android:textStyle="bold"
                     android:textColor="@color/chip_text_selector"
                     app:chipBackgroundColor="@color/chip_selector_blue"
-                    app:chipStrokeWidth="0dp"
+                    app:chipStrokeWidth="1.5dp"
+                    app:chipStrokeColor="@color/chip_stroke_selector"
                     app:checkedIconVisible="false"
                     app:chipCornerRadius="21dp" />
 
@@ -126,7 +127,8 @@
                     android:textStyle="bold"
                     android:textColor="@color/chip_text_selector"
                     app:chipBackgroundColor="@color/chip_selector_blue"
-                    app:chipStrokeWidth="0dp"
+                    app:chipStrokeWidth="1.5dp"
+                    app:chipStrokeColor="@color/chip_stroke_selector"
                     app:checkedIconVisible="false"
                     app:chipCornerRadius="21dp" />
 
@@ -140,7 +142,8 @@
                     android:textStyle="bold"
                     android:textColor="@color/chip_text_selector"
                     app:chipBackgroundColor="@color/chip_selector_blue"
-                    app:chipStrokeWidth="0dp"
+                    app:chipStrokeWidth="1.5dp"
+                    app:chipStrokeColor="@color/chip_stroke_selector"
                     app:checkedIconVisible="false"
                     app:chipCornerRadius="21dp" />
 
@@ -154,7 +157,8 @@
                     android:textStyle="bold"
                     android:textColor="@color/chip_text_selector"
                     app:chipBackgroundColor="@color/chip_selector_blue"
-                    app:chipStrokeWidth="0dp"
+                    app:chipStrokeWidth="1.5dp"
+                    app:chipStrokeColor="@color/chip_stroke_selector"
                     app:checkedIconVisible="false"
                     app:chipCornerRadius="21dp" />
 

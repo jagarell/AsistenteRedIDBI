@@ -126,15 +126,22 @@ class TechnicalChatFragment : Fragment() {
                         R.id.action_chat_to_topologyEditor,
                         bundleOf("evaluationId" to viewModel.evaluationId.toString())
                     )
+                    "CONTINUE_DIAGNOSIS" -> viewModel.sendAnswer("GENERAR_MINUTA", "Continuar al diagnóstico")
                     "VIEW_PROPOSAL", "VIEW_ANALYSIS" -> navigateToDiagnosis()
+                }
+            },
+            onMapClick = { map ->
+                val evidences = viewModel.uiState.value.evidences
+                com.upc.asistenteredidbi.presentation.map.MapZoomDialog.show(requireContext(), map) { image ->
+                    evidences.firstOrNull { it.code == image.evidenceCode && it.scope == image.scope }
+                        ?.paths?.firstOrNull()
+                        ?.let { com.upc.asistenteredidbi.presentation.map.MapCanvasView.decodeThumb(it) }
                 }
             }
         )
 
         binding.rvMessages.apply {
-            layoutManager = LinearLayoutManager(requireContext()).apply {
-                stackFromEnd = true
-            }
+            layoutManager = LinearLayoutManager(requireContext())
             adapter = messagesAdapter
         }
     }
@@ -325,8 +332,16 @@ class TechnicalChatFragment : Fragment() {
         }
 
         val freeChat = state.completed
-        val needsTextInput = freeChat || (!confirming &&
+        val atSummary = type == TechnicalChatInputType.SUMMARY && !confirming
+        val needsTextInput = freeChat || atSummary || (!confirming &&
             (type == TechnicalChatInputType.TEXT || type == TechnicalChatInputType.NUMBER))
+        if (atSummary) {
+            // Como en el prototipo: el campo está, pero hasta el diagnóstico no recibe texto.
+            binding.etTextInput.isEnabled = false
+            binding.btnSubmit.isEnabled = false
+            binding.btnSubmit.alpha = 0.45f
+            binding.etTextInput.hint = "Pregúntale algo al asistente…"
+        }
         val showTextRow = needsTextInput
         binding.etTextInput.isVisible = needsTextInput
         binding.containerTextRow.isVisible = showTextRow
@@ -392,14 +407,8 @@ class TechnicalChatFragment : Fragment() {
                     viewModel.sendAnswer("", "Entendido")
                 }
 
-                TechnicalChatInputType.SUMMARY -> {
-                    addPrimaryAction("Generar minuta") {
-                        viewModel.sendAnswer("GENERAR_MINUTA", "Generar minuta")
-                    }
-                    addSecondaryAction("Generar mapa con IA") {
-                        viewModel.sendAnswer("GENERAR_MAPA_IA", "Generar mapa con IA")
-                    }
-                }
+                // El resumen se cierra con "Continuar al diagnóstico →" dentro de su tarjeta.
+                TechnicalChatInputType.SUMMARY -> Unit
 
                 else -> Unit
             }
@@ -449,20 +458,13 @@ class TechnicalChatFragment : Fragment() {
         )
     }
 
-    private fun addSecondaryAction(label: String, onClick: () -> Unit) {
-        binding.actionBar.addView(
-            actionButton(label, filled = false, onClick = onClick),
-            LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(48))
-        )
-    }
-
     private fun actionButton(
         label: String,
         filled: Boolean,
         iconRes: Int? = null,
         onClick: () -> Unit
     ): MaterialButton {
-        val blue = Color.parseColor("#2F6FCB")
+        val blue = Color.parseColor("#1565C0")
         return MaterialButton(
             requireContext(),
             null,
@@ -506,7 +508,7 @@ class TechnicalChatFragment : Fragment() {
 
     // ---- chips de respuesta rápida ---------------------------------------------------
     private fun addQuickReplyChip(label: String, filled: Boolean = false, compact: Boolean = false, onClick: () -> Unit) {
-        val blue = Color.parseColor("#2F6FCB")
+        val blue = Color.parseColor("#1565C0")
         val button = MaterialButton(
             requireContext(),
             null,
@@ -514,14 +516,22 @@ class TechnicalChatFragment : Fragment() {
         ).apply {
             text = label
             isAllCaps = false
-            textSize = if (compact) 12f else 13f
+            textSize = if (compact) 12f else 14f
+            typeface = android.graphics.Typeface.DEFAULT_BOLD
             cornerRadius = dp(18)
             insetTop = 0
             insetBottom = 0
             minHeight = 0
             minimumHeight = dp(if (compact) 30 else 36)
-            if (compact) setPadding(dp(12), 0, dp(12), 0)
-            if (filled) {
+            setPadding(dp(if (compact) 12 else 14), 0, dp(if (compact) 12 else 14), 0)
+            if (compact) {
+                // Sugerencias del chat libre: píldoras celestes sin borde, como en el prototipo.
+                backgroundTintList = ColorStateList.valueOf(Color.parseColor("#E8F1FD"))
+                strokeWidth = 0
+                setTextColor(blue)
+                typeface = android.graphics.Typeface.DEFAULT
+                textSize = 14f
+            } else if (filled) {
                 backgroundTintList = ColorStateList.valueOf(blue)
                 setTextColor(Color.WHITE)
             } else {
@@ -566,7 +576,7 @@ class TechnicalChatFragment : Fragment() {
                     }
                 }
                 // Como el prototipo: contorno azul con fondo blanco; marcado = relleno azul.
-                val blue = Color.parseColor("#2F6FCB")
+                val blue = Color.parseColor("#1565C0")
                 val checkedStates = arrayOf(intArrayOf(android.R.attr.state_checked), intArrayOf())
                 chipBackgroundColor = ColorStateList(checkedStates, intArrayOf(blue, Color.WHITE))
                 setTextColor(ColorStateList(checkedStates, intArrayOf(Color.WHITE, blue)))
@@ -678,22 +688,33 @@ class TechnicalChatFragment : Fragment() {
             state.isSending && state.node?.inputType == TechnicalChatInputType.EVIDENCE -> "Analizando imagen…"
             state.isSending && state.completed -> "Generando mapa…"
             state.completed && state.currentMap != null -> "Mapa generado"
-            state.completed -> "Evaluación completada"
+            state.completed || state.node?.inputType == TechnicalChatInputType.SUMMARY -> "Evaluación completada"
             else -> "Evaluación en curso"
         }
     }
+
+    /** Total estimado de preguntas del último nodo visto: sirve para el "N de N preguntas" final. */
+    private var lastQuestionTotal = 0
 
     private fun renderProgress(state: TechnicalChatUiState) {
         binding.progressEvaluation.progress = state.progressPercent
         binding.tvProgressPercent.text = "${state.progressPercent}%"
 
-        // Progreso por bloque (A..I): como las ramas del flujo cambian cuántas
-        // preguntas habrá, no se muestra "X de N".
+        // "Pregunta N de T": T es una estimación (los loops por caja/impresora/área
+        // la hacen crecer), por eso lleva "~" cuando todavía puede cambiar.
         val node = state.node
+        val atSummary = node?.inputType == TechnicalChatInputType.SUMMARY
+        if (node != null && node.questionTotal > 0) lastQuestionTotal = node.questionTotal
+        if (atSummary) {
+            binding.progressEvaluation.progress = 100
+            binding.tvProgressPercent.text = "100%"
+        }
         binding.tvQuestionCounter.text = when {
-            state.completed -> "Evaluación completa"
-            node != null && node.blockCount > 0 ->
-                "Bloque ${node.blockIndex} de ${node.blockCount} · ${node.blockLabel}"
+            state.completed || atSummary ->
+                if (lastQuestionTotal > 0) "$lastQuestionTotal de $lastQuestionTotal preguntas"
+                else "Evaluación completa"
+            node != null && node.questionTotal > 0 ->
+                "Pregunta ${node.questionNumber} de ~${node.questionTotal} · ${node.blockLabel}"
             else -> "Preparando evaluación"
         }
     }

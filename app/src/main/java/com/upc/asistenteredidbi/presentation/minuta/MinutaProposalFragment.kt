@@ -111,12 +111,12 @@ class MinutaProposalFragment : Fragment() {
             text = "✎ Editar mapa"
             textSize = 14f
             typeface = android.graphics.Typeface.DEFAULT_BOLD
-            setTextColor(android.graphics.Color.parseColor("#2F6FCB"))
+            setTextColor(android.graphics.Color.parseColor("#1565C0"))
             gravity = android.view.Gravity.CENTER
             background = android.graphics.drawable.GradientDrawable().apply {
                 setColor(android.graphics.Color.WHITE)
                 cornerRadius = 22 * density
-                setStroke((1.5f * density).toInt(), android.graphics.Color.parseColor("#2F6FCB"))
+                setStroke((1.5f * density).toInt(), android.graphics.Color.parseColor("#1565C0"))
             }
             layoutParams = android.widget.LinearLayout.LayoutParams(
                 android.view.ViewGroup.LayoutParams.MATCH_PARENT, (44 * density).toInt()
@@ -164,23 +164,7 @@ class MinutaProposalFragment : Fragment() {
     private fun openMapZoomDialog(
         map: com.upc.asistenteredidbi.domain.model.NetworkMap,
         provider: (com.upc.asistenteredidbi.domain.model.MapImageModel) -> android.graphics.Bitmap?
-    ) {
-        val dialog = Dialog(requireContext(), android.R.style.Theme_Black_NoTitleBar_Fullscreen)
-        dialog.setContentView(R.layout.dialog_topology_zoom)
-        dialog.findViewById<Toolbar>(R.id.toolbar).setNavigationOnClickListener { dialog.dismiss() }
-        val old = dialog.findViewById<TopologyGraphView>(R.id.topologyGraphViewZoom)
-        val host = old.parent as android.view.ViewGroup
-        old.isVisible = false
-        host.addView(
-            com.upc.asistenteredidbi.presentation.map.MapCanvasView(requireContext()).apply {
-                mode = com.upc.asistenteredidbi.presentation.map.MapCanvasView.Mode.VIEW
-                this.map = map
-                imageProvider = provider
-            },
-            android.view.ViewGroup.LayoutParams(android.view.ViewGroup.LayoutParams.MATCH_PARENT, android.view.ViewGroup.LayoutParams.MATCH_PARENT)
-        )
-        dialog.show()
-    }
+    ) = com.upc.asistenteredidbi.presentation.map.MapZoomDialog.show(requireContext(), map, provider)
 
     private fun setupRecyclerViews() {
         equipmentAdapter = ProposalEquipmentAdapter()

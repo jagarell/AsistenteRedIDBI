@@ -44,6 +44,22 @@ object EvidencePresentation {
         else -> code
     }
 
+    /** Nombre corto para la miniatura del resumen ("Ticket cocina", "ipconfig caja"). */
+    fun shortLabel(item: ChatEvidenceItem): String {
+        val area = item.title.substringAfter(" · ", "").lowercase()
+        fun withArea(base: String) = if (area.isNotBlank()) "$base $area" else base
+        return when (item.code) {
+            "E2" -> "Router"
+            "E3" -> "Etiqueta router"
+            "E4" -> withArea("ipconfig")
+            "E5" -> withArea("Impresora")
+            "E6" -> "Puntos de red"
+            "E7" -> "Extensión"
+            "E8" -> "Escáner IP"
+            else -> item.title.substringBefore(" · ")
+        }
+    }
+
     fun section(code: String): String = when (code) {
         "E1" -> "Conectividad"
         "E2", "E3" -> "Equipamiento y POS"
@@ -69,7 +85,8 @@ object EvidencePresentation {
         val code = prompt.evidenceCode.orEmpty()
         return ChatCard(
             kind = "EVIDENCE_PROMPT",
-            title = "Evidencia · ${title(code)}",
+            title = if (prompt.evidenceTotal > 0) "Evidencia ${prompt.evidenceNumber} de ${prompt.evidenceTotal} · ${title(code)}"
+            else "Evidencia · ${title(code)}",
             text = prompt.text,
             note = hint(code)
         )
@@ -152,22 +169,31 @@ object EvidencePresentation {
                 val devices = (x["dispositivos"] as? List<*>).orEmpty().filterIsInstance<Map<*, *>>()
                 val subnet = devices.mapNotNull { (it["ip"] as? String)?.split(".")?.take(3)?.joinToString(".") }
                     .groupingBy { it }.eachCount().maxByOrNull { it.value }?.key
-                val shown = devices.take(7).map { d ->
-                    val ip = d["ip"] as? String
-                    val name = (d["nombre"] as? String)?.takeIf { it.isNotBlank() }
-                        ?: (d["fabricante"] as? String)?.takeIf { it.isNotBlank() } ?: "Sin nombre"
+                fun nameOf(d: Map<*, *>): String? = (d["etiqueta"] as? String)?.takeIf { it.isNotBlank() }
+                    ?: (d["nombre"] as? String)?.takeIf { it.isNotBlank() }
+                    ?: (d["fabricante"] as? String)?.takeIf { it.isNotBlank() }
+                // Primero lo documentado, luego lo que hay que aclarar; los que no
+                // traen ni nombre ni fabricante se resumen en una línea.
+                val named = devices.filter { nameOf(it) != null }
+                    .sortedBy { if (it["documentado"] == false) 1 else 0 }
+                val shown = named.take(7).map { d ->
                     ChatListRow(
-                        tag = ip?.substringAfterLast('.')?.let { ".$it" }.orEmpty(),
-                        label = name,
+                        tag = (d["ip"] as? String)?.substringAfterLast('.')?.let { ".$it" }.orEmpty(),
+                        label = nameOf(d).orEmpty(),
                         status = if (d["documentado"] == false) "warn" else "ok"
                     )
                 }
+                val unnamed = devices.size - named.size
                 ChatCard(
                     kind = "RESULT",
                     title = if (devices.isEmpty()) "Escáner de IP" else "${devices.size} equipos" + (subnet?.let { " en $it.0/24" } ?: ""),
                     badge = "+ IA", list = shown,
                     text = description.takeIf { devices.isEmpty() },
-                    footer = if (devices.size > shown.size) "+ ${devices.size - shown.size} más en la captura" else null,
+                    footer = when {
+                        unnamed > 0 -> "+ $unnamed sin nombre (probablemente celulares)"
+                        named.size > shown.size -> "+ ${named.size - shown.size} más en la captura"
+                        else -> null
+                    },
                     warnings = warnings
                 )
             }
@@ -261,18 +287,40 @@ object EvidencePresentation {
         val x = result.extracted
         fun str(key: String): String? = (x[key] as? String)?.takeIf { it.isNotBlank() }
         fun num(key: String): String? = (x[key] as? Number)?.let { fmt(it.toDouble()) }
+        // Lo que va entre * se pinta destacado en la galería.
+        fun hi(v: String?) = v?.let { "*$it*" }
         val text = when (result.code) {
-            "E1" -> listOfNotNull(
-                num("bajadaMbps")?.let { "$it ↓" }, num("subidaMbps")?.let { "$it ↑ Mbps" }, num("pingMs")?.let { "$it ms" }
+            "E1" -> {
+                val load = listOfNotNull(num("latenciaBajadaMs"), num("latenciaSubidaMs"))
+                listOfNotNull(
+                    listOfNotNull(num("bajadaMbps")?.let { "$it ↓" }, num("subidaMbps")?.let { "$it ↑ Mbps" }).joinToString(" · ")
+                        .takeIf { it.isNotBlank() }?.let { hi(it) },
+                    num("pingMs")?.let { hi("$it ms") },
+                    if (load.size == 2) "⚠ ${load[0]}/${load[1]} ms con carga" else null
+                ).joinToString(" · ")
+            }
+            "E3" -> listOfNotNull(
+                hi(joined(str("marca"), str("modelo"))), hi(str("ipGestion")), "credenciales ocultas"
             ).joinToString(" · ")
-            "E3" -> listOfNotNull(joined(str("marca"), str("modelo")), str("ipGestion"), "credenciales ocultas")
-                .joinToString(" · ")
-            "E4" -> listOfNotNull(str("ipv4"), str("adaptador")).joinToString(" · ")
-            "E5" -> listOfNotNull(joined(str("marca"), str("modelo")), str("ip")).joinToString(" · ")
-            "E8" -> "${(x["dispositivos"] as? List<*>)?.size ?: 0} dispositivos"
+            "E4" -> listOfNotNull(
+                hi(listOfNotNull(str("ipv4")?.let { ".${it.substringAfterLast('.')}" },
+                    str("adaptador")?.let { "por $it" }).joinToString(" ")),
+                if (x["ethernetDesconectado"] == true) "Ethernet libre" else null
+            ).filter { it.isNotBlank() && it != "**" }.joinToString(" · ")
+            "E5" -> listOfNotNull(
+                hi(joined(str("marca"), str("modelo"))),
+                hi(str("ip")?.let { ".${it.substringAfterLast('.')}" + when (x["dhcp"]) { false -> " fija"; true -> " DHCP"; else -> "" } })
+            ).joinToString(" · ")
+            "E8" -> hi("${(x["dispositivos"] as? List<*>)?.size ?: 0} dispositivos").orEmpty()
             else -> ""
         }
-        return text.ifBlank { str("descripcion").orEmpty() }
+        return text.ifBlank { shortSentence(str("descripcion").orEmpty()) }
+    }
+
+    /** Primera frase de lo que describió la IA, recortada para caber en la galería. */
+    private fun shortSentence(text: String): String {
+        val first = text.substringBefore(". ").trim().trimEnd('.')
+        return if (first.length <= 70) first else first.take(67).trimEnd() + "…"
     }
 
     private fun joined(a: String?, b: String?, sep: String = " "): String? =
