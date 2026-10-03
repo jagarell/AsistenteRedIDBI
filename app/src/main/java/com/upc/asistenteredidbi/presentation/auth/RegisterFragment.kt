@@ -77,7 +77,6 @@ class RegisterFragment : Fragment() {
                 binding.tilConfirmPassword.error = "Las contraseñas no coinciden"
 
             else -> {
-                val role = if (binding.rbSupervisor.isChecked) "SUPERVISOR" else "TECNICO"
                 viewModel.register(
                     fullName = name,
                     email = email,
@@ -85,8 +84,7 @@ class RegisterFragment : Fragment() {
                     company = company,
                     city = "Lima",
                     password = password,
-                    confirmPassword = confirmPassword,
-                    role = role
+                    confirmPassword = confirmPassword
                 )
             }
         }

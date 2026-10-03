@@ -74,6 +74,16 @@ class AssistantHomeFragment : Fragment() {
                         )
                     }
 
+                    state.resumeEvaluationId?.let { evaluationId ->
+                        viewModel.consumeResumeEvaluationId()
+                        findNavController().navigate(
+                            R.id.action_home_to_chat,
+                            Bundle().apply { putString("evaluationId", evaluationId.toString()) }
+                        )
+                    }
+
+                    if (state.confirmDiscardPrevious) showDiscardDialog()
+
                     state.errorMessage?.let { message ->
                         Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
                         viewModel.clearError()
@@ -119,13 +129,10 @@ class AssistantHomeFragment : Fragment() {
             findNavController().navigate(R.id.action_home_to_perfil)
         }
 
-        binding.cardNewEvaluation.setOnClickListener {
-            viewModel.startNewEvaluation()
-        }
+        binding.cardNewEvaluation.setOnClickListener { requestNewEvaluation() }
 
-        binding.cardContinue.setOnClickListener {
-            findNavController().navigate(R.id.action_home_to_minutas)
-        }
+        // Retoma el chat donde se quedó; solo "Nueva Evaluación" lo borra.
+        binding.cardContinue.setOnClickListener { viewModel.continuePrevious() }
 
         binding.cardHistorial.setOnClickListener {
             findNavController().navigate(R.id.action_home_to_historial)
@@ -136,7 +143,29 @@ class AssistantHomeFragment : Fragment() {
         }
     }
 
+    /** También lo usa el menú lateral. */
+    fun requestNewEvaluation() = viewModel.requestNewEvaluation()
+
+    private var discardDialog: androidx.appcompat.app.AlertDialog? = null
+
+    private fun showDiscardDialog() {
+        if (discardDialog?.isShowing == true) return
+        discardDialog = androidx.appcompat.app.AlertDialog.Builder(requireContext())
+            .setTitle("Empezar una evaluación nueva")
+            .setMessage("Tienes una evaluación previa guardada. Si empiezas una nueva, el chat anterior se borra. ¿Quieres continuar la anterior o empezar de cero?")
+            .setPositiveButton("Empezar nueva") { _, _ -> viewModel.discardPreviousAndStartNew() }
+            .setNeutralButton("Continuar la anterior") { _, _ ->
+                viewModel.cancelDiscardPrevious()
+                viewModel.continuePrevious()
+            }
+            .setNegativeButton("Cancelar") { _, _ -> viewModel.cancelDiscardPrevious() }
+            .setOnCancelListener { viewModel.cancelDiscardPrevious() }
+            .show()
+    }
+
     override fun onDestroyView() {
+        discardDialog?.dismiss()
+        discardDialog = null
         super.onDestroyView()
         _binding = null
     }

@@ -62,9 +62,9 @@ class MinutaRecordAdapter(
                     binding.tvStatus.setBackgroundResource(R.drawable.bg_status_draft)
                 }
                 MinutaRecordStatus.COMPLETA -> {
-                    binding.tvStatus.text = "Completa"
-                    binding.tvStatus.setTextColor(context.getColor(R.color.purple_status))
-                    binding.tvStatus.setBackgroundResource(R.drawable.bg_status_analysis)
+                    binding.tvStatus.text = "Completada"
+                    binding.tvStatus.setTextColor(context.getColor(R.color.primary_blue))
+                    binding.tvStatus.setBackgroundResource(R.drawable.bg_status_sent)
                 }
                 MinutaRecordStatus.VALIDADA -> {
                     binding.tvStatus.text = "Validada"

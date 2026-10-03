@@ -46,8 +46,7 @@ class ConfiguracionFragment : Fragment() {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.uiState.collect { state ->
                     state.user?.let { user ->
-                        binding.rowMiPerfil.tvRowSubtitle.visibility = View.VISIBLE
-                        binding.rowMiPerfil.tvRowSubtitle.text = user.fullName
+                        // "Mi Perfil" va sin subtítulo, como en el prototipo.
                         binding.rowEmpresa.tvRowSubtitle.visibility = View.VISIBLE
                         binding.rowEmpresa.tvRowSubtitle.text = user.company?.takeIf { it.isNotBlank() } ?: "—"
                         binding.rowCorreo.tvRowSubtitle.visibility = View.VISIBLE

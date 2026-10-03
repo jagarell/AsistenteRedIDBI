@@ -2,6 +2,8 @@ package com.upc.asistenteredidbi.presentation.historial
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.upc.asistenteredidbi.data.session.ChatLocalFiles
+import com.upc.asistenteredidbi.data.session.ChatProgressStore
 import com.upc.asistenteredidbi.domain.model.EvaluationFilters
 import com.upc.asistenteredidbi.domain.model.EvaluationStatus
 import com.upc.asistenteredidbi.domain.model.EvaluationSummaryItem
@@ -40,7 +42,9 @@ data class HistorialUiState(
 @HiltViewModel
 class HistorialViewModel @Inject constructor(
     private val listEvaluationsUseCase: ListEvaluationsUseCase,
-    private val startEvaluationUseCase: StartEvaluationUseCase
+    private val startEvaluationUseCase: StartEvaluationUseCase,
+    private val chatProgressStore: ChatProgressStore,
+    private val chatLocalFiles: ChatLocalFiles
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HistorialUiState())
@@ -58,7 +62,24 @@ class HistorialViewModel @Inject constructor(
     fun onSearchQueryChange(value: String) = _uiState.update { it.copy(searchQuery = value) }
     fun onTabSelected(tab: HistorialTab) = _uiState.update { it.copy(selectedTab = tab) }
 
-    fun startNewEvaluation() {
+    /** El FAB "Nueva evaluación": si hay un chat previo guardado se pide confirmar antes de borrarlo. */
+    fun requestNewEvaluation(confirmDiscard: () -> Unit) {
+        viewModelScope.launch {
+            if (chatProgressStore.resumableEvaluationId() != null) confirmDiscard() else startNewEvaluation()
+        }
+    }
+
+    fun discardPreviousAndStartNew() {
+        viewModelScope.launch {
+            chatProgressStore.resumableEvaluationId()?.let { previous ->
+                chatProgressStore.clear(previous)
+                chatLocalFiles.clear(previous)
+            }
+            startNewEvaluation()
+        }
+    }
+
+    private fun startNewEvaluation() {
         if (_uiState.value.isStartingEvaluation) return
 
         viewModelScope.launch {

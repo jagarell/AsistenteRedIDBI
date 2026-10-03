@@ -2,6 +2,8 @@ package com.upc.asistenteredidbi.presentation.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.upc.asistenteredidbi.data.session.ChatLocalFiles
+import com.upc.asistenteredidbi.data.session.ChatProgressStore
 import com.upc.asistenteredidbi.domain.model.MinutaRecord
 import com.upc.asistenteredidbi.domain.model.ProfileStats
 import com.upc.asistenteredidbi.domain.usecase.GetProfileStatusUseCase
@@ -25,7 +27,12 @@ data class AssistantHomeUiState(
     val errorMessage: String? = null,
 
     val isStartingEvaluation: Boolean = false,
-    val newEvaluationId: Long? = null
+    val newEvaluationId: Long? = null,
+
+    /** Evaluación con chat guardado que "Continuar" debe retomar. */
+    val resumeEvaluationId: Long? = null,
+    /** "Nueva Evaluación" con un chat previo guardado: hay que confirmar antes de borrarlo. */
+    val confirmDiscardPrevious: Boolean = false
 )
 
 @HiltViewModel
@@ -33,7 +40,9 @@ class AssistantHomeViewModel @Inject constructor(
     private val getProfileUseCase: GetProfileUseCase,
     private val getProfileStatusUseCase: GetProfileStatusUseCase,
     private val listMinutasUseCase: ListMinutasUseCase,
-    private val startEvaluationUseCase: StartEvaluationUseCase
+    private val startEvaluationUseCase: StartEvaluationUseCase,
+    private val chatProgressStore: ChatProgressStore,
+    private val chatLocalFiles: ChatLocalFiles
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AssistantHomeUiState())
@@ -70,9 +79,54 @@ class AssistantHomeViewModel @Inject constructor(
         }
     }
 
+    /** "Continuar · Evaluación previa": retoma el chat donde se quedó. */
+    fun continuePrevious() {
+        viewModelScope.launch {
+            val id = chatProgressStore.resumableEvaluationId()
+            if (id == null) {
+                _uiState.update {
+                    it.copy(errorMessage = "No tienes una evaluación en curso. Toca «Nueva Evaluación» para empezar una.")
+                }
+            } else {
+                _uiState.update { it.copy(resumeEvaluationId = id) }
+            }
+        }
+    }
+
+    fun consumeResumeEvaluationId() {
+        _uiState.update { it.copy(resumeEvaluationId = null) }
+    }
+
+    /** "Nueva Evaluación": si hay un chat previo guardado, pide confirmar porque se borra. */
+    fun requestNewEvaluation() {
+        viewModelScope.launch {
+            if (chatProgressStore.resumableEvaluationId() != null) {
+                _uiState.update { it.copy(confirmDiscardPrevious = true) }
+            } else {
+                startNewEvaluation()
+            }
+        }
+    }
+
+    fun cancelDiscardPrevious() {
+        _uiState.update { it.copy(confirmDiscardPrevious = false) }
+    }
+
+    /** Borra el chat anterior (mensajes, fotos y estados) y arranca una evaluación nueva. */
+    fun discardPreviousAndStartNew() {
+        viewModelScope.launch {
+            chatProgressStore.resumableEvaluationId()?.let { previous ->
+                chatProgressStore.clear(previous)
+                chatLocalFiles.clear(previous)
+            }
+            _uiState.update { it.copy(confirmDiscardPrevious = false) }
+            startNewEvaluation()
+        }
+    }
+
     /** "Nueva Evaluación": crea la evaluación real en el gateway antes de entrar al chat,
      *  para que no todas las evaluaciones nuevas terminen compartiendo el mismo ID. */
-    fun startNewEvaluation() {
+    private fun startNewEvaluation() {
         if (_uiState.value.isStartingEvaluation) return
 
         viewModelScope.launch {

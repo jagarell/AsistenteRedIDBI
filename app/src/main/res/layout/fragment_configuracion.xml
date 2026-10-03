@@ -48,9 +48,9 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:paddingStart="20dp"
-            android:paddingEnd="20dp"
-            android:paddingTop="20dp">
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:paddingTop="12dp">
 
             <!-- CUENTA -->
             <TextView style="@style/SettingsSectionLabel" android:text="CUENTA" />
@@ -67,11 +67,12 @@
                     android:id="@+id/rowEmpresa"
                     layout="@layout/item_settings_row" />
 
-                <View style="@style/SettingsRowDivider" />
+                <View style="@style/SettingsRowDivider" android:visibility="gone" />
 
                 <include
                     android:id="@+id/rowCorreo"
-                    layout="@layout/item_settings_row" />
+                    layout="@layout/item_settings_row"
+                    android:visibility="gone" />
             </LinearLayout>
 
             <!-- SEGURIDAD -->
@@ -104,15 +105,19 @@
 
                     <com.google.android.material.materialswitch.MaterialSwitch
                         android:id="@+id/switchTwoFactor"
+                        app:thumbTint="@color/switch_thumb"
+                        app:trackTint="@color/switch_track"
+                        app:trackDecorationTint="@android:color/transparent"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content" />
                 </LinearLayout>
 
-                <View style="@style/SettingsRowDivider" />
+                <View style="@style/SettingsRowDivider" android:visibility="gone" />
 
                 <include
                     android:id="@+id/rowDispositivos"
-                    layout="@layout/item_settings_row" />
+                    layout="@layout/item_settings_row"
+                    android:visibility="gone" />
             </LinearLayout>
 
             <!-- NOTIFICACIONES -->
@@ -139,6 +144,9 @@
 
                     <com.google.android.material.materialswitch.MaterialSwitch
                         android:id="@+id/switchPush"
+                        app:thumbTint="@color/switch_thumb"
+                        app:trackTint="@color/switch_track"
+                        app:trackDecorationTint="@android:color/transparent"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content" />
                 </LinearLayout>
@@ -164,6 +172,9 @@
 
                     <com.google.android.material.materialswitch.MaterialSwitch
                         android:id="@+id/switchEmail"
+                        app:thumbTint="@color/switch_thumb"
+                        app:trackTint="@color/switch_track"
+                        app:trackDecorationTint="@android:color/transparent"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content" />
                 </LinearLayout>
@@ -189,15 +200,18 @@
 
                     <com.google.android.material.materialswitch.MaterialSwitch
                         android:id="@+id/switchSystemAlerts"
+                        app:thumbTint="@color/switch_thumb"
+                        app:trackTint="@color/switch_track"
+                        app:trackDecorationTint="@android:color/transparent"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content" />
                 </LinearLayout>
             </LinearLayout>
 
             <!-- APLICACIÓN -->
-            <TextView style="@style/SettingsSectionLabel" android:text="APLICACIÓN" />
+            <TextView style="@style/SettingsSectionLabel" android:text="APLICACIÓN" android:visibility="gone" />
 
-            <LinearLayout style="@style/SettingsCard">
+            <LinearLayout style="@style/SettingsCard" android:visibility="gone">
 
                 <include
                     android:id="@+id/rowIdioma"

@@ -832,10 +832,10 @@ class TechnicalChatViewModel @Inject constructor(
                 contentJson = contentJson
             ).onSuccess { minuta ->
                 _uiState.update { it.copy(minutaId = minuta.id) }
-                // La propuesta ya quedó guardada como minuta: desde aquí en
-                // adelante la pantalla de Propuesta Técnica es la fuente de
-                // verdad, así que ya no hace falta poder retomar el chat.
-                chatProgressStore.clear(evaluationId)
+                // El chat queda guardado aunque la minuta ya exista: "Continuar" lo
+                // retoma tal como se dejó (diagnóstico, mapa y cambios incluidos).
+                // Solo "Nueva Evaluación" lo descarta.
+                persistProgress()
             }
             // Si falla, se deja minutaId=null a propósito: el técnico puede
             // completar la evaluación de todas formas; el progreso sigue

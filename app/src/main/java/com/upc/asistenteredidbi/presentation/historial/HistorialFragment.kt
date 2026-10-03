@@ -60,7 +60,16 @@ class HistorialFragment : Fragment() {
     private fun setupClicks() {
         binding.btnBack.setOnClickListener { findNavController().navigateUp() }
 
-        binding.fabNewEvaluation.setOnClickListener { viewModel.startNewEvaluation() }
+        binding.fabNewEvaluation.setOnClickListener {
+            viewModel.requestNewEvaluation {
+                androidx.appcompat.app.AlertDialog.Builder(requireContext())
+                    .setTitle("Empezar una evaluación nueva")
+                    .setMessage("Tienes una evaluación previa guardada. Si empiezas una nueva, el chat anterior se borra.")
+                    .setPositiveButton("Empezar nueva") { _, _ -> viewModel.discardPreviousAndStartNew() }
+                    .setNegativeButton("Cancelar", null)
+                    .show()
+            }
+        }
 
         binding.etSearch.addTextChangedListener { text ->
             viewModel.onSearchQueryChange(text?.toString().orEmpty())

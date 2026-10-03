@@ -44,34 +44,32 @@ class HistoryAdapter(
             binding.tvStatus.text = item.status.label
             binding.progressHistory.progress = item.progress
             binding.tvProgress.text = "${item.progress}%"
+            // La barra va siempre en azul, como en el prototipo; el estado lo da la etiqueta.
+            binding.progressHistory.progressTintList = binding.root.context.getColorStateList(R.color.primary_blue)
 
             when (item.status) {
                 HistoryStatus.COMPLETADO -> {
                     binding.tvStatus.setTextColor(binding.root.context.getColor(R.color.success_green))
                     binding.tvStatus.setBackgroundResource(R.drawable.bg_status_completed)
-                    binding.progressHistory.progressTintList =
-                        binding.root.context.getColorStateList(R.color.primary_blue)
+                    
                 }
 
                 HistoryStatus.BORRADOR -> {
                     binding.tvStatus.setTextColor(binding.root.context.getColor(R.color.orange_status))
                     binding.tvStatus.setBackgroundResource(R.drawable.bg_status_draft)
-                    binding.progressHistory.progressTintList =
-                        binding.root.context.getColorStateList(R.color.orange_status)
+                    
                 }
 
                 HistoryStatus.ENVIADO -> {
                     binding.tvStatus.setTextColor(binding.root.context.getColor(R.color.primary_blue))
                     binding.tvStatus.setBackgroundResource(R.drawable.bg_status_sent)
-                    binding.progressHistory.progressTintList =
-                        binding.root.context.getColorStateList(R.color.success_green)
+                    
                 }
 
                 HistoryStatus.EN_ANALISIS -> {
                     binding.tvStatus.setTextColor(binding.root.context.getColor(R.color.purple_status))
                     binding.tvStatus.setBackgroundResource(R.drawable.bg_status_analysis)
-                    binding.progressHistory.progressTintList =
-                        binding.root.context.getColorStateList(R.color.orange_status)
+                    
                 }
             }
 

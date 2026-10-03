@@ -60,12 +60,29 @@ class ChatProgressStore @Inject constructor(
     suspend fun save(evaluationId: Long, snapshot: ChatProgressSnapshot) {
         context.chatProgressDataStore.edit {
             it[keyFor(evaluationId)] = adapter.toJson(snapshot)
+            it[LAST_EVALUATION_KEY] = evaluationId.toString()
         }
     }
 
     suspend fun clear(evaluationId: Long) {
-        context.chatProgressDataStore.edit { it.remove(keyFor(evaluationId)) }
+        context.chatProgressDataStore.edit {
+            it.remove(keyFor(evaluationId))
+            if (it[LAST_EVALUATION_KEY] == evaluationId.toString()) it.remove(LAST_EVALUATION_KEY)
+        }
+    }
+
+    /**
+     * Evaluación cuyo chat se puede retomar con "Continuar": la última con progreso
+     * guardado. Solo "Nueva Evaluación" la descarta (ver [clear]).
+     */
+    suspend fun resumableEvaluationId(): Long? {
+        val id = context.chatProgressDataStore.data.first()[LAST_EVALUATION_KEY]?.toLongOrNull() ?: return null
+        return id.takeIf { load(it) != null }
     }
 
     private fun keyFor(evaluationId: Long) = stringPreferencesKey("chat_progress_$evaluationId")
+
+    private companion object {
+        val LAST_EVALUATION_KEY = stringPreferencesKey("last_evaluation_id")
+    }
 }

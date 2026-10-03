@@ -78,7 +78,13 @@ class MainActivity : AppCompatActivity() {
         }
 
         drawer.navInicio.setOnClickListener { closeDrawer() }
-        drawer.navNuevaEvaluacion.setOnClickListener { navigateFromDrawer(R.id.action_home_to_chat) }
+        drawer.navNuevaEvaluacion.setOnClickListener {
+            closeDrawer()
+            // Mismo flujo que la tarjeta "Nueva Evaluación" del inicio (crea la evaluación y confirma si hay un chat previo).
+            val host = supportFragmentManager.findFragmentById(R.id.nav_host_fragment)
+            (host?.childFragmentManager?.primaryNavigationFragment as? com.upc.asistenteredidbi.presentation.home.AssistantHomeFragment)
+                ?.requestNewEvaluation()
+        }
         drawer.navHistorial.setOnClickListener { navigateFromDrawer(R.id.action_home_to_historial) }
         drawer.navPropuestas.setOnClickListener { navigateFromDrawer(R.id.action_home_to_minutas) }
         drawer.navConfiguracion.setOnClickListener { navigateFromDrawer(R.id.action_home_to_config) }
