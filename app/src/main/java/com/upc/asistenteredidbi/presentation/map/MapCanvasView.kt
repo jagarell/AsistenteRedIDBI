@@ -231,7 +231,7 @@ class MapCanvasView @JvmOverloads constructor(
             canvas.drawCircle(cx, cy, nodeRadius + 5f * d, ringPaint)
             ringPaint.pathEffect = null
         }
-        canvas.drawText(n.label.take(if (staticPreview) 12 else 26), cx, cy + nodeRadius + 14f * d, labelPaint)
+        canvas.drawText(n.label.take(if (staticPreview) 14 else 26), cx, cy + nodeRadius + 14f * d, labelPaint)
     }
 
     private fun drawText(canvas: Canvas, t: MapTextModel) {
