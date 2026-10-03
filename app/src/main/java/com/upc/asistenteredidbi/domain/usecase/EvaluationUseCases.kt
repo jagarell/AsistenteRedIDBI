@@ -23,6 +23,11 @@ class ListEvaluationsUseCase @Inject constructor(private val repository: Evaluat
         repository.listEvaluations(filters)
 }
 
+/** Anula una evaluación en borrador (Historial). */
+class AnnulEvaluationUseCase @Inject constructor(private val repository: EvaluationRepository) {
+    suspend operator fun invoke(evaluationId: String): Result<Unit> = repository.annulEvaluation(evaluationId)
+}
+
 class GetEvaluationUseCase @Inject constructor(private val repository: EvaluationRepository) {
     suspend operator fun invoke(evaluationId: String): Result<Evaluation> = repository.getEvaluation(evaluationId)
 }

@@ -24,5 +24,8 @@ interface EvaluationRepository {
 
     suspend fun getEvaluation(evaluationId: String): Result<Evaluation>
 
+    /** Anula una evaluación en borrador; el gateway rechaza cualquier otro estado. */
+    suspend fun annulEvaluation(evaluationId: String): Result<Unit>
+
     suspend fun analyzeEvaluation(evaluationId: Long, answers: Map<String, String> = emptyMap()): Result<AnalysisResponseDto>
 }

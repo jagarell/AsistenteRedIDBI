@@ -441,7 +441,8 @@ class TechnicalChatFragment : Fragment() {
             pickImages.launch("image/*")
         }, LinearLayout.LayoutParams(0, dp(46), 1f).apply { marginStart = dp(10) })
         bar.addView(row)
-        bar.addView(TextView(requireContext()).apply {
+        // La foto general del local es obligatoria: no hay "Omitir".
+        if (node?.skippable != false) bar.addView(TextView(requireContext()).apply {
             text = "Omitir por ahora · la pediré al final"
             textSize = 13f
             setTextColor(Color.parseColor("#6B7280"))

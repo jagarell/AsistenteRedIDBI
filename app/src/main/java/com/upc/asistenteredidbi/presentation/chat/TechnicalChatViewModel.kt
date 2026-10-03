@@ -232,7 +232,7 @@ class TechnicalChatViewModel @Inject constructor(
         val observed = evidences.filter { it.status == "warn" }
         val warnings = buildList {
             if (missing.isNotEmpty()) {
-                add("Falta: ${missing.joinToString(", ") { it.title }}. Quedan como pendientes en la minuta.")
+                add("Falta: ${missing.joinToString(", ") { it.title }}. Quedan pendientes: súbelas con «Resolver» cuando puedas (no van en el PDF).")
             }
             if (observed.isNotEmpty()) {
                 add("Con observaciones: ${observed.joinToString(", ") { it.title }}.")
@@ -468,7 +468,7 @@ class TechnicalChatViewModel @Inject constructor(
     fun skipEvidence() {
         val state = _uiState.value
         val node = state.node ?: return
-        if (node.inputType != TechnicalChatInputType.EVIDENCE) return
+        if (node.inputType != TechnicalChatInputType.EVIDENCE || !node.skippable) return
         val code = node.evidenceCode.orEmpty()
         val flowState = state.flowState ?: return
         if (state.isSending || state.isLoading || state.pending != null) return

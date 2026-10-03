@@ -24,6 +24,10 @@ interface EvaluationApiService {
         @Query("date_to") dateTo: String? = null
     ): List<EvaluationListItemDto>
 
+    /** Anula una evaluación en borrador (solo se permite desde BORRADOR). */
+    @POST("api/evaluations/{evaluationId}/anular")
+    suspend fun annulEvaluation(@Path("evaluationId") evaluationId: String): EvaluationDto
+
     @GET("api/evaluations/{evaluationId}")
     suspend fun getEvaluation(@Path("evaluationId") evaluationId: String): EvaluationDto
 

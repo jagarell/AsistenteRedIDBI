@@ -44,6 +44,11 @@ class EvaluationRepositoryImpl @Inject constructor(
         api.getEvaluation(evaluationId).toDomain()
     }
 
+    override suspend fun annulEvaluation(evaluationId: String): Result<Unit> = safeCall {
+        api.annulEvaluation(evaluationId)
+        Unit
+    }
+
     private fun statusToApiValue(status: EvaluationStatus): String = when (status) {
         EvaluationStatus.BORRADOR -> "borrador"
         EvaluationStatus.EN_PROGRESO -> "en_progreso"

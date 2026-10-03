@@ -44,6 +44,8 @@ data class ChatNodeDto(
     val evidenceTotal: Int? = null,
     val defaultValue: String? = null,
     val evidenceCode: String? = null,
+    /** false en las evidencias obligatorias (la foto general del local). */
+    val skippable: Boolean? = null,
     val maxFiles: Int? = null,
     val severity: String? = null,
     val context: String? = null,

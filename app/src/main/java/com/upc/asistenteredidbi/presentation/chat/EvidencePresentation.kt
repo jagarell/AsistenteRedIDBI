@@ -77,6 +77,7 @@ object EvidencePresentation {
         "E4" -> "Leeré la IP, la puerta de enlace y el tipo de adaptador."
         "E5" -> "Leeré el modelo, la IP, la MAC y el puerto."
         "E8" -> "Leeré cada dispositivo con su IP, MAC y fabricante."
+        "E9" -> "Es obligatoria: sin la foto del local no se genera la minuta."
         else -> null
     }
 

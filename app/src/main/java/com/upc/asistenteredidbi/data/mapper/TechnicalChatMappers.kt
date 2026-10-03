@@ -63,6 +63,7 @@ fun ChatNodeDto.toDomain(): ChatNodePrompt = ChatNodePrompt(
     evidenceTotal = evidenceTotal ?: 0,
     defaultValue = defaultValue,
     evidenceCode = evidenceCode,
+    skippable = skippable ?: true,
     maxFiles = maxFiles ?: 3,
     severity = severity,
     // Moshi decodifica los números de un Map<String, Any?> como Double.

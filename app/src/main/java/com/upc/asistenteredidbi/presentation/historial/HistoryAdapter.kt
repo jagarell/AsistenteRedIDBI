@@ -33,6 +33,8 @@ class HistoryAdapter(
 
     override fun getItemCount(): Int = items.size
 
+    fun itemAt(position: Int): HistoryItem? = items.getOrNull(position)
+
     inner class VH(private val binding: ItemHistoryBinding) :
         RecyclerView.ViewHolder(binding.root) {
 

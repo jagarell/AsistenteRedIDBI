@@ -34,6 +34,8 @@ data class ChatNodePrompt(
     /** Prefill (ej. fecha de hoy en P06, técnico en P07). */
     val defaultValue: String? = null,
     val evidenceCode: String? = null,
+    /** false en las evidencias obligatorias: no se muestra "Omitir". */
+    val skippable: Boolean = true,
     val maxFiles: Int = 3,
     /** Para avisos: "warning" / "info". */
     val severity: String? = null,

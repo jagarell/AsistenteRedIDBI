@@ -7,6 +7,7 @@ import com.upc.asistenteredidbi.data.session.ChatProgressStore
 import com.upc.asistenteredidbi.domain.model.EvaluationFilters
 import com.upc.asistenteredidbi.domain.model.EvaluationStatus
 import com.upc.asistenteredidbi.domain.model.EvaluationSummaryItem
+import com.upc.asistenteredidbi.domain.usecase.AnnulEvaluationUseCase
 import com.upc.asistenteredidbi.domain.usecase.ListEvaluationsUseCase
 import com.upc.asistenteredidbi.domain.usecase.StartEvaluationUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -31,10 +32,20 @@ data class HistorialUiState(
     val allEvaluations: List<EvaluationSummaryItem> = emptyList(),
     val errorMessage: String? = null,
     val isStartingEvaluation: Boolean = false,
-    val newEvaluationId: Long? = null
+    val newEvaluationId: Long? = null,
+    /** Filtro por fecha de creación (inclusive), "yyyy-MM-dd"; null = sin filtro. */
+    val dateFrom: String? = null,
+    val dateTo: String? = null
 ) {
+    /** Lo que entra por el filtro de fecha: base de los contadores y de la lista. */
+    val inDateRange: List<EvaluationSummaryItem>
+        get() = allEvaluations.sortedByDescending { it.createdAt }.filter { item ->
+            val day = item.createdAt.take(10)
+            (dateFrom == null || day >= dateFrom) && (dateTo == null || day <= dateTo)
+        }
+
     val filteredEvaluations: List<EvaluationSummaryItem>
-        get() = allEvaluations
+        get() = inDateRange
             .filter { selectedTab.status == null || it.status == selectedTab.status }
             .filter { searchQuery.isBlank() || it.establishmentName.contains(searchQuery, ignoreCase = true) || it.clientName?.contains(searchQuery, ignoreCase = true) == true }
 }
@@ -43,6 +54,7 @@ data class HistorialUiState(
 class HistorialViewModel @Inject constructor(
     private val listEvaluationsUseCase: ListEvaluationsUseCase,
     private val startEvaluationUseCase: StartEvaluationUseCase,
+    private val annulEvaluationUseCase: AnnulEvaluationUseCase,
     private val chatProgressStore: ChatProgressStore,
     private val chatLocalFiles: ChatLocalFiles
 ) : ViewModel() {
@@ -61,6 +73,29 @@ class HistorialViewModel @Inject constructor(
 
     fun onSearchQueryChange(value: String) = _uiState.update { it.copy(searchQuery = value) }
     fun onTabSelected(tab: HistorialTab) = _uiState.update { it.copy(selectedTab = tab) }
+
+    fun setDateRange(from: String?, to: String?) = _uiState.update { it.copy(dateFrom = from, dateTo = to) }
+    fun clearDateRange() = setDateRange(null, null)
+
+    /** Anula una evaluación en borrador; si era la del chat guardado, también se descarta ese chat. */
+    fun annul(evaluationId: String) {
+        viewModelScope.launch {
+            annulEvaluationUseCase(evaluationId)
+                .onSuccess {
+                    evaluationId.toLongOrNull()?.let { id ->
+                        if (chatProgressStore.resumableEvaluationId() == id) {
+                            chatProgressStore.clear(id)
+                            chatLocalFiles.clear(id)
+                        }
+                    }
+                    _uiState.update { it.copy(allEvaluations = it.allEvaluations.filterNot { e -> e.id == evaluationId }) }
+                }
+                .onFailure { error ->
+                    _uiState.update { it.copy(errorMessage = error.message ?: "No se pudo anular la evaluación") }
+                    loadHistorial()
+                }
+        }
+    }
 
     /** El FAB "Nueva evaluación": si hay un chat previo guardado se pide confirmar antes de borrarlo. */
     fun requestNewEvaluation(confirmDiscard: () -> Unit) {
