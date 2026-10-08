@@ -71,6 +71,10 @@ class MainActivity : AppCompatActivity() {
     private fun setupDrawer() {
         val drawer = binding.navDrawerContent
 
+        // Versión real de la app en el pie del menú (antes decía "v1.0" fijo).
+        val versionName = runCatching { packageManager.getPackageInfo(packageName, 0).versionName }.getOrNull().orEmpty()
+        drawer.tvDrawerVersion.text = "v$versionName · Asistente de Red"
+
         drawer.btnCloseDrawer.setOnClickListener { closeDrawer() }
         drawer.navLogout.setOnClickListener {
             closeDrawer()

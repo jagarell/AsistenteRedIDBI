@@ -1,6 +1,6 @@
 <resources>
 
-    <string name="app_name">Asistente Red IDBI</string>
+    <string name="app_name">Asistente de Red</string>
     <string name="login_title">Iniciar sesión</string>
     <string name="email_hint">Correo electrónico</string>
     <string name="password_hint">Contraseña</string>
