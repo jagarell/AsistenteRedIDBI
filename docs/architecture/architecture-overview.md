@@ -1,5 +1,7 @@
 # Arquitectura general
 
+Actualizada al 6 de octubre de 2026.
+
 ## Diagrama 1 — Vista para stakeholders
 
 ```mermaid
@@ -7,41 +9,33 @@ flowchart LR
     USER[Usuario<br/>Técnico o Supervisor]
 
     subgraph CLIENT[Cliente]
-        ANDROID[App Android nativa<br/>Kotlin + XML]
-        LOCAL[DataStore Preferences<br/>JWT, rol y perfil mínimo]
+        ANDROID[App Android nativa<br/>Kotlin + XML · APK 0.0.2]
+        LOCAL[DataStore Preferences<br/>JWT, refresh token, rol<br/>y progreso del chat]
         ANDROID --> LOCAL
     end
 
-    subgraph API[API y negocio]
+    subgraph RAILWAY[Producción · Railway · HTTPS]
         GATEWAY[API Gateway / Backend<br/>Spring Boot 3 + Java 17<br/>REST + JWT]
-    end
-
-    subgraph PYTHON[Servicio especializado Python]
-        FASTAPI[FastAPI<br/>chat de 20 nodos, análisis,<br/>propuesta y topología]
-    end
-
-    subgraph DATA[Datos]
-        PG[(PostgreSQL<br/>usuarios, evaluaciones,<br/>minutas y evidencias)]
-        FILES[(Disco local uploads/<br/>fotografías)]
+        FASTAPI[FastAPI<br/>chat de 76 nodos, visión,<br/>reglas, minuta y mapa]
+        PG[(PostgreSQL de producción<br/>usuarios, evaluaciones,<br/>minutas y evidencias)]
+        FILES[(Disco del servicio<br/>uploads/ fotografías)]
     end
 
     subgraph EXT[Servicios externos]
-        OSM[Nominatim / OpenStreetMap<br/>geocodificación]
-        OPENAI[OpenAI API<br/>texto y visión, opcional]
-        FLOWISE[Flowise<br/>propuesta, opcional]
-        SMTP[Servidor SMTP<br/>correo, opcional]
-        FCM[Firebase Cloud Messaging<br/>push, opcional]
+        OPENAI[OpenAI API<br/>visión de evidencias]
+        OSM[Nominatim / OpenStreetMap<br/>geocodificación, legado]
+        SMTP[Resend API<br/>correo, sin configurar]
+        FCM[Firebase Cloud Messaging<br/>push, sin configurar]
     end
 
     USER -->|Interacción local| ANDROID
-    ANDROID -->|HTTP REST + JSON/multipart<br/>Bearer JWT, síncrono| GATEWAY
+    ANDROID -->|HTTPS REST + JSON/multipart<br/>Bearer JWT, síncrono| GATEWAY
     GATEWAY -->|HTTP REST + JSON/Base64<br/>síncrono| FASTAPI
     GATEWAY -->|JDBC / SQL vía JPA| PG
     GATEWAY -->|Java NIO| FILES
-    FASTAPI -->|HTTPS GET, síncrono| OSM
-    FASTAPI -.->|HTTPS API, síncrono| OPENAI
-    FASTAPI -.->|HTTP/HTTPS REST, síncrono| FLOWISE
-    GATEWAY -.->|SMTP + STARTTLS| SMTP
+    FASTAPI -->|HTTPS API, síncrono| OPENAI
+    FASTAPI -.->|HTTPS GET| OSM
+    GATEWAY -.->|HTTPS API| SMTP
     GATEWAY -.->|HTTPS Firebase Admin SDK| FCM
     FCM -.->|Push asíncrono| ANDROID
 ```
@@ -50,55 +44,56 @@ flowchart LR
 
 ### Clientes encontrados
 
-- Android nativo: identificado e implementado.
-- iOS: **No identificado en el repositorio**.
-- Flutter o React Native: **No identificado en el repositorio**.
-- Frontend web o portal de administración: **No identificado en el repositorio**.
-- Otros clientes: Swagger/OpenAPI generado por FastAPI sirve para exploración técnica, no se identificó como producto de usuario.
+- Android nativo: implementado (APK 0.0.2 de debug; no hay llave de release).
+- iOS, Flutter, React Native, frontend web o portal de administración: **no identificados en los repositorios**.
+- Swagger/OpenAPI generado por FastAPI: sirve para exploración técnica, no es un producto de usuario.
 
 ### Estilo arquitectónico
 
-- App Android con MVVM y separación `presentation` / `domain` / `data`.
-- Backend Spring Boot modular monolítico; el nombre “gateway” describe su papel, pero también contiene la lógica de negocio y persistencia.
-- Servicio Python separado para lógica conversacional, reglas de análisis, topología e integraciones IA/geocodificación.
-- Comunicación entre procesos principalmente síncrona por REST.
-- PostgreSQL como fuente de verdad del negocio.
-- Archivos de evidencia en disco local; la base conserva metadatos y resultado del análisis.
+- App Android con MVVM y separación `presentation` / `domain` / `data`, con inyección Hilt.
+- Backend Spring Boot modular monolítico. El nombre "gateway" describe su papel, pero también contiene la lógica de negocio y la persistencia.
+- Servicio Python separado para:
+  - el motor del chat (`flow_engine.py`, sin estado en el servidor: el cliente envía un `state` opaco);
+  - la lectura de evidencias con IA;
+  - las reglas de validación, la propuesta AS-IS/TO-BE, el documento de minuta y el mapa.
+- Comunicación entre procesos síncrona por REST.
+- PostgreSQL como fuente de verdad del negocio. Las respuestas del chat se guardan en `evaluations.chat_answers_json` y el mapa en `evaluations.map_json`.
+- Archivos de evidencia en el disco del servicio del gateway. La base guarda metadatos, código de evidencia y resultado del análisis.
 
 ## Componentes principales
 
 | Componente | Tecnología | Responsabilidad | Se comunica con | Protocolo |
 |---|---|---|---|---|
-| Usuario técnico/supervisor | Persona + dispositivo Android | Captura evaluación, evidencias y gestiona minutas | App Android | Interacción UI |
-| App Android | Kotlin, Android SDK 35, XML, Navigation | UI móvil y coordinación del flujo | Gateway, DataStore, FCM | HTTP REST; almacenamiento local; push |
-| UI y estado Android | Fragments, ViewModel, LiveData, Coroutines | Presentación y estado por pantalla | Casos de uso/repositorios | Llamadas en proceso |
-| Networking Android | Retrofit, OkHttp, Moshi | Serialización y consumo del gateway | Gateway | HTTP REST + JSON/multipart + JWT |
-| Sesión local | Jetpack DataStore Preferences | Guarda JWT, duración, rol, ID y nombre | Interceptor/UI | Acceso local |
-| Gateway | Spring Boot 3.5.16, Java 17 | Seguridad y lógica de negocio | Android, PostgreSQL, FastAPI, SMTP, FCM, disco | REST, JDBC, HTTP, SMTP, HTTPS, filesystem |
-| Seguridad | Spring Security, JJWT, BCrypt | Login, JWT stateless y rol supervisor | Usuarios y controladores | Bearer JWT / HS256 |
-| Persistencia | Spring Data JPA, Hibernate | Usuarios, evaluaciones, minutas y evidencia | PostgreSQL | JDBC/SQL |
-| FastAPI | Python, FastAPI, Pydantic | Chat, análisis, propuesta y topología | Gateway, OSM, OpenAI, Flowise | HTTP REST/JSON |
-| PostgreSQL | PostgreSQL | Persistencia principal de negocio | Gateway | JDBC/SQL |
-| Evidencias | Filesystem local `uploads/` | Guarda imágenes binarias | Gateway | Java NIO / HTTP estático |
-| OpenStreetMap | Nominatim | Convierte nombre/dirección a coordenadas | FastAPI | HTTPS GET |
-| OpenAI | OpenAI API | Resumen opcional y análisis visual | FastAPI | HTTPS API |
-| Flowise | API REST configurable | Resumen alternativo de propuesta | FastAPI | HTTP/HTTPS REST + Bearer opcional |
-| SMTP | Servidor configurable | Recuperación de contraseña y propuesta adjunta | Gateway | SMTP + STARTTLS |
-| Firebase | FCM + Admin SDK | Envío y entrega de push | Gateway y Android | HTTPS + push asíncrono |
-| Actuator | Spring Boot Actuator | Endpoints `health` e `info` | Operador local | HTTP |
+| Usuario técnico o supervisor | Persona + dispositivo Android | Captura la evaluación y las evidencias en el chat; gestiona minutas | App Android | Interacción UI |
+| App Android | Kotlin, Android SDK 35, XML, Navigation | UI móvil: chat, mapa editable, minuta, historial | Gateway, DataStore, FCM | HTTPS REST, almacenamiento local, push |
+| UI y estado Android | Fragments, ViewModel, LiveData, Coroutines | Presentación y estado por pantalla. `ChatProgressStore` permite retomar el chat | Casos de uso y repositorios | Llamadas en proceso |
+| Networking Android | Retrofit, OkHttp, Moshi | Serialización y consumo del gateway | Gateway | HTTPS REST + JSON/multipart + JWT |
+| Gateway | Spring Boot 3.5, Java 17 | Seguridad, negocio, PDF (PDFBox para la propuesta; Thymeleaf + OpenHTMLtoPDF para la minuta), recordatorios programados | Android, PostgreSQL, FastAPI, Resend, FCM, disco | REST, JDBC, HTTP, HTTPS, filesystem |
+| Seguridad | Spring Security, JJWT, BCrypt | Login, JWT stateless, refresh token rotado, rol Supervisor | Usuarios y controladores | Bearer JWT / HS256 |
+| Persistencia | Spring Data JPA, Hibernate (`ddl-auto=update`) | Usuarios, evaluaciones, minutas, evidencias, refresh tokens, checklist | PostgreSQL | JDBC/SQL |
+| FastAPI | Python, FastAPI, Pydantic, Pillow | Chat de 76 nodos, visión, reglas V01–V10, AS-IS/TO-BE, documento de minuta, mapa (PNG con fuentes DejaVu) | Gateway, OpenAI | HTTP REST/JSON |
+| PostgreSQL | PostgreSQL (producción vía `DB_URL`; local o H2 en desarrollo) | Persistencia principal. ⚠️ El código no permite saber si la base de producción es un plugin de Railway o un servicio externo | Gateway | JDBC/SQL |
+| Evidencias | Disco `uploads/` del gateway | Imágenes binarias | Gateway | Java NIO / HTTP estático |
+| OpenAI | OpenAI API | Extracción de datos de evidencias (speedtest, etiquetas, ipconfig, tickets, escáner) y marca/modelo | FastAPI | HTTPS API |
+| OpenStreetMap | Nominatim | Geocodificación del motor legado de 23 nodos (`engine.py`) | FastAPI | HTTPS GET |
+| Correo | Resend (API HTTPS); no SMTP porque Railway Hobby lo bloquea | Recuperación de contraseña, envío de propuesta y minuta. Hoy apagado: requiere `RESEND_API_KEY` y `MAIL_ENABLED=true` | Gateway | HTTPS API |
+| Firebase | FCM + Admin SDK | Push. Falta `google-services.json` y la service account | Gateway y Android | HTTPS + push asíncrono |
+| Railway | PaaS con Dockerfile por servicio | Hosting del gateway y FastAPI con HTTPS. Auto-deploy desde `main` | — | — |
 
 ## Componentes no identificados
 
 | Capacidad | Estado observado |
 |---|---|
-| Caché/Redis | No identificado en el repositorio |
-| Cola o broker de mensajes | No identificado en el repositorio |
-| WebSockets/SSE/gRPC/GraphQL | No identificado en el repositorio |
-| Jobs programados o batch | No identificado; existe un `CommandLineRunner` de datos iniciales |
-| Analytics de producto | No identificado en el repositorio |
-| APM, tracing o métricas centralizadas | No identificado; solo logging estándar y Actuator health/info |
-| Docker/Kubernetes | No identificado en los tres repositorios |
-| CI/CD | No identificado en los tres repositorios |
-| Hosting/cloud/load balancer | No identificado en los tres repositorios |
-| Secret manager | No identificado; se usan variables de entorno y archivos locales ignorados por Git |
-
+| Caché/Redis | No identificado |
+| Cola o broker de mensajes | No identificado |
+| WebSockets/SSE/gRPC/GraphQL | No identificado |
+| Jobs programados | ✅ `MinutaReminderJob` (`@Scheduled`, 9:00 America/Lima): aviso de borradores por vencer |
+| Analytics de producto | No identificado |
+| APM, tracing o métricas centralizadas | No identificado: solo logging estándar y Actuator health/info |
+| Docker | ✅ Dockerfile en el gateway y en FastAPI; `docker-compose.yml` solo para probar en local |
+| Kubernetes | No identificado |
+| CI/CD | Parcial: Railway construye y despliega en cada push a `main`. **No se identificaron pruebas automáticas en el pipeline** ni ambiente de staging |
+| Hosting/cloud | ✅ Railway |
+| IaC | No identificado: la configuración de Railway se hace en su panel |
+| Secret manager | Variables de entorno de Railway; archivos `.env` ignorados por Git en local |
+| Base de conocimiento de minutas | Propuesta (tablas `kb_*`), solo en local. Ver `../base-conocimiento/` |

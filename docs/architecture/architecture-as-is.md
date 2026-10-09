@@ -1,5 +1,7 @@
 # Arquitectura actual — AS-IS
 
+Actualizada al 6 de octubre de 2026, contra el código desplegado (APK 0.0.2). Los puntos marcados con ✅ estaban como problema en la revisión del 17 de agosto y ya se resolvieron.
+
 ## Diagrama consolidado
 
 ```mermaid
@@ -7,130 +9,132 @@ flowchart LR
     TECH[Técnico]
     SUP[Supervisor]
 
-    subgraph APP[Android monolítico]
-        SCREEN[Fragments/XML]
+    subgraph APP[Android monolítico · APK 0.0.2]
+        SCREEN[Fragments/XML<br/>chat, mapa, minuta]
         VM[MVVM + casos de uso]
-        HTTP[Retrofit/OkHttp/Moshi]
-        DS[DataStore sesión]
+        HTTP[Retrofit/OkHttp/Moshi<br/>TokenAuthenticator]
+        DS[DataStore sesión<br/>+ progreso del chat]
         FCMAPP[FCM SDK]
         SCREEN --> VM --> HTTP
         HTTP --> DS
     end
 
-    subgraph BACK[Spring Boot modular monolítico :8080]
-        SEC[JWT/Spring Security]
-        MODULES[Auth · Profile · Evaluation<br/>Chat · Analysis · Evidence<br/>Minuta · PDF · Email · Push]
-        JPA[JPA/Hibernate]
+    subgraph BACK[Spring Boot modular monolítico · Railway]
+        SEC[JWT + refresh rotado<br/>Spring Security]
+        MODULES[Auth · Profile · Evaluation<br/>Chat · Map · Analysis · Evidence<br/>Minuta · PDF · Email · Push · Jobs]
+        JPA[JPA/Hibernate<br/>ddl-auto=update]
         SEC --> MODULES --> JPA
     end
 
-    subgraph IA[FastAPI :8000]
-        CHAT[Chat 20 nodos]
-        RULE[Reglas + análisis]
-        TOP[Topología]
-        CHAT --> RULE --> TOP
+    subgraph IA[FastAPI · Railway]
+        CHAT[Chat 76 nodos<br/>state opaco]
+        VIS[Visión de evidencias<br/>+ redacción E3]
+        RULE[Reglas V01–V10<br/>AS-IS / TO-BE]
+        DOC[Minuta + mapa]
+        CHAT --> VIS --> RULE --> DOC
     end
 
-    DB[(PostgreSQL local)]
-    FS[(uploads/ local)]
-    EX[OpenStreetMap]
-    OPT[OpenAI · Flowise<br/>SMTP · Firebase<br/>opcionales]
+    DB[(PostgreSQL<br/>producción)]
+    FS[(uploads/ en disco<br/>del servicio)]
+    OAI[OpenAI]
+    OPT[Resend · Firebase<br/>sin configurar]
 
     TECH --> APP
     SUP --> APP
-    HTTP -->|HTTP REST + JWT| SEC
+    HTTP -->|HTTPS REST + JWT| SEC
     MODULES -->|HTTP REST sin auth| IA
     JPA -->|JDBC| DB
     MODULES -->|filesystem| FS
-    IA -->|HTTPS| EX
-    IA -.-> OPT
+    IA -->|HTTPS| OAI
     MODULES -.-> OPT
     OPT -.-> FCMAPP
 ```
 
-## Fortalezas — arquitectura correcta
+## Fortalezas
 
-- Android depende de un único backend y no accede directamente a base de datos ni proveedores externos.
-- Separación Android en presentación, dominio y datos con interfaces de repositorio e inyección Hilt.
-- Contratos DTO separados de modelos de dominio y serialización Moshi.
-- Autenticación stateless, contraseñas BCrypt, JWT firmado y autorización de validación con `@PreAuthorize`.
-- Recuperación de contraseña evita enumeración básica de correos y no devuelve el código en HTTP.
-- PostgreSQL está centralizado detrás del gateway; FastAPI no compite como segunda fuente de verdad.
-- Motor del chat y topología deterministas, con fallback cuando OpenAI o Flowise fallan.
-- El análisis opcional falla explícitamente cuando faltan credenciales, sin simular éxito.
-- Evidencias separan binarios de metadatos.
-- Existen manejo global de excepciones, endpoints de salud y pruebas unitarias del servicio de minutas.
+- Android depende de un solo backend y no accede directo a la base ni a proveedores externos.
+- Separación en Android por presentación, dominio y datos, con interfaces de repositorio e inyección Hilt.
+- Contratos DTO separados de los modelos de dominio; serialización con Moshi.
+- Autenticación stateless con BCrypt y JWT firmado. ✅ Ahora hay **refresh token rotado** (se guarda solo su hash) y **logout** que lo revoca.
+- ✅ El **registro siempre crea Técnico**: el rol Supervisor solo se asigna por base de datos.
+- La recuperación de contraseña evita la enumeración básica de correos y no devuelve el código en HTTP.
+- PostgreSQL centralizado detrás del gateway: FastAPI no es una segunda fuente de verdad. El chat no guarda estado en el servidor (`state` opaco).
+- ✅ **Las respuestas del chat se persisten** (`chat_answers_json`) y alimentan el análisis, la minuta y el mapa.
+- ✅ **La minuta PDF se arma en el servidor** desde los datos persistidos, no desde contenido enviado por la app.
+- Motor de reglas determinista (V01–V10, AS-IS/TO-BE) que funciona sin OpenAI. La visión falla de forma explícita si no hay clave.
+- ✅ Credenciales de la etiqueta del router (E3) ocultas antes de guardar o mostrar.
+- ✅ Transporte HTTPS en producción (Railway) y Dockerfiles por servicio.
+- Manejo global de excepciones, endpoints de salud y pruebas (gateway: minutas, PDF, auth, anulación; FastAPI: motor de flujo, API del chat, muestra de Rock & Burgers, mapa).
 
 ## Problemas críticos
 
-### 🔴 Seguridad de transporte y configuración móvil
+### 🔴 Despliegue sin red de seguridad
 
-- La app usa una URL HTTP hardcodeada y permite cleartext globalmente. Los JWT, datos personales y evidencias podrían viajar sin cifrado fuera del entorno local.
-- El logging OkHttp está en nivel `BODY` para todos los builds; aunque oculta `Authorization`, puede registrar credenciales, datos personales y payloads técnicos.
-- La variante `release` no aplica minificación y no se observa configuración por ambiente.
+- Cada push a `main` despliega en producción. No hay ambiente de staging ni pruebas automáticas en el pipeline.
+- `ddl-auto=update` en producción: una entidad nueva crea tablas en la base real, y los cambios de enums dan error por las restricciones existentes.
+- El APK es un build **debug** sin llave de release.
+
+### 🔴 Seguridad de la app móvil
+
+- `usesCleartextTraffic="true"` sigue activo de forma global.
+- El logging de OkHttp está en nivel `BODY` para todos los builds. Aunque oculta `Authorization`, puede registrar datos personales, respuestas del chat y fotos en Base64.
+- `isMinifyEnabled = false` en release; no hay configuración por ambiente (la `BASE_URL` es una constante que se cambia a mano).
 
 ### 🔴 Autorización por recurso insuficiente
 
-- La mayoría de los endpoints exige JWT, pero `EvaluationController`, `HistoryController` y `EvidenceController` no validan propiedad del recurso ni rol.
-- `Evaluation` no contiene un propietario visible. Un usuario autenticado podría enumerar, actualizar o borrar evaluaciones ajenas.
-- El análisis de evidencia busca `evidenceId` sin comprobar que pertenezca al `evaluationId` de la URL.
-- `/uploads/**` es público, por lo que fotografías técnicas quedan accesibles sin JWT si se conoce o descubre la URL.
-- El registro acepta un rol proporcionado por el cliente mediante `Role.fromString`; debe comprobarse que un usuario no pueda autoasignarse `SUPERVISOR`.
+- `EvaluationController` y `HistoryController` no validan dueño ni rol. `GET /api/evaluations/{id}` devuelve cualquier evaluación a un usuario autenticado.
+- `Evaluation` no tiene campo de propietario: un usuario podría enumerar, actualizar o borrar evaluaciones ajenas.
+- `/uploads/**` es público: las fotos técnicas (routers, IPs, locales) son accesibles sin JWT si se conoce la URL.
 
-### 🔴 Riesgo de pérdida y exposición de archivos
+### 🔴 Archivos de evidencia
 
-- Las evidencias viven en disco local sin almacenamiento redundante, versionado, cifrado documentado, antivirus ni política de retención.
-- No se identificó validación fuerte de categoría, firma/magic bytes o tipo real de archivo en upload.
-- No se identificaron backups ni recuperación ante desastres.
+- Están en el disco del servicio. ⚠️ Sin evidencia en el repo de un volumen persistente en Railway: si no lo hay, las fotos se pierden en cada redeploy, y las minutas viejas no podrían regenerar el PDF.
+- No hay redundancia, versionado, cifrado documentado ni política de retención.
 
 ### 🔴 Controles de abuso de autenticación
 
-- No se identificó rate limiting para login, registro o códigos de recuperación.
-- Los códigos de recuperación se guardan aparentemente en texto claro y no se observó contador de intentos.
-- No se identificaron refresh tokens, revocación de JWT ni rotación de claves.
+- No se identificó rate limiting en login, registro ni códigos de recuperación.
+- El código de recuperación se guarda en texto claro (`users.reset_code`), sin contador de intentos.
 
 ## Mejoras recomendadas
 
 ### 🟠 Confiabilidad y performance
 
-- `RestTemplate` no configura timeouts, retries, circuit breaker ni connection pooling explícito para FastAPI.
-- Chat, análisis visual, SMTP y FCM se ejecutan dentro de peticiones síncronas; una dependencia lenta ocupa threads del gateway.
-- Las imágenes se convierten completas a Base64 en memoria, aumentando aproximadamente un tercio el tamaño y presión de memoria.
-- Varias listas usan `findAll()` sin paginación.
-- JSON estructural de minuta se guarda como texto, reduciendo validación y capacidad de consulta.
+- `RestTemplate` sin timeouts, retries ni circuit breaker hacia FastAPI. El chat con visión hace llamadas síncronas a OpenAI dentro de la petición.
+- Las fotos viajan en Base64 dentro del JSON (cerca de un tercio más pesadas) y el `state` crece con cada evidencia.
+- Varias listas usan `findAll()` o `findActive()` sin paginación.
+- JSON guardado como `TEXT` (`chat_answers_json`, `map_json`, `content_json`, `extracted_json`): no se valida ni se puede consultar.
 
 ### 🟠 Contratos y consistencia
 
-- Android conserva rutas `/api/v1/...` no implementadas por el gateway.
-- Existen dos conceptos de evidencia: una API avanzada legado `/api/v1` y el flujo real simplificado.
-- `ProposalController` entrega mocks y convive con el flujo real `/api/proposals`.
-- El PDF recibe su contenido desde Android, en vez de reconstruirlo desde datos autorizados del servidor.
-- FastAPI recibe todo el mapa de respuestas en cada petición y no valida identidad/autorización de servicio.
-- No hay versionado uniforme de la API ni contrato OpenAPI compartido/generado para Android.
+- Conviven el checklist de evidencias (`/api/v1/...`) y las evidencias del chat. El checklist ya no se usa en el flujo principal.
+- `ProposalController` sigue entregando contenido de prueba (mock).
+- `/api/proposals/pdf` (propuesta legada) todavía recibe el contenido desde Android.
+- FastAPI no valida la identidad del gateway (sin autenticación de servicio). Además conserva el motor legado de 23 nodos y la geocodificación.
+- No hay contrato OpenAPI compartido ni versionado uniforme de la API.
 
 ### 🟠 Operación y entrega
 
-- No se identificaron CI/CD, contenedores, migraciones Flyway/Liquibase, despliegues reproducibles ni pruebas end-to-end.
-- Observabilidad limitada a logs estándar y `health/info`; no hay métricas, tracing, correlación o alertas.
-- CORS usa `*` por defecto en gateway y FastAPI.
-- No se identificó un gestor de secretos, perfiles por ambiente o rotación automatizada.
-- `DataSeeder` inserta datos al arranque cuando la tabla está vacía; debería limitarse a un perfil de desarrollo.
+- No hay migraciones versionadas (Flyway/Liquibase), staging, pruebas end-to-end ni pruebas automáticas antes del deploy.
+- Observabilidad limitada a logs y `health/info`: sin métricas, tracing ni alertas.
+- CORS `*` por defecto en el gateway y en FastAPI.
+- `DataSeeder` inserta datos al arrancar si la tabla está vacía; debería limitarse a un perfil de desarrollo.
+- La base de conocimiento de minutas manuales (`kb_*`) está diseñada pero no implementada. Debe probarse solo en local (ver `../base-conocimiento/`).
 
 ## Evaluación por dimensión
 
 | Dimensión | Estado | Observación |
 |---|---|---|
-| Seguridad | Crítico para producción | JWT/BCrypt correctos; TLS y autorización por recurso insuficientes |
-| Escalabilidad | Desarrollo/MVP | Gateway y FastAPI escalables como procesos, pero disco local y estado/configuración bloquean horizontalidad |
-| Performance | Aceptable para carga baja | Todo síncrono, sin paginación ni resiliencia de llamadas |
-| Acoplamiento | Medio | Buen límite Gateway/FastAPI; Android depende de contratos inconsistentes |
-| Separación | Buena base | Módulos claros; gateway combina API, negocio, archivos e integraciones |
-| Errores | Parcial | Handler global y fallbacks; faltan políticas uniformes y resiliencia |
-| Autenticación | Buena base | Stateless + BCrypt; faltan rate limits, refresh/revocación |
-| Autorización | Débil | Rol aplicado a validación; ownership general no aplicado |
-| Datos | Parcial | PostgreSQL central; relaciones lógicas y migraciones ausentes |
-| Python | Bien delimitado | Sin persistencia activa; requiere auth interna y controles operativos |
-| Externos | Degradación parcial | OpenAI/Flowise tienen fallback; SMTP/FCM son directos |
-| Observabilidad | Insuficiente | Health/info y logs solamente |
-| CI/CD | Ausente | No identificado en repositorios |
-
+| Seguridad | Crítico para escalar | ✅ HTTPS, refresh rotado y registro como Técnico. 🔴 Sin control de dueño, `/uploads` público y logging BODY |
+| Escalabilidad | MVP en producción | Gateway y FastAPI son contenedores, pero el disco local y la ausencia de colas limitan escalar horizontalmente |
+| Performance | Aceptable con carga baja | Visión síncrona dentro del chat, sin timeouts ni paginación |
+| Acoplamiento | Medio | Buen límite Gateway/FastAPI. APK y backend deben desplegarse juntos |
+| Separación | Buena base | Módulos claros; el gateway combina API, negocio, archivos e integraciones |
+| Errores | Parcial | Handler global y errores explícitos (E9 obligatoria, correo apagado); faltan políticas de resiliencia |
+| Autenticación | Buena | ✅ Stateless, BCrypt, refresh rotado y logout. Faltan rate limits y hash del código de recuperación |
+| Autorización | Débil | Rol aplicado a validar minutas; dueño de la evaluación no aplicado |
+| Datos | Parcial | PostgreSQL central y respuestas persistidas; sin migraciones ni relaciones JPA |
+| Python | Bien delimitado | Sin persistencia; requiere auth de servicio y retirar el motor legado |
+| Externos | Degradación parcial | OpenAI con fallback por reglas; Resend y FCM apagados explícitamente |
+| Observabilidad | Insuficiente | Health/info y logs |
+| CI/CD | Riesgoso | Auto-deploy desde `main` sin pruebas ni staging |

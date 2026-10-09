@@ -1,184 +1,123 @@
 # Contexto del proyecto — Asistente Red IDBI ("Analista IA")
 
-Última actualización: 2026-09-14. Este doc resume el estado real del proyecto
-para retomarlo en otra sesión sin tener que re-descubrir todo de cero.
+Última actualización: 2026-10-06. Resume el estado real del proyecto para retomarlo en otra sesión sin redescubrir todo.
+
+La versión anterior de este documento (2026-09-14) describía el chat de 23 nodos. Ese chat **ya no existe**: hoy corre el flujo de 76 nodos.
+
+> ⛔ **Producción no se toca.** Cada push a `main` despliega solo en Railway. La versión en uso es el APK 0.0.2 contra `https://asistenteredidbi.up.railway.app`. Todo trabajo nuevo va en una rama local y se prueba con Postgres local o H2 (ver "Cómo probar sin tocar producción").
 
 ## Arquitectura (3 repos)
 
-- **`AsistenteRedIDBI`** (este repo) — app Android nativa (Kotlin, MVVM +
-  Hilt + Retrofit/Moshi + Navigation Component). `applicationId`
-  `com.upc.asistenteredidbi`.
-- **`idbi-api-gateway`** (`~/IdeaProjects/idbi-api-gateway`) — backend Spring
-  Boot (puerto 8080), Postgres (`asistente_red_idbi`, usuario `idbi_user`).
-  Es la ÚNICA fuente de verdad de negocio: auth/JWT, evaluaciones, minutas,
-  perfil, notificaciones push, PDF/envío de propuesta.
-- **`idbi-fastapi`** (`~/IdeaProjects/idbi-fastapi`) — microservicio Python
-  FastAPI (puerto 8000). Solo dos responsabilidades: el motor de chat
-  técnico de 23 nodos (`app/chat/`) y el análisis de fotos por visión
-  (`/analyze-photo`, OpenAI Vision). El gateway le hace de proxy.
+| Repo (GitHub) | Carpeta local habitual | Qué hace |
+|---|---|---|
+| `AsistenteRedIDBI` | este repo | App Android nativa: Kotlin, MVVM + Hilt + Retrofit/Moshi + Navigation. `applicationId` `com.upc.asistenteredidbi`. Aquí vive toda la documentación (`docs/`) |
+| `AsistenteRedIDBI-API-Gateway` | `~/IdeaProjects/idbi-api-gateway` | Spring Boot (puerto 8080), Postgres `asistente_red_idbi`. **Única fuente de verdad de negocio**: auth/JWT, evaluaciones, minutas, perfil, push, evidencias, PDF de propuesta y de minuta, mapa |
+| `AsistenteRedIDBI-API` | `~/IdeaProjects/idbi-fastapi` | FastAPI (puerto 8000). Motor del chat de 76 nodos (`app/chat/`), lectura de fotos con IA (OpenAI Vision), documento de minuta y mapa. No tiene base propia |
 
-El Android habla siempre con el gateway (`10.0.2.2:8080` desde el emulador);
-el gateway es el único que le habla a FastAPI (`FASTAPI_BASE_URL`).
+- El Android habla siempre con el gateway: `10.0.2.2:8080` desde el emulador, o Railway en producción.
+- Solo el gateway le habla a FastAPI (`FASTAPI_BASE_URL`).
+- Endpoints: [`analista-ia/04_Backend_APIs.md`](analista-ia/04_Backend_APIs.md).
 
-## Cómo levantar todo para seguir trabajando
+## Estado actual (APK 0.0.2, commits al 2026-10-03)
+
+Commits desplegados: Android `089040f`, gateway `c81c257`, FastAPI `dd03113`.
+
+**Hecho y verificado en producción:**
+- **Chat técnico de 76 nodos** ([`flujo/FLUJO_NODOS.md`](flujo/FLUJO_NODOS.md)).
+  - Incluye loops por caja, impresora y área; el subflujo U de ubicación; avisos (Raspberry, áreas sin impresora); 13 evidencias con IA y el resumen final.
+  - El motor no guarda estado en el servidor: el cliente envía el `state` opaco.
+  - Al completarse, el gateway guarda las respuestas en `evaluations.chat_answers_json`.
+- **Evidencias con IA.**
+  - Se extraen los datos de cada foto y se cruzan entre sí: proveedor del speedtest frente a P13, MAC de la impresora frente al escáner, adaptador del ipconfig.
+  - En E3 se ocultan las credenciales.
+  - E9 (fotos generales) es **obligatoria**: sin ella no se genera el PDF.
+- **Minuta PDF** (Thymeleaf + OpenHTMLtoPDF, `MinutaPdfService`). Tiene validación técnica automática (reglas V01–V10), recomendaciones, mapa y anexo A. El anexo B se eliminó.
+- **Mapa editable.** Zoom a pantalla completa, paleta de colores, menú Agregar (elemento, línea recta o discontinua, caja de texto, imagen) y comandos del mapa (por reglas, no LLM).
+- **Contador.** Muestra "Pregunta N de ~T" (solo preguntas fijas) y "Evidencia N de M".
+- **Historial.** Filtro por rango de fechas y orden del más nuevo al más antiguo. Deslizar un Borrador a la izquierda lo anula (anulación soft, con una marca aparte).
+- **"Continuar" y "Nueva Evaluación".** "Continuar" retoma el chat. Solo "Nueva Evaluación" lo borra, y pide confirmación.
+- **Base.** Auth (JWT), perfil, home con datos reales, minutas (crear, completar, validar), roles Técnico/Supervisor e infraestructura de push FCM.
+- **Motor AS-IS/TO-BE** (`app/chat/proposal.py`). Funciona por reglas, sin OpenAI, con umbrales de industria: TIA/EIA-568 a 100 m, cobertura de AP, demanda frente a plan contratado, presupuesto PoE y redundancia. `app/analysis.py` lo reutiliza: hay una sola fuente de verdad.
+
+**Decisiones del equipo:**
+- El borrador vence a los 30 días.
+- Solo un Borrador se puede anular.
+- Una evaluación nueva nace en BORRADOR.
+
+## En curso: base de conocimiento de minutas manuales
+
+Las minutas hechas a mano (PDF) se cargan con el Excel [`base-conocimiento/Base_Conocimiento_Minutas.xlsx`](base-conocimiento/Base_Conocimiento_Minutas.xlsx) en tablas `kb_*`. El objetivo es que las recomendaciones se basen en casos reales.
+
+- Ya hay 18 minutas cargadas (2023–2026: Sicilia, Don Oscar, Barrio Pesquero, Rock & Burgers, Dorcher, Malala, Hotel La Confianza, 7 sedes Rikoton y 3 de Gelato Alore), con 52 reglas, 13 acciones estándar y la tabla de decisión de impresión IDPos.
+- **Reglas de negocio IDPos** (sección 4b de `base-conocimiento/BASE_CONOCIMIENTO_MINUTAS.md`):
+  - **Comandas:** se deducen de las áreas de preparación (bar, cocina, jugos, cafetería, parrillas, makis, ramen, panadería…).
+  - **Controlador de impresiones:** va en la PC o laptop de caja. Si no hay ninguna, en un Raspberry, solo con impresoras de red; una USB solo funciona con laptop o PC.
+  - **Tablet en caja (o solo tablets):** Raspberry obligatorio.
+  - **Impresoras de áreas de preparación:** siempre de red por cable.
+  - **Comanda solo en caja:** Sunmi con chip.
+  - **Sin fibra ni cable coaxial** (P14 = Inalámbrica o "No sé", que se toma como sin internet): probar la señal del chip (Entel o Claro) con un celular y, si hay comandas, router con chip.
+  - **Compras:** el Raspberry y el Sunmi se cotizan con el equipo de Desarrollo de Negocios.
+  - **Puertos y energía:** los puertos libres se leen de la foto del router (E2). Si los equipos por cable los superan, se recomienda switch y cuántos puntos de red implementar. Cada equipo de red necesita toma cerca; si no hay, punto de energía adicional o extensión.
+  - **WiFi:** el access point o el primer repetidor van con red y energía; el segundo repetidor, solo con energía. Todo el local debe tener WiFi para que los meseros comanden.
+  - **Aviso de viabilidad:** si no se siguen las recomendaciones, no es viable la implementación del punto de venta. La minuta debe mostrarlo.
+  - **Estado (2026-10-09):**
+    - **Implementado en la rama local `feature/flujo-comandas-internet`** (FastAPI; no está en `main` ni en producción): P22 con Sí/No/Tablet/No sé/Otro (+ P22f); la pregunta fija P12b "¿En caja saldrán comandas?" con aviso de Sunmi; P14 con Fibra óptica/Cable coaxial/No sé/No tiene/Internet con chip (sin internet se salta P15 y E1); áreas de preparación nuevas en P11; y la regla R51: las impresoras de áreas de preparación tienen que ser de red por cable.
+    - **Sigue propuesto:** la prueba de chip P14b + E1b y la lectura de puertos en la foto E2 (con switch y puntos de red).
+- Diseño, importador y prompt para Claude Code: [`base-conocimiento/BASE_CONOCIMIENTO_MINUTAS.md`](base-conocimiento/BASE_CONOCIMIENTO_MINUTAS.md).
+- **Todo esto se hace solo en local.**
+
+## Pendientes
+
+1. **Firebase.** Falta `app/google-services.json` (requiere recompilar a 0.0.3) y la service account en Railway (`FIREBASE_CREDENTIALS_JSON`). Hasta entonces no salen los push.
+2. **Filas "Pendiente · …" del PDF** (Razón social, RUC, Correo, switch) y la regla "Datos obligatorios completos". Hay que decidir si se quitan.
+3. **Pruebas en dispositivo pendientes:**
+   - Que "Omitir" desaparezca en E9.
+   - Cómo muestra la app el error 400 al pedir el PDF de una evaluación vieja sin E9.
+4. **Pantallas 01–19 del prototipo** (propuesta, PDF, envío): no se repasaron del todo. Además, los márgenes son de 24 dp y el prototipo usa 16 dp.
+5. **Credenciales externas pendientes:**
+   - Correo: `RESEND_API_KEY` + `MAIL_ENABLED=true`. El correo sale por la API HTTPS de Resend, no por SMTP, porque Railway Hobby bloquea SMTP.
+   - RUC (APIs Peru): `RUC_VALIDATION_*`, apagado por diseño.
+   - En local no hay `OPENAI_API_KEY`: la IA se simula (ver abajo).
+6. **Base de conocimiento.** Crear las tablas `kb_*` y el importador en local, y después conectar el motor de recomendaciones a esas tablas.
+
+## Cómo levantar todo en local
 
 ```bash
-# 1) Postgres ya corre como servicio de Postgres.app, no hace falta nada.
-
-# 2) Gateway — el .env con credenciales YA EXISTE en el repo (gitignored),
-#    no hay que regenerarlo salvo que se haya perdido.
+# Gateway: el .env con credenciales existe en la máquina de desarrollo (gitignored)
 cd ~/IdeaProjects/idbi-api-gateway
 set -a; source .env; set +a
 ./mvnw spring-boot:run
 
-# 3) FastAPI
+# FastAPI
 cd ~/IdeaProjects/idbi-fastapi
 ./venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8000
 ```
 
-**Importante**: cada vez que el gateway se reinicia, si en algún momento se
-regenera `JWT_SECRET` en `.env`, todas las sesiones guardadas en la app
-(tokens viejos) quedan inválidas (403 silencioso). Si algo que antes andaba
-empieza a devolver 403 en todo, lo primero a probar es cerrar sesión y
-volver a entrar.
+### Cómo probar sin tocar producción
 
-## Decisiones de arquitectura tomadas
+- **Gateway con H2:**
+  ```
+  JWT_SECRET=... DB_URL=jdbc:h2:mem:devdb;MODE=PostgreSQL DB_USERNAME=sa DB_PASSWORD=x SPRING_DATASOURCE_DRIVER_CLASS_NAME=org.h2.Driver JPA_DDL_AUTO=create-drop SPRING_JPA_DATABASE_PLATFORM=org.hibernate.dialect.H2Dialect ./mvnw spring-boot:run -Dspring-boot.run.useTestClasspath=true
+  ```
+- **FastAPI sin `OPENAI_API_KEY`:** simular la IA con los valores de `tests/test_rock_sample.py`.
+- **APK contra local:** cambiar `BASE_URL` en `AuthModule.kt` a `http://10.0.2.2:8080/` solo en local. **Revertir antes de cualquier commit.**
 
-- **El mismatch `/api/v1/...` vs rutas reales del gateway**: el Android
-  tenía toda una capa (`EvaluationApiService`, partes de `ProfileApiService`)
-  apuntando a rutas `/api/v1/...` en snake_case que nunca existieron en
-  ningún backend (parecen diseñadas para un tercer servicio Python que se
-  abandonó — quedan tablas huérfanas en Postgres como evidencia: `locals`,
-  `technical_evaluations`, `network_devices`, etc., sin código que las
-  use). Se decidió **no** construir ese backend paralelo: se repuntó Android
-  a las rutas reales del gateway donde hacía falta (perfil). Gran parte de
-  ese código roto (`AssistantHomeViewModel` original, `HistorialViewModel`,
-  `ListEvaluationsUseCase`) resultó ser código muerto — ninguna pantalla real
-  lo llamaba — así que no bloqueaba nada, solo estaba mal.
-- **Nodos del chat sin UI real** (fotos, coordenadas GPS): en vez de
-  construir UI para algo que no la tenía, se cambiaron de estrategia:
-  - "Adjunta fotos" → nodo de confirmación Sí/No (la carga de fotos real
-    vive en Evidencias Técnicas).
-  - "Coordenadas GPS" → se resuelve solo (`auto=True` en `nodes.py`),
-    geocodificando nombre+dirección vía Nominatim/OpenStreetMap (gratis, sin
-    API key), sin preguntarle nada al técnico.
+## Trampas conocidas
 
-## Estado de features (real vs. pendiente)
+- **Enums en la base de producción.** La base tiene restricciones con los valores de los enums, y `ddl-auto=update` no las actualiza. Agregar un valor nuevo a un enum da 500: hay que usar una columna o marca aparte.
+- **Tablas nuevas en producción.** Por `ddl-auto=update`, cualquier entidad nueva que llegue a `main` crea tablas en producción. Es otra razón para no subir las tablas `kb_*` sin aprobación.
+- **Dueño de las tablas.** En local, las tablas deben ser propiedad de `idbi_user`. Si aparece `must be owner of table`:
+  ```
+  REASSIGN OWNED BY "<usuario_mac>" TO idbi_user;
+  ```
+- **JWT.** Si se regenera `JWT_SECRET`, los tokens guardados en la app dejan de servir (403 silencioso). Cierra sesión y vuelve a entrar.
+- **Puerto 8080.** Puede estar ocupado por otro proyecto (Voya). Revisa con `lsof -i :8080 -sTCP:LISTEN` que el proceso sea `IdbiApiGatewayApplication`.
+- **Emulador.** Lánzalo con `env -u HTTP_PROXY -u HTTPS_PROXY …` (ver `notas-de-desarrollo/project_emulator_proxy_conflict.md`).
+- **Moshi.** No uses `kotlin.Pair` en modelos que pasan por `ChatProgressStore`.
+- **Credenciales.** Nunca incluyas credenciales (AnyDesk, claves WiFi, contraseñas de router) en minutas, documentos ni en la base de conocimiento.
+- **Tablas huérfanas.** Quedan tablas de un backend abandonado: `locals`, `technical_evaluations`, `network_devices`. Ningún código las usa.
 
-**Reales y funcionando de punta a punta:**
-- Auth (registro/login, JWT).
-- Chat técnico de 23 nodos → genera propuesta + topología + score reales.
-- **Motor de propuesta AS-IS/TO-BE, ahora UNIFICADO** (2026-09-08/09 y
-  2026-09-14, sin OpenAI): el chat de 23 nodos separa un diagnóstico
-  **AS-IS** (`asIsFindings`) de la propuesta **TO-BE** (`recommendations`),
-  razonando con umbrales reales de ingeniería (límite de cobre TIA/EIA-568 a
-  100m, cobertura de AP según m²/material de pared, demanda de ancho de banda
-  vs. plan contratado, presupuesto PoE, redundancia por cantidad de POS) —
-  constantes documentadas y ajustables al inicio de
-  `idbi-fastapi/app/chat/proposal.py` y `app/chat/topology.py` (valores
-  estándar de industria, no el catálogo real de IDBI). **Desde el
-  2026-09-14 ya no hay dos motores separados**: `app/analysis.py` (el que
-  alimenta `/analyze` y la tarjeta "Recomendaciones IA" de la pantalla
-  principal de propuesta) llama internamente a
-  `chat.proposal.generate_proposal()` para el score/AS-IS/TO-BE, y solo
-  agrega el desglose por 4 áreas (Conectividad/Infraestructura/Equipamiento/
-  WiFi) que esa pantalla necesita. Una sola fuente de verdad de punta a
-  punta, verificada por curl.
-- **Respuestas del chat persistidas server-side** (2026-09-14): al
-  completarse el chat, el gateway guarda el `Map<String,String>` de
-  respuestas en `evaluations.chat_answers_json`
-  (`ChatService.persistAnswers`). Esto arregló un bug real: la pantalla
-  principal de propuesta llamaba `/analysis` sin respuestas en cada carga
-  (`MinutaViewModel.loadAnalysis()`), pisando en silencio el análisis real ya
-  calculado en Evidencias con uno genérico — ahora `AnalysisService` cae a
-  las respuestas persistidas en vez de a un mapa vacío.
-- **Identificación de equipos por foto** (2026-09-14): al subir una foto de
-  un equipo (router/switch/pos/printer/camera/computer/access_point),
-  `app/vision.py` le pide a OpenAI Vision marca/modelo en JSON estructurado
-  (antes solo devolvía texto libre). Si detecta algo, queda guardado en
-  `evidence_photos.detected_brand/model` (gateway) y se contrasta contra lo
-  autorreportado en el chat dentro de `_compute_as_is()` — ej. "el técnico
-  reportó X pero la foto muestra Y, verificar". Requiere `OPENAI_API_KEY`
-  real para probarse de punta a punta (pendiente, ver sección de
-  credenciales); la lógica de merge y contraste se verificó simulando el
-  resultado de visión directo en Postgres.
-- Minutas (crear/completar/validar).
-- Análisis IA (pantalla post-Evidencias): calculado de verdad a partir de
-  las respuestas del chat, no hardcodeado — motor unificado (ver arriba).
-- Topología: íconos por tipo de dispositivo, se centra sola, tap para
-  pantalla completa con pinch-zoom.
-- **Checklist dinámico de Evidencias Técnicas, reconstruido de cero**
-  (2026-09-14): reemplaza el viejo flujo fijo de 7 categorías. Al entrar a
-  Evidencias, el backend siembra automáticamente áreas (una por zona WiFi
-  del chat + "Rack / Router" + "Plano y Topología" fijas) y equipos (uno por
-  tipo presente según las cantidades reales del chat) — ver
-  `app/chat/checklist.py` (FastAPI) y `EvidenceChecklistService` (gateway,
-  paquete `evidence.checklist`, 11 endpoints en
-  `/api/v1/evaluations/{id}/evidence/...` + `/minuta`). Fase A (selección
-  libre: agregar/quitar áreas o equipos a mano) → "Confirmar selección" →
-  Fase B (cada ítem necesita ≥1 foto, multi-foto permitido, botón "Analizar
-  con IA" se habilita solo cuando todos tienen foto). Verificado de punta a
-  punta por curl: sembrado real, agregar área custom, bloquear, subir foto,
-  `GET minuta` con las 21 respuestas reales + tabla de equipos con conteo de
-  fotos. El flujo viejo (`EvidenceUploadApiService`/`EvidenceController` del
-  gateway) se borró — ya no existen dos pipelines de evidencia compitiendo.
-- Generación de PDF de la propuesta (Apache PDFBox) y envío por correo con
-  el PDF adjunto — el código es real; el envío falla explícito si
-  `MAIL_ENABLED=false` (default) en vez de simular éxito.
-- Home: nombre/empresa/stats reales (`GET /api/profile/me`), lista de
-  "Recientes" con minutas reales.
-- Perfil: nombre/correo reales, "Cerrar sesión" funcional.
-- Notificaciones push (FCM): infraestructura completa en Android + gateway.
+## Código muerto conocido
 
-**Pendiente — requiere que el usuario provea credenciales externas:**
-- **Firebase (push)**: crear proyecto en Firebase Console → descargar
-  `app/google-services.json` (Android) y una clave de cuenta de servicio →
-  `FIREBASE_CREDENTIALS_PATH` en el `.env` del gateway.
-- **SMTP (envío de correo real)**: `MAIL_HOST`/`MAIL_USERNAME`/
-  `MAIL_PASSWORD` + `MAIL_ENABLED=true` en el `.env` del gateway.
-- **OpenAI (visión de fotos + identificación de marca/modelo)**:
-  `OPENAI_API_KEY` en el `.env` de `idbi-fastapi` para que el análisis de
-  fotos en Evidencias deje de decir "no configurado" y para que la
-  extracción de marca/modelo (2026-09-14) funcione de verdad.
-- **Validación de RUC/negocio (SUNAT vía APIs Peru)**: `RUC_VALIDATION_API_KEY`
-  + `RUC_VALIDATION_ENABLED=true` en el `.env` del gateway
-  (`RucValidationService`, 2026-09-14). Apagado por defecto: solo corre
-  validación de formato local (nombre no vacío/no solo números). El usuario
-  aún no tiene cuenta en apis.net.pe — queda preparado, no simula éxito.
-
-**Pendiente de verificación manual (2026-09-14)**: todo lo de hoy se probó
-por curl/psql contra los backends reales y los 3 repos compilan, pero
-**nadie recorrió a mano en el emulador** la nueva UI del checklist dinámico
-de Evidencias (diálogos de agregar área/equipo, captura Fase B) ni los fixes
-de interacción del chat (texto que se limpiaba solo, feedback visual en
-botones Sí/No/opción). Antes de dar por cerrado hay que abrir la app, crear
-una evaluación, completar el chat, y probar Evidencias de punta a punta a
-mano. El plan completo con el detalle de las 6 piezas de esta sesión queda
-en `~/.claude/plans/spicy-imagining-falcon.md` si hace falta repasar el
-diseño.
-
-**Código muerto conocido (no bloquea nada, pero confunde si se lee)**:
-`HistorialViewModel`/`EvaluationSummaryItem`/`EvaluationFilters` (Android) y
-`ProposalController` (gateway, `/api/evaluations/{id}/proposal`, sigue
-100% hardcodeado — nada lo llama). `HistorialFragment` real usa datos mock
-propios, no ese ViewModel.
-
-## Gotchas de infraestructura local
-
-- Las tablas de Postgres deben ser propiedad de `idbi_user` (no del usuario
-  de macOS) para que `ddl-auto: update` de Hibernate pueda migrar el
-  esquema. Si un día vuelve el error `must be owner of table`, correr:
-  `REASSIGN OWNED BY "<tu_usuario_mac>" TO idbi_user;` conectado a la base
-  `asistente_red_idbi`.
-- **Puerto 8080 puede estar ocupado por otro proyecto (Voya)**: el usuario
-  tiene otro proyecto Android Studio, `~/AndroidStudioProjects/Voya/backend`
-  (Spring Boot), que también levanta en el puerto 8080 por defecto
-  (`pe.voya.backend.VoyaBackendApplication`). Si quedó corriendo de una
-  sesión anterior, la app le pega a Voya sin darse cuenta y **todos** los
-  endpoints — incluso los públicos como `/api/auth/login` — devuelven
-  `403 Forbidden` sin cuerpo, pareciendo un bug de seguridad del gateway
-  cuando en realidad `SecurityConfig.java` está bien. Antes de debuggear
-  cualquier "no tengo permisos"/403 inesperado, correr
-  `lsof -i :8080 -sTCP:LISTEN` y confirmar que el proceso es
-  `IdbiApiGatewayApplication`, no `VoyaBackendApplication`; si no, matarlo y
-  relevantar el gateway real.
+- Android: no hay código muerto confirmado en el historial. `HistorialViewModel`, `EvaluationSummaryItem` y `EvaluationFilters` **sí se usan** (el Historial los usa para el filtro por fecha y anular borradores).
+- Gateway: `ProposalController` (`/api/evaluations/{id}/proposal`). Está hardcodeado y nada lo llama.

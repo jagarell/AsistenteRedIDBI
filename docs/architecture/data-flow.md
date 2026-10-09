@@ -1,5 +1,7 @@
 # Flujo de datos
 
+Actualizado al 6 de octubre de 2026: chat de 76 nodos, evidencias en el chat y minuta PDF armada en el servidor.
+
 ## Diagrama 3 — Flujo principal: evaluación técnica completa
 
 ```mermaid
@@ -11,90 +13,87 @@ sequenceDiagram
     participant DS as DataStore
     participant GW as Spring Boot Gateway
     participant DB as PostgreSQL
+    participant FS as Disco uploads/
     participant PY as FastAPI
-    participant OSM as Nominatim
-    participant AI as OpenAI/Flowise opcional
+    participant AI as OpenAI Vision
 
     U->>UI: Inicia sesión
-    UI->>VM: Credenciales
-    VM->>GW: POST /api/auth/login (HTTP JSON)
-    GW->>DB: Buscar usuario y hash (JPA/JDBC)
-    DB-->>GW: Usuario y rol
-    GW->>GW: BCrypt + emitir JWT HS256
-    GW-->>VM: JWT, expiración, usuario y rol
+    VM->>GW: POST /api/auth/login (HTTPS JSON)
+    GW->>DB: Usuario, hash y rol
+    GW->>GW: BCrypt + JWT HS256 + refresh token
+    GW->>DB: Guardar hash del refresh token
+    GW-->>VM: Access token, refresh token, usuario y rol
     VM->>DS: Guardar sesión
-    VM-->>UI: Abrir Home
 
-    U->>UI: Inicia evaluación
-    UI->>VM: Datos iniciales
-    VM->>DS: Leer JWT
+    U->>UI: Nueva evaluación
     VM->>GW: POST /api/evaluations (Bearer JWT)
-    GW->>DB: INSERT evaluación
-    DB-->>GW: ID de evaluación
-    GW-->>UI: Evaluación creada
+    GW->>DB: INSERT evaluación en BORRADOR
+    GW-->>UI: ID de evaluación
 
-    UI->>GW: POST .../chat/start (JWT)
-    GW->>PY: POST /chat/start (JSON)
-    PY-->>GW: Primera pregunta
-    GW-->>UI: Nodo inicial
+    UI->>GW: POST .../chat/start
+    GW->>PY: POST /chat/start (evaluationId, técnico, fecha)
+    PY-->>GW: Primer nodo + state opaco
+    GW-->>UI: Pregunta P01
 
-    loop Hasta completar 20 nodos
-        U->>UI: Responde pregunta
-        UI->>GW: POST .../chat/answer (JWT, paso y respuestas)
-        GW->>PY: POST /chat/answer (JSON síncrono)
-        opt Nodo automático de ubicación
-            PY->>OSM: HTTPS GET de nombre + dirección
-            OSM-->>PY: Latitud y longitud
+    loop Hasta el resumen final (P54)
+        alt Nodo de pregunta
+            U->>UI: Responde
+            UI->>GW: POST .../chat/answer (state + respuesta)
+            GW->>PY: POST /chat/answer
+        else Nodo de evidencia (E1…E9, EU-*)
+            U->>UI: Toma o elige 1 a 3 fotos
+            UI->>GW: POST .../chat/answer-photos (multipart files + state)
+            GW->>FS: Guardar archivos
+            GW->>DB: INSERT evidence_photos (evidence_code, chat_scope, área)
+            GW->>PY: POST /chat/answer (state + fotos Base64)
+            PY->>AI: Extraer datos (speedtest, etiqueta, ipconfig, ticket, escáner)
+            AI-->>PY: JSON estructurado
+            PY->>PY: Redactar credenciales (E3), cruces y reglas
+            opt El técnico corrige un dato leído
+                UI->>GW: POST .../chat/amend
+                GW->>PY: POST /chat/amend
+            end
         end
-        PY-->>GW: Siguiente nodo y progreso
-        GW-->>UI: Pregunta siguiente
+        PY-->>GW: Siguiente nodo + state
+        GW-->>UI: Pregunta, aviso o tarjeta de evidencia
+        UI->>DS: ChatProgressStore guarda el state (para Continuar)
     end
 
-    opt Motor de propuesta configurado como OpenAI o Flowise
-        PY->>AI: HTTPS/REST con respuestas técnicas
-        AI-->>PY: Resumen enriquecido
-    end
-    PY->>PY: Reglas, score y topología
-    PY-->>GW: Propuesta completa
-    GW-->>UI: Resultado técnico
+    PY-->>GW: completed=true + propuesta AS-IS/TO-BE + answers con __state
+    GW->>DB: UPDATE evaluations.chat_answers_json
+    GW-->>UI: Resumen final
 
-    UI->>GW: POST evidencia multipart (JWT)
-    GW->>GW: Guardar archivo en uploads/
-    GW->>DB: INSERT metadata de evidencia
-    DB-->>GW: ID de evidencia
-    GW-->>UI: URL y metadata
+    U->>UI: Generar mapa con IA / editar
+    UI->>GW: POST .../map/generate y .../map/command
+    GW->>PY: POST /chat/map/generate o /chat/map/command
+    PY-->>GW: Mapa JSON
+    UI->>GW: PUT .../map (mapa editado)
+    GW->>DB: UPDATE evaluations.map_json
 
-    U->>UI: Solicita análisis de foto
-    UI->>GW: POST .../evidence/{id}/analyze
-    GW->>GW: Leer archivo desde disco
-    GW->>PY: POST /analyze-photo (imagen Base64)
-    PY->>AI: OpenAI Vision, si existe API key
-    AI-->>PY: Descripción
-    PY-->>GW: Resultado del análisis
-    GW->>DB: UPDATE analysis_result
-    GW-->>UI: Evidencia analizada
-
-    U->>UI: Completa minuta
-    UI->>GW: POST/PUT /api/minutas (JWT)
-    GW->>DB: INSERT/UPDATE minuta
-    DB-->>GW: Minuta persistida
-    GW-->>UI: Estado de minuta
+    U->>UI: Ver minuta PDF
+    UI->>GW: GET .../minuta/pdf
+    GW->>DB: Leer state y mapa
+    GW->>PY: POST /chat/minuta-document
+    PY-->>GW: Documento (secciones, reglas V01–V10, recomendaciones)
+    GW->>GW: Thymeleaf + OpenHTMLtoPDF
+    GW-->>UI: PDF (400 si falta la evidencia E9)
 ```
 
 ## Explicación paso a paso
 
-1. Android recoge las credenciales y las envía como JSON al gateway.
-2. El gateway normaliza el correo, verifica el hash BCrypt y genera un JWT HS256 que contiene identidad y rol.
-3. Android guarda JWT, expiración, ID, nombre y rol en DataStore Preferences. El interceptor OkHttp agrega el token a llamadas posteriores.
-4. Al crear una evaluación, el gateway valida el JWT y persiste el registro mediante JPA/Hibernate.
-5. Para el chat, el gateway actúa como proxy síncrono. Envía a FastAPI el identificador, el paso actual y el mapa acumulado de respuestas.
-6. FastAPI conserva el estado del chat en el payload recibido; no se identificó persistencia propia ni sesión server-side del chat.
-7. En el nodo automático de ubicación, FastAPI consulta Nominatim y añade coordenadas al mapa de respuestas.
-8. Al concluir los 20 nodos, FastAPI calcula reglas, score, equipos, recomendaciones y topología. Puede reemplazar únicamente el resumen mediante OpenAI o Flowise y vuelve a reglas si la integración falla.
-9. El gateway devuelve el resultado a Android. En el flujo revisado, no se observó que `ChatService` persista por sí mismo todas las respuestas o la propuesta; la minuta posterior almacena resumen/contenido/topología como texto JSON.
-10. Las fotografías se envían como `multipart/form-data` al gateway. El binario va a disco local y sus metadatos a PostgreSQL.
-11. Para analizar una imagen, el gateway lee el archivo, lo codifica en Base64 y lo envía síncronamente a FastAPI; FastAPI usa OpenAI si existe una clave.
-12. La minuta se crea y actualiza en PostgreSQL. La validación está protegida por rol `SUPERVISOR`.
+1. **Login.** Android envía las credenciales al gateway. El gateway verifica el hash BCrypt, emite un JWT HS256 y un refresh token (guarda solo su hash). `TokenAuthenticator` renueva el access token con `/api/auth/refresh`, y el refresh token se rota en cada uso.
+2. **Nueva evaluación.** Toda evaluación nueva nace en **BORRADOR**. Las minutas en borrador vencen a los 30 días (`DRAFT_TTL_DAYS`), y `MinutaReminderJob` avisa al técnico 2 días antes (`DRAFT_WARN_DAYS_BEFORE`).
+3. **Chat.** El gateway es un proxy síncrono hacia FastAPI.
+   - FastAPI **no guarda estado**: cada respuesta devuelve un `state` opaco que el cliente reenvía.
+   - Las respuestas tienen alcance, por ejemplo `P22#L_CAJAS:1`.
+   - El gateway prellena P06 (fecha) y P07 (técnico).
+4. **Evidencias.** Las fotos llegan en multipart al gateway. El gateway guarda el binario en disco y los metadatos en `evidence_photos`, y las reenvía en Base64 a FastAPI.
+   - FastAPI extrae los datos con OpenAI Vision, oculta las credenciales de la etiqueta del router (E3) y cruza la información (proveedor, MAC de la impresora, adaptador).
+   - El técnico confirma lo leído o lo corrige (`/amend`).
+5. **Fin del chat.** FastAPI devuelve la propuesta AS-IS/TO-BE y el estado completo en `answers["__state"]`. El gateway lo guarda en `evaluations.chat_answers_json`, que es la fuente para el análisis, la minuta y el mapa.
+6. **Mapa.** Se genera desde el `state` y se edita en la app (`MapCanvasView`). La versión editada se guarda en `evaluations.map_json`.
+7. **Minuta PDF.** **Se arma en el servidor** con datos persistidos, no con contenido enviado por Android: FastAPI produce el documento y el gateway lo convierte en PDF. Sin la evidencia E9 no se genera.
+8. **Minutas.** La minuta como registro (borrador, completa, validada) vive en `minutas`. Validar requiere el rol Supervisor.
 
 ## Flujo de PDF y correo
 
@@ -103,27 +102,25 @@ sequenceDiagram
     actor U as Usuario
     participant A as Android
     participant G as Gateway
-    participant P as PDFBox
-    participant S as SMTP
+    participant P as FastAPI
+    participant R as Resend API
 
-    U->>A: Generar propuesta PDF
-    A->>G: POST /api/proposals/pdf + JWT + contenido
-    G->>P: Construir PDF en memoria
-    P-->>G: byte[] application/pdf
-    G-->>A: Stream del PDF
-    A-->>U: Visualizar/compartir archivo
+    U->>A: Ver o enviar minuta
+    A->>G: GET /api/evaluations/{id}/minuta/pdf
+    G->>P: POST /chat/minuta-document (state persistido)
+    P-->>G: Documento JSON
+    G->>G: Thymeleaf + OpenHTMLtoPDF
+    G-->>A: application/pdf
 
-    opt Envío por correo solicitado
-        A->>G: POST /api/proposals/send + JWT
-        G->>P: Generar PDF
-        P-->>G: byte[]
-        G->>S: SMTP STARTTLS + adjunto
-        S-->>G: Resultado del envío
-        G-->>A: Confirmación o error explícito
+    opt Envío por correo
+        A->>G: POST .../minuta/send
+        G->>R: HTTPS + PDF adjunto
+        R-->>G: Resultado
+        G-->>A: Confirmación o error explícito (si MAIL_ENABLED=false)
     end
-```
 
-El contenido del PDF llega desde Android en el request; el controlador de PDF no consulta directamente PostgreSQL en la implementación observada.
+    Note over A,G: La propuesta PDF legada (/api/proposals/pdf) todavía recibe el contenido desde Android y usa PDFBox
+```
 
 ## Flujo de notificaciones
 
@@ -132,28 +129,30 @@ sequenceDiagram
     participant A as Android
     participant F as Firebase Cloud Messaging
     participant G as Gateway
+    participant J as MinutaReminderJob
     participant DB as PostgreSQL
 
     A->>F: Solicitar token FCM
-    F-->>A: Token de dispositivo
+    F-->>A: Token
     A->>G: PUT /api/notifications/device-token + JWT
-    G->>DB: Guardar token en usuario
-    Note over G,F: Un servicio de negocio puede solicitar el envío
+    G->>DB: Guardar fcm_token en el usuario
+    J->>DB: Minutas en BORRADOR por vencer (9:00 America/Lima)
+    J->>G: Notificar al técnico
     G->>F: Firebase Admin SDK / HTTPS
     F-->>A: Push asíncrono
 ```
 
-No se identificó una cola: el envío desde el gateway hacia Firebase es directo.
+Los push no salen todavía: faltan `google-services.json` en Android y `FIREBASE_CREDENTIALS_JSON` en Railway. No hay cola: el envío a Firebase es directo.
 
 ## Sincronía y persistencia
 
 | Flujo | Tipo | Persistencia |
 |---|---|---|
-| Android → Gateway | Síncrono HTTP REST | DataStore solo guarda sesión local |
-| Gateway → FastAPI | Síncrono HTTP REST | FastAPI no persiste en el flujo activo |
-| Gateway → PostgreSQL | Síncrono transaccional vía JPA | Persistencia permanente |
-| Gateway → disco | Síncrono Java NIO | Archivo permanente solo en el host actual |
-| FastAPI → Nominatim/OpenAI/Flowise | Síncrono HTTP(S) | No identificada |
-| Gateway → SMTP | Síncrono durante la petición | No identificada |
-| Gateway → FCM | Solicitud síncrona; entrega push asíncrona | Token en usuario |
-
+| Android → Gateway | Síncrono HTTPS REST | DataStore: sesión y `state` del chat para "Continuar" |
+| Gateway → FastAPI | Síncrono HTTP REST, sin timeout configurado | FastAPI no persiste; el estado viaja en `state` |
+| Gateway → PostgreSQL | Síncrono transaccional vía JPA | Permanente |
+| Gateway → disco | Síncrono Java NIO | Archivo en el disco del servicio. ⚠️ El código no muestra si en Railway hay un volumen persistente |
+| FastAPI → OpenAI | Síncrono HTTPS dentro de la respuesta del chat | No persiste en FastAPI; el resultado vuelve en `state` y el gateway lo guarda en `extracted_json` |
+| Gateway → Resend | Síncrono durante la petición | No identificada |
+| Gateway → FCM | Solicitud síncrona; entrega push asíncrona | Token en el usuario |
+| Excel de minutas → tablas `kb_*` | Script local (propuesto) | Solo base local o de pruebas |
