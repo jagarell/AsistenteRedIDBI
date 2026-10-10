@@ -10,9 +10,9 @@ Todo el proyecto está en 3 repositorios. La documentación de los tres vive aqu
 
 Producción (Railway): `https://asistenteredidbi.up.railway.app` (gateway).
 
-> 🌿 **Rama de trabajo actual:** `feature/flujo-comandas-internet` (FastAPI y esta documentación; local, sin push). Trae los cambios del flujo del 2026-10-09: comanda en caja (P12b), P14 y P22 con opciones nuevas, y la regla de impresoras de preparación de red. Ver [`flujo/FLUJO_NODOS.md`](flujo/FLUJO_NODOS.md), sección 15.
+> 🚀 **2026-10-10:** se desplegó el flujo con comanda en caja (P12b), P14 y P22 con opciones nuevas, prueba del chip, puertos del router, decisión de impresión, switch, WiFi por zona y aviso de viabilidad. Versión en uso: **APK 0.0.3**. Ver [`flujo/FLUJO_NODOS.md`](flujo/FLUJO_NODOS.md), sección 15.
 
-> ⛔ **Cada `push` a `main` despliega solo en producción.** El trabajo nuevo va en ramas locales y se prueba con Postgres local o H2. No se hace push ni merge a `main` sin aprobación del equipo. Versión en uso: APK 0.0.2.
+> ⛔ **Cada `push` a `main` despliega solo en producción.** El trabajo nuevo va en ramas locales y se prueba con Postgres local o H2. No se hace push ni merge a `main` sin aprobación del equipo. Versión en uso: APK 0.0.3.
 
 ## Por dónde empezar
 

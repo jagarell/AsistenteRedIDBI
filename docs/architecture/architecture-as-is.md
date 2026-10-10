@@ -1,6 +1,6 @@
 # Arquitectura actual — AS-IS
 
-Actualizada al 6 de octubre de 2026, contra el código desplegado (APK 0.0.2). Los puntos marcados con ✅ estaban como problema en la revisión del 17 de agosto y ya se resolvieron.
+Actualizada al 6 de octubre de 2026, contra el código desplegado (APK 0.0.3). Los puntos marcados con ✅ estaban como problema en la revisión del 17 de agosto y ya se resolvieron.
 
 ## Diagrama consolidado
 
@@ -9,7 +9,7 @@ flowchart LR
     TECH[Técnico]
     SUP[Supervisor]
 
-    subgraph APP[Android monolítico · APK 0.0.2]
+    subgraph APP[Android monolítico · APK 0.0.3]
         SCREEN[Fragments/XML<br/>chat, mapa, minuta]
         VM[MVVM + casos de uso]
         HTTP[Retrofit/OkHttp/Moshi<br/>TokenAuthenticator]

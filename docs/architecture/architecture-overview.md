@@ -9,7 +9,7 @@ flowchart LR
     USER[Usuario<br/>Técnico o Supervisor]
 
     subgraph CLIENT[Cliente]
-        ANDROID[App Android nativa<br/>Kotlin + XML · APK 0.0.2]
+        ANDROID[App Android nativa<br/>Kotlin + XML · APK 0.0.3]
         LOCAL[DataStore Preferences<br/>JWT, refresh token, rol<br/>y progreso del chat]
         ANDROID --> LOCAL
     end
@@ -44,7 +44,7 @@ flowchart LR
 
 ### Clientes encontrados
 
-- Android nativo: implementado (APK 0.0.2 de debug; no hay llave de release).
+- Android nativo: implementado (APK 0.0.3 de debug; no hay llave de release).
 - iOS, Flutter, React Native, frontend web o portal de administración: **no identificados en los repositorios**.
 - Swagger/OpenAPI generado por FastAPI: sirve para exploración técnica, no es un producto de usuario.
 

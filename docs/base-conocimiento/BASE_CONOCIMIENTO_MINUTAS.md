@@ -1,6 +1,6 @@
 # Base de conocimiento de minutas manuales
 
-Última actualización: 2026-10-09 (18 minutas cargadas). Parte del cambio al flujo de la sección 4b **ya está implementada en la rama local `feature/flujo-comandas-internet`** (no en producción); lo demás sigue propuesto.
+Última actualización: 2026-10-10 (18 minutas cargadas). El cambio al flujo de la sección 4b **ya está implementado y desplegado**; lo que sigue propuesto son las tablas `kb_*`, el importador y la fase 2 (recomendaciones desde la base).
 
 Este documento explica cómo pasar a la base de datos las **minutas técnicas hechas a mano (PDF)**. El objetivo es que el motor de recomendaciones aprenda de visitas reales.
 
@@ -20,7 +20,7 @@ La entrada es el Excel [`Base_Conocimiento_Minutas.xlsx`](Base_Conocimiento_Minu
 
 ## ⛔ Regla de oro: nada a producción
 
-> **No se sube nada a producción.** La versión de la app que está en uso (APK 0.0.2 y backends desplegados en Railway) no debe cambiar.
+> **No se sube nada a producción.** La versión de la app que está en uso (APK 0.0.3 y backends desplegados en Railway) no debe cambiar.
 
 - **No hacer `push` a `main`** en ninguno de los 3 repos. En Railway, cada push a `main` despliega solo.
 - Trabajar en una rama local (`feature/base-conocimiento-minutas`). No abrir ni mergear PRs a `main` sin autorización explícita del equipo.
@@ -420,7 +420,7 @@ Implementación sugerida:
 
 ### Cambio al flujo: qué está hecho y qué falta
 
-**Implementado el 2026-10-09 en la rama local `feature/flujo-comandas-internet`** (FastAPI, commit aparte; sin push a `main`). Detalle en [`../flujo/FLUJO_NODOS.md`](../flujo/FLUJO_NODOS.md), sección 15:
+**Implementado y desplegado el 2026-10-10** (FastAPI, gateway y APK 0.0.3). Detalle en [`../flujo/FLUJO_NODOS.md`](../flujo/FLUJO_NODOS.md), sección 15:
 - **P22** con *Sí / No / Tablet / No sé / Otro*, con P22f ("¿qué equipo hay en caja?") y aviso de Raspberry obligatorio para la tablet.
 - **P12b** "¿En caja saldrán comandas?" como pregunta fija para todos los negocios, con el aviso del Sunmi.
 - **P14** con *Fibra óptica / Cable coaxial / No sé / No tiene / Internet con chip*. Sin internet se salta P15 y el speedtest E1.
@@ -428,7 +428,11 @@ Implementación sugerida:
 - **Regla R51:** si un área de preparación necesita impresora, tiene que ser de red por cable. Genera alerta y acción en el chat y una regla en la validación de la minuta.
 - Motor: operador `includesAny`, referencias `$item` y `$prepAreas`.
 
-**Sigue propuesto (no implementado):** P14b + E1b (prueba de la señal del chip), el bloque `derived`, la lectura de puertos en E2 (P18a, switch y puntos de red), `G_IMPRESION`, P46a (WiFi por zona) y el aviso de viabilidad en la minuta. Los fragmentos de abajo son el diseño de referencia; los de P12b, P14, P22 y R51 ya existen en el flujo con ligeras diferencias (por ejemplo, el aviso del Sunmi sale una sola vez después de P12b, no dentro del loop de cajas).
+- **P14b + E1b** (prueba de la señal del chip), **puertos del router** leídos en E2 (con P18a de respaldo), **switch y puntos de red** (`G_PUERTOS`), **decisión de impresión** (`G_IMPRESION`), **WiFi por zona** (P46a), el **aviso de viabilidad** en la minuta y los **valores derivados** calculados por el motor.
+
+Diferencias con el diseño de referencia de abajo: el aviso del Sunmi sale una sola vez después de P12b (no dentro del loop de cajas); la alerta de Raspberry de cada caja se quitó y la recomendación se decide al final del bloque E; el número de equipos por cable cuenta el access point si hay zonas sin señal o P45 = Sí, y los puntos de red faltantes salen de las respuestas U1 = No (o de los puertos que faltan).
+
+**Sigue propuesto (no implementado):** las tablas `kb_*`, el importador del Excel y que las recomendaciones salgan de la base de conocimiento (fase 2). Las reglas siguen fijas en el código.
 
 **Cambio propuesto al flujo (diseño completo)**
 

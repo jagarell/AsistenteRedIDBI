@@ -1,6 +1,6 @@
 # Flujo de nodos – Asistente técnico de red con IA (minuta técnica)
 
-Especificación del chat técnico del proyecto **Asistente Red IDBI**. **Ya está implementada** en `AsistenteRedIDBI-API/app/chat/` (motor `flow_engine.py`, flujo `app/chat/flow/flujo_asistente_red.json`). Este documento se generó desde ese JSON el 2026-10-06 y se actualizó el 2026-10-09 con los cambios de comandas, internet y equipo de caja (ver §15). Esos cambios están en la rama local `feature/flujo-comandas-internet`: **no están desplegados en producción**.
+Especificación del chat técnico del proyecto **Asistente Red IDBI**. **Ya está implementada** en `AsistenteRedIDBI-API/app/chat/` (motor `flow_engine.py`, flujo `app/chat/flow/flujo_asistente_red.json`). Este documento se generó desde ese JSON el 2026-10-06 y se actualizó el 2026-10-10 con los cambios de comandas, internet, puertos del router, decisión de impresión y WiFi por zona (ver §15).
 
 **La fuente de verdad es `flujo_asistente_red.json`.** Este documento la explica.
 
@@ -31,13 +31,13 @@ flowchart TD
   B -->|P10 > 1| BP[🔁 L_PISOS<br/>P11a piso de cada área] --> B2
   B -->|P10 = 1| B2[P12 cajas · P12b ¿comandas en caja?]
   B2 -->|sin áreas de preparación y comanda en caja| SUN[ℹ️ Recomendar Sunmi] --> C
-  B2 --> C[C. Internet<br/>P13 · P14 tipo de conexión · P15–P18 + 📷 E1 E2 E3<br/>sin internet: se salta P15 y E1]
+  B2 --> C[C. Internet<br/>P13 · P14 tipo de conexión · P15–P18 + 📷 E1 E2 E3<br/>sin internet o Sunmi: P14b señal del chip + 📷 E1b<br/>sin internet: se salta P15 y E1<br/>puertos del router leídos en E2 (P18a si no se leen)]
   C -->|P12 > 0| D[🔁 L_CAJAS<br/>P22 ¿hay PC o laptop?]
   C -->|P12 = 0| E
   D -->|Sí| D1[P23 cable/WiFi → 📷 E4 ipconfig]
-  D -->|No · No sé| DR[⚠️ Recomendar Raspberry] --> D2{P22a ¿Ya tiene Raspberry?}
+  D -->|No · No sé| D2{P22a ¿Ya tiene Raspberry?}
   D -->|Tablet| DT[⚠️ Raspberry obligatorio] --> D2
-  D -->|Otro| DO[P22f ¿qué equipo?] --> DR
+  D -->|Otro| DO[P22f ¿qué equipo?] --> D2
   D2 -->|Sí| D3[P22c conexión]
   D2 -->|No| D4[P22b adquirirá Raspberry/Laptop/PC] --> U1((Subflujo U))
   D1 & D3 & U1 --> E[E. Impresoras<br/>P25 áreas que imprimen · P26 cuántas]
@@ -47,14 +47,20 @@ flowchart TD
   EG -->|Sí| EA[⚠️ Áreas sin impresora] --> EL2[🔁 por área: P32 compartir o nueva]
   EL2 -->|Compartir| E3[P32a con qué impresora]
   EL2 -->|Nueva| E4[P32b ubicación · P32c conexión] --> U2((Subflujo U))
-  EG -->|No| F
-  E3 & U2 --> F[F. Energía<br/>P33 tomas cerca · P34 · P35 UPS · P36 extensiones]
+  EG -->|No| GI
+  E3 & U2 --> GI{G_IMPRESION<br/>decisión de impresión}
+  GI -->|sin PC y comandas| GR[⚠️ Kit Raspberry]
+  GI -->|sin PC y caja USB| GP[⚠️ Laptop o PC con controlador]
+  GI -->|sin PC, sin comandas| GB[ℹ️ PC básica]
+  GR & GP & GB & GI --> GPU{G_PUERTOS<br/>¿alcanzan los puertos?}
+  GPU -->|faltan| GS[⚠️ Switch + puntos de red] --> US((Subflujo U<br/>switch)) --> F
+  GPU -->|alcanzan| F[F. Energía<br/>P33 tomas cerca · P34 · P35 UPS · P36 extensiones]
   F -->|P33 = No| U3((Subflujo U<br/>solo energía)) --> G
   F --> G[G. Cableado<br/>P37 · P38 ¿llegan a todas las áreas?]
   G -->|No| GL[🔁 P38a por área sin punto → Subflujo U solo red] --> G2
   G -->|Sí| G2[P39 cable · P39a entre pisos · P40 gabinete · P41 · 📷 E6]
   G2 -->|P36 = Sí| G3[P43 ubicación extensión · 📷 E7]
-  G2 & G3 --> H[H. WiFi y dispositivos<br/>P45–P47 · 📷 E8 escáner IP]
+  G2 & G3 --> H[H. WiFi y dispositivos<br/>P45 · P46 zonas sin señal → P46a repetidor o access point<br/>por zona: Subflujo U · P47 · 📷 E8 escáner IP]
   H --> I[I. Cierre<br/>📷 E9 · P50 ¿segunda visita? → P50a por qué · P51–P53]
   I --> S[P54 SUMMARY<br/>Generar minuta · Generar mapa con IA]
 ```
@@ -72,7 +78,7 @@ flowchart TD
   "required": true,
   "options": [{"value": "PC", "label": "PC"}, …],    // o dinámicas, ver §5
   "validation": {"min": 0, "max": 20},               // opcional: min, max, minSelected, minLength, regex
-  "next": "P23"  |  {"rules": [{"if": <cond>, "goto": "A_RASPBERRY"}], "default": "P23"},
+  "next": "P23"  |  {"rules": [{"if": <cond>, "goto": "A_RASPBERRY_TABLET"}], "default": "P23"},
   "effects": [ … ],            // opcional, ver §7
   "minuta": "equipos_caja",    // sección de la minuta donde va la respuesta
   "topology": { … },           // opcional: pista para el generador del mapa
@@ -168,6 +174,7 @@ Variables disponibles:
 | **Impresora de preparación que no es de red por cable (R51)** | En P30 (impresora existente) o P32c (nueva): si el área es de preparación (Bar, Cocina, Pizza, Brasas, Jugos, Cafetería, Parrillas, Makis, Ramen, Panadería) y la conexión no es *Cable de red*, genera una alerta y la acción de cambiarla. Además la minuta lo muestra como regla *Impresoras de áreas de preparación de red por cable*. |
 | **No hay impresoras (P26 = 0)** | Todas las áreas de P25 quedan sin impresora → ALERT → por cada área, P32. Si es *Nueva*: P32b, P32c y subflujo U, con fotos del punto de red y de la toma cercanos o del lugar donde se instalarán. |
 | **No hay punto de red o toma cerca** | Subflujo U: pide dónde se instalará según el cliente (TEXT) y una 📷 foto del lugar (EU-RN / EU-EN). Genera `addAction`. |
+| **Equipo sin toma de energía cerca (U5 = No)** | Agrega la acción "necesitará un punto de energía adicional o una extensión". |
 | **Tomas lejos de los equipos de red (P33 = No)** | Subflujo U solo de energía, con `skipNearQuestion` porque P33 ya respondió que no hay. |
 | **Áreas sin punto de red (P38 = No)** | P38a (MULTI_SELECT) → por cada área, subflujo U solo de red. |
 | **Más de un piso** | L_PISOS pregunta el piso de cada área (P11a). P39a pregunta cómo pasa el cable entre pisos. El mapa agrupa los equipos por piso. |
@@ -237,13 +244,17 @@ Reglas:
 | ID | Tipo | Texto | Campo | Opciones / extracción | Siguiente |
 |---|---|---|---|---|---|
 | `P13` | CHOICE | ¿Quién es el proveedor de internet? | internet.proveedor | Movistar / Claro / Entel / Win / Otro | `P14` |
-| `P14` | CHOICE | ¿Qué tipo de conexión tiene? | internet.tipoConexion | Fibra óptica / Cable coaxial / No sé / No tiene / Internet con chip | si $P14 es "No tiene" o "No sé" (sin internet) → `P16`; si no → `P15` |
+| `P14` | CHOICE | ¿Qué tipo de conexión tiene? | internet.tipoConexion | Fibra óptica / Cable coaxial / No sé / No tiene / Internet con chip | si sin internet (No tiene o No sé) → `P14b`; si hay Sunmi (P12b = Sí y sin áreas de preparación) → `P14b`; si no → `P15` |
+| `P14b` | CHOICE | Pon el chip en un celular dentro del local. ¿Qué chip tiene señal? | internet.senalChip | Entel / Claro / Ambos / Ninguno | si hay señal → `E1b`; si no y sin internet → `P16`; si no → `P15` |
+| `E1b` | 📷 EVIDENCE **E1b** | Sube la captura del speedtest hecho desde el celular con el chip. | evidencias.speedtestChip | IA extrae: bajadaMbps, subidaMbps, pingMs, proveedor | sin internet → `P16`; si no → `P15` |
 | `P15` | NUMBER | ¿Cuál es la velocidad contratada? (Mbps) | internet.velocidadContratada |  | `P16` |
 | `P16` | YES_NO | ¿Hay una segunda línea de internet de respaldo? | internet.respaldo |  | `P17` |
 | `P17` | YES_NO | ¿Hubo caídas de internet en el último mes? | internet.caidas |  | `P18` |
 | `P18` | CHOICE | ¿En qué área está el router? | internet.ubicacionRouter | dinámico: `$P11` | si sin internet → `P20`; si no → `P19` |
 | `P19` | 📷 EVIDENCE **E1** | Sube la captura del speedtest (hecho desde el local). | evidencias.speedtest | IA extrae: bajadaMbps, subidaMbps, pingMs, proveedor, servidor, fechaHora | `P20` |
-| `P20` | 📷 EVIDENCE **E2** | Sube una foto del router donde se vea su ubicación. | evidencias.router | IA extrae: marca, modelo, ubicacionVisual | `P21` |
+| `P20` | 📷 EVIDENCE **E2** | Sube una foto del router donde se vea su ubicación. | evidencias.router | IA extrae: marca, modelo, ubicacionVisual, puertosLanTotales, puertosLanOcupados, puertosLanLibres (el técnico confirma o corrige) | `G_PUERTOS_E2` |
+| `G_PUERTOS_E2` | ROUTER (sin UI) |  |  |  | si la IA leyó los puertos libres → `P21`; si no → `P18a` |
+| `P18a` | NUMBER | No se pudieron leer los puertos en la foto del router. ¿Cuántos puertos LAN libres tiene? | internet.puertosLibresRouter |  | `P21` |
 | `P21` | 📷 EVIDENCE **E3** | Sube una foto de la etiqueta del router o switch. | evidencias.etiquetaRouter | IA extrae: marca, modelo, numeroSerie, mac | `P22_GATE` |
 | `P22_GATE` | ROUTER (sin UI) |  |  |  | si $P12 = 0 → `P25`; si no → `L_CAJAS` |
 
@@ -252,10 +263,9 @@ Reglas:
 | ID | Tipo | Texto | Campo | Opciones / extracción | Siguiente |
 |---|---|---|---|---|---|
 | `L_CAJAS` | 🔁 LOOP | itemLabel: Caja {i} |  |  | repite `P22` por cada elemento de `$P12` → al terminar `P25` |
-| `P22` | CHOICE | Caja {i}: ¿hay una PC o laptop? | cajas[{i}].equipo | Sí / No / Tablet / No sé / Otro | Sí → `P23`; Tablet → `A_RASPBERRY_TABLET`; Otro → `P22f`; No y No sé → `A_RASPBERRY` |
-| `P22f` | TEXT | Caja {i}: ¿qué equipo hay en caja? | cajas[{i}].equipoOtro |  | `A_RASPBERRY` |
+| `P22` | CHOICE | Caja {i}: ¿hay una PC o laptop? | cajas[{i}].equipo | Sí / No / Tablet / No sé / Otro | Sí → `P23`; Tablet → `A_RASPBERRY_TABLET`; Otro → `P22f`; No y No sé → `P22a` (la recomendación se decide al final del bloque E, en `G_IMPRESION`) |
+| `P22f` | TEXT | Caja {i}: ¿qué equipo hay en caja? | cajas[{i}].equipoOtro |  | `P22a` |
 | `A_RASPBERRY_TABLET` | ⚠️ ALERT | Caja {i}: la caja es una tablet. Es obligatorio un kit Raspberry para el controlador de impresiones y las impresoras deben ser de red. Cotízalo con Desarrollo de Negocios. |  |  | `P22a` |
-| `A_RASPBERRY` | ⚠️ ALERT | No hay un equipo en Caja {i} para el sistema de impresiones. Recomienda al cliente instalar un Raspberry para el sistema de impresiones. |  |  | `P22a` |
 | `P22a` | YES_NO | ¿El cliente ya cuenta con un Raspberry? | cajas[{i}].tieneRaspberry |  | si $P22a = "SI" → `P22c`; si no → `P22b` |
 | `P22b` | CHOICE | ¿Qué adquirirá el cliente para el sistema de impresiones? | cajas[{i}].adquirira | Raspberry / Laptop / PC | `U_CAJA` |
 | `P22c` | CHOICE | ¿Cómo se conecta el Raspberry a la red? | cajas[{i}].raspberryConexion | Cable de red / WiFi | `@loop.next` |
@@ -275,14 +285,21 @@ Reglas:
 | `P29` | CHOICE | Impresora {i}: ¿cuál es la marca? | impresoras[{i}].marca | Epson / Bixolon / Star / Otro | `P30` |
 | `P30` | CHOICE | Impresora {i}: ¿cómo se conecta? | impresoras[{i}].conexion | Cable de red / USB / WiFi / Bluetooth | `P31` (si es de un área de preparación y no es de red por cable: alerta R51) |
 | `P31` | 📷 EVIDENCE **E5** | Impresora {i}: sube el ticket de autotest o la etiqueta. | evidencias.impresora[{i}] | IA extrae: marca, modelo, numeroSerie, ip, mac | `@loop.next` |
-| `P32_GATE` | ROUTER (sin UI) |  |  |  | si $derived.areasSinImpresora no vacío → `A_SIN_IMPRESORA`; si no → `P33` |
+| `P32_GATE` | ROUTER (sin UI) |  |  |  | si $derived.areasSinImpresora no vacío → `A_SIN_IMPRESORA`; si no → `G_IMPRESION` |
 | `A_SIN_IMPRESORA` | ⚠️ ALERT | Estas áreas no tienen impresora asignada: {derived.areasSinImpresora.labels}. |  |  | `L_AREAS_SIN_IMP` |
-| `L_AREAS_SIN_IMP` | 🔁 LOOP | itemLabel: {item.label} |  |  | repite `P32` por cada elemento de `$derived.areasSinImpresora` → al terminar `P33` |
+| `L_AREAS_SIN_IMP` | 🔁 LOOP | itemLabel: {item.label} |  |  | repite `P32` por cada elemento de `$derived.areasSinImpresora` → al terminar `G_IMPRESION` |
 | `P32` | CHOICE | {item.label}: ¿cómo se resolverá la impresión? | impresionPendiente[{item.value}].solucion | Compartirá una impresora existente / Se instalará una impresora nueva | si $P32 = "COMPARTIR" → `P32a`; si no → `P32b` |
 | `P32a` | CHOICE | {item.label}: ¿con qué impresora compartirá? | impresionPendiente[{item.value}].impresora | dinámico: `$registry.printers` | `@loop.next` |
 | `P32b` | CHOICE | {item.label}: ¿en qué área se colocará la impresora nueva? | impresionPendiente[{item.value}].ubicacion | dinámico: `$P11` | `P32c` |
 | `P32c` | CHOICE | ¿Cómo se conectará la impresora nueva? | impresionPendiente[{item.value}].conexion | Cable de red / USB / WiFi | `U_IMPRESORA` (si el área es de preparación y no es cable de red: alerta R51) |
 | `U_IMPRESORA` | ↪ SUBFLOW U | params: area="$P32b", equipo="Impresora nueva ({item.label})", needsNetwork={"eq": ["$P32c", "CABLE_RED"]}, needsPower=true |  |  | `@loop.next` |
+| `G_IMPRESION` | ROUTER (sin UI) |  |  |  | sin PC y sin comandas (P12b = No y sin áreas de preparación) → `A_IMP_PC_BASICA`; sin PC y la impresora de caja es USB → `A_IMP_PC_CONTROLADOR`; sin PC y con comandas → `A_IMP_RASPBERRY`; si no → `G_PUERTOS` |
+| `A_IMP_RASPBERRY` | ⚠️ ALERT | No hay PC ni laptop en caja y las impresoras son de red. Recomienda un kit Raspberry para el controlador de impresiones. Cotízalo con Desarrollo de Negocios. |  |  | `G_PUERTOS` |
+| `A_IMP_PC_CONTROLADOR` | ⚠️ ALERT | La impresora de caja es USB y solo funciona con laptop o PC, no con Raspberry. Recomienda una laptop o PC para el controlador de impresiones. |  |  | `G_PUERTOS` |
+| `A_IMP_PC_BASICA` | ℹ️ ALERT | No hay áreas de preparación ni comanda. Recomienda una laptop o PC básica con USB para pre-cuentas y comprobantes; sin controlador. |  |  | `G_PUERTOS` |
+| `G_PUERTOS` | ROUTER (sin UI) |  |  |  | si faltan puertos ($derived.faltanPuertos > 0) → `A_FALTAN_PUERTOS`; si no → `P33` |
+| `A_FALTAN_PUERTOS` | ⚠️ ALERT | El router tiene {derived.puertosLibresRouter} puertos libres y hay {derived.equiposCableados} equipos por cable. Recomienda un switch de {derived.tamanoSwitch} puertos e implementar {derived.puntosRedFaltantes} puntos de red. |  |  | `U_SWITCH` |
+| `U_SWITCH` | ↪ SUBFLOW U | params: area="$P18", equipo="Switch nuevo", needsNetwork=false, needsPower=true |  |  | `P33` |
 
 ### F. Energía
 
@@ -317,7 +334,10 @@ Reglas:
 | ID | Tipo | Texto | Campo | Opciones / extracción | Siguiente |
 |---|---|---|---|---|---|
 | `P45` | YES_NO | ¿Hay access points o repetidores? | wifi.accessPoints |  | `P46` |
-| `P46` | MULTI_SELECT | ¿Hay zonas sin señal WiFi? | wifi.zonasSinSenal | dinámico: `$P11` + Ninguna | `P47` |
+| `P46` | MULTI_SELECT | ¿Hay zonas sin señal WiFi? | wifi.zonasSinSenal | dinámico: `$P11` + Ninguna | si hay zonas sin señal → `P46a`; si no → `P47` |
+| `P46a` | CHOICE | Sugerencia: {derived.sugerenciaWifi}. ¿Qué se instalará en las zonas sin señal? | wifi.solucion | Repetidor / Access point / Ambos | `L_ZONAS_SIN_SENAL` |
+| `L_ZONAS_SIN_SENAL` | 🔁 LOOP | itemLabel: {item.label} |  |  | repite `U_WIFI` por cada zona de `$derived.zonasSinSenal` → al terminar `P47` |
+| `U_WIFI` | ↪ SUBFLOW U | params: area="{item.value}", equipo="Repetidor/AP – {item.label}", needsNetwork=(solo la 1.ª zona), needsPower=true |  |  | `@loop.next` |
 | `P47` | YES_NO | ¿Hay cámaras de seguridad conectadas a la red? | red.camaras |  | `P48` |
 | `P48` | 📷 EVIDENCE **E8** | Sube la captura del escáner de IP. | evidencias.escanerIp | IA extrae: dispositivos[ip, mac, fabricante, nombre] | `P49` |
 
@@ -355,7 +375,8 @@ Parámetros: `area`, `equipo`, `needsNetwork`, `needsPower`, `skipNearQuestion`.
 | Código | Nodo | Qué se pide | La IA extrae |
 |---|---|---|---|
 | **E1** | `P19` | Sube la captura del speedtest (hecho desde el local). | bajadaMbps, subidaMbps, pingMs, proveedor, servidor, fechaHora |
-| **E2** | `P20` | Sube una foto del router donde se vea su ubicación. | marca, modelo, ubicacionVisual |
+| **E1b** | `E1b` | Sube la captura del speedtest hecho desde el celular con el chip. (Solo sin internet o con Sunmi.) | bajadaMbps, subidaMbps, pingMs, proveedor |
+| **E2** | `P20` | Sube una foto del router donde se vea su ubicación. | marca, modelo, ubicacionVisual, puertosLanTotales, puertosLanOcupados, puertosLanLibres |
 | **E3** | `P21` | Sube una foto de la etiqueta del router o switch. | marca, modelo, numeroSerie, mac |
 | **E4** | `P24` | Caja {i}: sube la captura de ipconfig. | ipv4, mascara, puertaEnlace, adaptador, mac |
 | **E5** | `P31` | Impresora {i}: sube el ticket de autotest o la etiqueta. | marca, modelo, numeroSerie, ip, mac |
@@ -377,29 +398,37 @@ Escenarios que deben seguir pasando:
 1. **Rock & Burgers.** Áreas: Caja, Cocina, Bar, Jugos. Hay 2 impresoras: IMP1 para Caja e IMP2 compartida por Bar y Jugos. Cocina queda sin impresora, así que se instala una nueva por cable, sin punto de red cerca y con toma cerca. Sin UPS. Una impresora conectada a una extensión. Se agenda segunda visita.
    - Esperado: impresoras `IMP1 – Caja`, `IMP2 – Bar + Jugos`, `IMP3 – Cocina`.
    - Evidencias: E1, E2, E3, E4, E5×2, EU-RN, EU-E, E6, E7, E8, E9.
-   - 5 acciones: impresora nueva, punto de red, UPS, extensión, segunda visita.
+   - 6 acciones: impresora nueva, punto de red, UPS, extensión, segunda visita y controlador de impresiones en la PC de caja.
 2. **Sin PC en caja, 0 impresoras, 2 pisos.** Caja = No; el cliente adquirirá un Raspberry. Bar tendrá impresora nueva por WiFi y Jugos la compartirá. No hay tomas ni puntos de red cerca.
    - Esperado: alerta Raspberry, alerta de áreas sin impresora, `IMP1 – Bar + Jugos`.
    - Para la impresora WiFi no se pregunta por punto de red.
    - Se pregunta el piso de cada área (P11a) y P39a.
 3. **Sin cajas (P12 = 0).** Se salta todo el bloque D (P12b se pregunta igual).
 4. **Comandas, internet y equipo de caja (2026-10-09).** Tablet y Otro en P22; Sunmi con comanda solo en caja; sin internet salta P15 y E1; impresora de preparación por USB o WiFi genera la alerta R51 y la regla en la minuta. Pruebas al final de `tests/test_flow_engine.py`.
+5. **Rock & Burgers tiene ahora 6 acciones**: las 5 de antes más *instalar el controlador de impresiones en la PC de caja* (hay áreas de preparación).
 
 Además:
 - Validación estática: todos los `goto` existen y todos los nodos son alcanzables desde `P01`.
 - Ningún CHOICE o MULTI_SELECT queda sin opciones.
 
-## 15. Cambios del 2026-10-09 (rama local `feature/flujo-comandas-internet`, sin desplegar)
+## 15. Cambios de octubre de 2026 (comandas, internet, puertos, impresión y WiFi)
 
 | Cambio | Dónde |
 |---|---|
 | **P22** pasa a *Sí / No / Tablet / No sé / Otro*. Con Otro se pregunta qué equipo es (P22f). Tablet exige Raspberry. No sé y Otro se tratan como "No" y quedan por confirmar. | `P22`, `P22f`, `A_RASPBERRY_TABLET` |
-| **Comanda en caja** deja de ser una deducción y pasa a ser pregunta fija para todos los negocios (**P12b**). Sin áreas de preparación y con comanda en caja: Sunmi. | `P12b`, `A_SUNMI` |
-| **Regla nueva:** si un área de preparación necesita impresora, tiene que ser de red por cable (R51). | efectos de `P30` y `P32c`; regla en la validación de la minuta |
-| **P14** pasa a *Fibra óptica / Cable coaxial / No sé / No tiene / Internet con chip*. Sin internet (No tiene o No sé) se salta P15 y E1. | `P14`, `P18` |
+| **Comanda en caja** pasa a ser pregunta fija para todos los negocios (**P12b**). Sin áreas de preparación y con comanda en caja: Sunmi. | `P12b`, `A_SUNMI` |
+| **Regla R51:** si un área de preparación necesita impresora, tiene que ser de red por cable. Genera alerta y acción, y una regla en la minuta. | efectos de `P30` y `P32c` |
+| **P14** pasa a *Fibra óptica / Cable coaxial / No sé / No tiene / Internet con chip*. Sin internet se salta P15 y E1. | `P14`, `P18` |
+| **Prueba de la señal del chip:** si no hay internet, o si va un Sunmi, el técnico prueba el chip con un celular (P14b) y sube el speedtest con chip (E1b). Sin señal: alerta de internet satelital y segunda visita. | `P14b`, `E1b` |
+| **Puertos del router:** la IA cuenta los puertos LAN en la foto E2 y el técnico los confirma; si no se pueden leer, P18a. | `P20`, `G_PUERTOS_E2`, `P18a` |
+| **Decisión de impresión** al final del bloque E: Raspberry, laptop o PC con controlador, o PC básica. Se quitó la alerta de Raspberry que salía en cada caja sin PC. | `G_IMPRESION`, `A_IMP_*` |
+| **Switch y puntos de red:** si hay más equipos por cable que puertos libres, recomienda un switch (5, 8, 16 o 24 puertos) y cuántos puntos de red implementar. | `G_PUERTOS`, `A_FALTAN_PUERTOS`, `U_SWITCH` |
+| **WiFi por zona:** repetidor o access point (el primero con red y energía; los siguientes solo energía). | `P46a`, `L_ZONAS_SIN_SENAL`, `U_WIFI` |
+| **Aviso de viabilidad** en la minuta (resumen ejecutivo y siguientes acciones) cuando hay recomendaciones. | `minuta_doc.py`, plantilla del PDF |
+| **Controlador de impresiones:** si hay comandas y hay PC o laptop en caja, se agrega la acción de instalarlo. | efecto de `P23` |
 | **Áreas de preparación nuevas** en P11: Cafetería, Parrillas, Makis, Ramen, Panadería. | `areas`, `prepAreas` |
-| El motor suma `includesAny`, `$item` y `$prepAreas`. | `flow_engine.py` |
+| El motor suma `includesAny`, `$item`, `$prepAreas`, `$loop.index` y los valores derivados `necesitaComandas`, `sinInternet`, `sinPcEnCaja`, `conexionImpresoraCaja`, `puertosLibresRouter`, `equiposCableados`, `faltanPuertos`, `tamanoSwitch`, `puntosRedFaltantes`, `zonasSinSenal` y `sugerenciaWifi`. | `flow_engine.py` |
 
 Valores guardados: P22 ahora es `SI/NO/TABLET/NO_SE/OTRO` (antes `PC/LAPTOP/NO_HAY`) y P14 es `FIBRA/COAXIAL/NO_SE/NO_TIENE/CHIP` (antes `FIBRA/COBRE/INALAMBRICA/NO_SE`). Las evaluaciones guardadas con los valores anteriores se siguen leyendo bien (minuta, mapa y reglas).
 
-**Todavía propuesto, no implementado:** la prueba de la señal del chip (P14b y la evidencia E1b), el bloque `derived` completo, los puertos del router leídos en E2 (P18a, switch y puntos de red), la decisión de impresión al final del bloque E (`G_IMPRESION`) y la solución de WiFi por zona (P46a). Están en `../base-conocimiento/BASE_CONOCIMIENTO_MINUTAS.md`, sección 4b.
+Sigue sin hacerse: las tablas `kb_*` y el importador del Excel de minutas manuales (ver `../base-conocimiento/BASE_CONOCIMIENTO_MINUTAS.md`). El motor de recomendaciones todavía usa las reglas fijas del código, no la base de conocimiento.

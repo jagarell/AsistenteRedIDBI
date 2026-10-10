@@ -129,7 +129,7 @@ cd ~/AndroidStudioProjects/AsistenteRedIDBI
 ```
 
 Abre la carpeta en Android Studio y deja que sincronice Gradle. No necesitas
-tocar nada de configuración: la app apunta a `http://10.0.2.2:8080/`
+tocar nada de configuración: la app apunta a `http://10.0.3.2:8080/`
 (`AuthModule.kt`), que es el alias estándar del emulador Android hacia el
 `localhost` de la máquina donde corre el gateway — funciona solo si usas el
 **emulador**. Si vas a probar en un **dispositivo físico**, cambia

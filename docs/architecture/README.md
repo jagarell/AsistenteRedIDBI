@@ -3,13 +3,13 @@
 Documentación reconstruida desde el código de los tres repositorios.
 
 - **Primera versión:** 17 de agosto de 2026 (chat de 20 nodos, solo local).
-- **Actualizada:** 6 de octubre de 2026, contra los commits desplegados (Android `089040f`, gateway `c81c257`, FastAPI `dd03113`).
+- **Actualizada:** 6 de octubre de 2026, contra el código desplegado (APK 0.0.3, gateway `a254db8`, FastAPI `6a0acec`).
 
 ## Alcance analizado
 
 | Repo en GitHub | Carpeta local habitual | Qué es |
 |---|---|---|
-| `AsistenteRedIDBI` | — | Aplicación Android nativa (APK 0.0.2) |
+| `AsistenteRedIDBI` | — | Aplicación Android nativa (APK 0.0.3) |
 | `AsistenteRedIDBI-API-Gateway` | `idbi-api-gateway` | API y backend de negocio Spring Boot |
 | `AsistenteRedIDBI-API` | `idbi-fastapi` | Servicio Python/FastAPI: chat de 76 nodos, visión, minuta y mapa |
 

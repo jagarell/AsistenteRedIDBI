@@ -29,6 +29,7 @@ object EvidencePresentation {
 
     fun title(code: String): String = when (code) {
         "E1" -> "Speedtest"
+        "E1b" -> "Speedtest con chip"
         "E2" -> "Foto del router"
         "E3" -> "Etiqueta del router"
         "E4" -> "ipconfig de la caja"
@@ -61,7 +62,7 @@ object EvidencePresentation {
     }
 
     fun section(code: String): String = when (code) {
-        "E1" -> "Conectividad"
+        "E1", "E1b" -> "Conectividad"
         "E2", "E3" -> "Equipamiento y POS"
         "E4" -> "Equipos de caja"
         "E5" -> "Impresoras"
@@ -73,6 +74,8 @@ object EvidencePresentation {
 
     private fun hint(code: String): String? = when (code) {
         "E1" -> "Leeré la velocidad, el ping y el proveedor por ti."
+        "E1b" -> "Leeré la velocidad que da el chip en el local."
+        "E2" -> "Contaré los puertos LAN del router: cuántos hay y cuántos están libres."
         "E3" -> "Ocultaré usuario, contraseña y clave WiFi de la etiqueta."
         "E4" -> "Leeré la IP, la puerta de enlace y el tipo de adaptador."
         "E5" -> "Leeré el modelo, la IP, la MAC y el puerto."
@@ -102,7 +105,7 @@ object EvidencePresentation {
         val description = str("descripcion")
 
         return when (result.code) {
-            "E1" -> {
+            "E1", "E1b" -> {
                 val tiles = listOfNotNull(
                     num("bajadaMbps")?.let { ChatResultField("Bajada Mbps", it) },
                     num("subidaMbps")?.let { ChatResultField("Subida Mbps", it) },
@@ -203,7 +206,10 @@ object EvidencePresentation {
                 kind = "RESULT", title = "Leí la foto", badge = "+ IA",
                 rows = listOfNotNull(
                     joined(str("marca"), str("modelo"))?.let { ChatResultField("Equipo", it) },
-                    str("ubicacionVisual")?.let { ChatResultField("Ubicación", it) }
+                    str("ubicacionVisual")?.let { ChatResultField("Ubicación", it) },
+                    num("puertosLanTotales")?.let { ChatResultField("Puertos LAN", it) },
+                    num("puertosLanOcupados")?.let { ChatResultField("Ocupados", it) },
+                    num("puertosLanLibres")?.let { ChatResultField("Libres", it) }
                 ),
                 text = description, warnings = warnings
             )
@@ -244,14 +250,17 @@ object EvidencePresentation {
     /** Datos corregibles de una evidencia (los de lista, como el escáner de IP, no se editan). */
     fun editableFields(result: ChatEvidenceResult): List<EditableField> {
         val spec: List<Triple<String, String, Boolean>> = when (result.code) {
-            "E1" -> listOf(
+            "E1", "E1b" -> listOf(
                 Triple("bajadaMbps", "Bajada (Mbps)", true), Triple("subidaMbps", "Subida (Mbps)", true),
                 Triple("pingMs", "Ping (ms)", true), Triple("proveedor", "Proveedor", false),
                 Triple("servidor", "Servidor", false)
             )
             "E2" -> listOf(
                 Triple("marca", "Marca", false), Triple("modelo", "Modelo", false),
-                Triple("ubicacionVisual", "Ubicación", false)
+                Triple("ubicacionVisual", "Ubicación", false),
+                Triple("puertosLanTotales", "Puertos LAN (total)", true),
+                Triple("puertosLanOcupados", "Puertos LAN ocupados", true),
+                Triple("puertosLanLibres", "Puertos LAN libres", true)
             )
             "E3" -> listOf(
                 Triple("marca", "Marca", false), Triple("modelo", "Modelo", false),
@@ -291,7 +300,7 @@ object EvidencePresentation {
         // Lo que va entre * se pinta destacado en la galería.
         fun hi(v: String?) = v?.let { "*$it*" }
         val text = when (result.code) {
-            "E1" -> {
+            "E1", "E1b" -> {
                 val load = listOfNotNull(num("latenciaBajadaMs"), num("latenciaSubidaMs"))
                 listOfNotNull(
                     listOfNotNull(num("bajadaMbps")?.let { "$it ↓" }, num("subidaMbps")?.let { "$it ↑ Mbps" }).joinToString(" · ")

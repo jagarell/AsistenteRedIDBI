@@ -16,7 +16,7 @@ Actualizado al 2026-10-06.
 
 ## Sprint 3 (en curso)
 
--   Versionamiento: APK 0.0.2 en uso. La siguiente es 0.0.3, con Firebase
+-   Versionamiento: APK 0.0.3 en uso. La siguiente es 0.0.4, con Firebase
 -   Exportación: PDF de minuta y envío por correo (falta `RESEND_API_KEY`)
 -   **Base de conocimiento de minutas manuales** (solo local): tablas `kb_*`, importador del Excel y recomendaciones basadas en casos reales
 

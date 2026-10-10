@@ -4,7 +4,7 @@
 
 La versión anterior de este documento (2026-09-14) describía el chat de 23 nodos. Ese chat **ya no existe**: hoy corre el flujo de 76 nodos.
 
-> ⛔ **Producción no se toca.** Cada push a `main` despliega solo en Railway. La versión en uso es el APK 0.0.2 contra `https://asistenteredidbi.up.railway.app`. Todo trabajo nuevo va en una rama local y se prueba con Postgres local o H2 (ver "Cómo probar sin tocar producción").
+> ⛔ **Producción no se toca.** Cada push a `main` despliega solo en Railway. La versión en uso es el APK 0.0.3 contra `https://asistenteredidbi.up.railway.app`. Todo trabajo nuevo va en una rama local y se prueba con Postgres local o H2 (ver "Cómo probar sin tocar producción").
 
 ## Arquitectura (3 repos)
 
@@ -14,13 +14,13 @@ La versión anterior de este documento (2026-09-14) describía el chat de 23 nod
 | `AsistenteRedIDBI-API-Gateway` | `~/IdeaProjects/idbi-api-gateway` | Spring Boot (puerto 8080), Postgres `asistente_red_idbi`. **Única fuente de verdad de negocio**: auth/JWT, evaluaciones, minutas, perfil, push, evidencias, PDF de propuesta y de minuta, mapa |
 | `AsistenteRedIDBI-API` | `~/IdeaProjects/idbi-fastapi` | FastAPI (puerto 8000). Motor del chat de 76 nodos (`app/chat/`), lectura de fotos con IA (OpenAI Vision), documento de minuta y mapa. No tiene base propia |
 
-- El Android habla siempre con el gateway: `10.0.2.2:8080` desde el emulador, o Railway en producción.
+- El Android habla siempre con el gateway: `10.0.3.2:8080` desde el emulador, o Railway en producción.
 - Solo el gateway le habla a FastAPI (`FASTAPI_BASE_URL`).
 - Endpoints: [`analista-ia/04_Backend_APIs.md`](analista-ia/04_Backend_APIs.md).
 
-## Estado actual (APK 0.0.2, commits al 2026-10-03)
+## Estado actual (APK 0.0.3, 2026-10-10)
 
-Commits desplegados: Android `089040f`, gateway `c81c257`, FastAPI `dd03113`.
+Commits desplegados al 2026-10-10: gateway `a254db8`, FastAPI `6a0acec` y Android APK 0.0.3 (código 3).
 
 **Hecho y verificado en producción:**
 - **Chat técnico de 76 nodos** ([`flujo/FLUJO_NODOS.md`](flujo/FLUJO_NODOS.md)).
@@ -61,8 +61,8 @@ Las minutas hechas a mano (PDF) se cargan con el Excel [`base-conocimiento/Base_
   - **WiFi:** el access point o el primer repetidor van con red y energía; el segundo repetidor, solo con energía. Todo el local debe tener WiFi para que los meseros comanden.
   - **Aviso de viabilidad:** si no se siguen las recomendaciones, no es viable la implementación del punto de venta. La minuta debe mostrarlo.
   - **Estado (2026-10-09):**
-    - **Implementado en la rama local `feature/flujo-comandas-internet`** (FastAPI; no está en `main` ni en producción): P22 con Sí/No/Tablet/No sé/Otro (+ P22f); la pregunta fija P12b "¿En caja saldrán comandas?" con aviso de Sunmi; P14 con Fibra óptica/Cable coaxial/No sé/No tiene/Internet con chip (sin internet se salta P15 y E1); áreas de preparación nuevas en P11; y la regla R51: las impresoras de áreas de preparación tienen que ser de red por cable.
-    - **Sigue propuesto:** la prueba de chip P14b + E1b y la lectura de puertos en la foto E2 (con switch y puntos de red).
+    - **Implementado y desplegado el 2026-10-10 (APK 0.0.3):** P22 con Sí/No/Tablet/No sé/Otro (+ P22f); la pregunta fija P12b "¿En caja saldrán comandas?" con aviso de Sunmi; P14 con Fibra óptica/Cable coaxial/No sé/No tiene/Internet con chip; la prueba de chip (P14b + E1b); los puertos del router leídos en la foto E2; la decisión de impresión (Raspberry, laptop o PC); el switch y los puntos de red; el WiFi por zona; la regla R51 (impresoras de preparación de red por cable) y el aviso de viabilidad en la minuta.
+    - **Sigue propuesto:** las tablas `kb_*`, el importador del Excel y las recomendaciones desde la base de conocimiento.
 - Diseño, importador y prompt para Claude Code: [`base-conocimiento/BASE_CONOCIMIENTO_MINUTAS.md`](base-conocimiento/BASE_CONOCIMIENTO_MINUTAS.md).
 - **Todo esto se hace solo en local.**
 
@@ -100,7 +100,7 @@ cd ~/IdeaProjects/idbi-fastapi
   JWT_SECRET=... DB_URL=jdbc:h2:mem:devdb;MODE=PostgreSQL DB_USERNAME=sa DB_PASSWORD=x SPRING_DATASOURCE_DRIVER_CLASS_NAME=org.h2.Driver JPA_DDL_AUTO=create-drop SPRING_JPA_DATABASE_PLATFORM=org.hibernate.dialect.H2Dialect ./mvnw spring-boot:run -Dspring-boot.run.useTestClasspath=true
   ```
 - **FastAPI sin `OPENAI_API_KEY`:** simular la IA con los valores de `tests/test_rock_sample.py`.
-- **APK contra local:** cambiar `BASE_URL` en `AuthModule.kt` a `http://10.0.2.2:8080/` solo en local. **Revertir antes de cualquier commit.**
+- **APK contra local:** cambiar `BASE_URL` en `AuthModule.kt` a `http://10.0.3.2:8080/` solo en local. **Revertir antes de cualquier commit.**
 
 ## Trampas conocidas
 

@@ -1,13 +1,13 @@
 # Arquitectura de despliegue
 
-Actualizada al 6 de octubre de 2026. Hay dos entornos: **producción en Railway** (en uso por el APK 0.0.2) y **desarrollo local**. No existe un ambiente de staging.
+Actualizada al 6 de octubre de 2026. Hay dos entornos: **producción en Railway** (en uso por el APK 0.0.3) y **desarrollo local**. No existe un ambiente de staging.
 
 ## Diagrama 4a — Producción (Railway)
 
 ```mermaid
 flowchart LR
     subgraph DEVICE[Dispositivo Android]
-        APK[APK 0.0.2 debug<br/>BASE_URL https Railway]
+        APK[APK 0.0.3 debug<br/>BASE_URL https Railway]
         STORE[DataStore local]
         APK --> STORE
     end
@@ -62,14 +62,14 @@ flowchart LR
         ENV --> PY
     end
 
-    APKD -->|HTTP 10.0.2.2:8080<br/>cleartext| JAVA
+    APKD -->|HTTP 10.0.3.2:8080<br/>cleartext| JAVA
 ```
 
 ## Hallazgos de despliegue
 
 | Elemento | Producción | Local |
 |---|---|---|
-| Android | APK 0.0.2 debug (sin llave de release); `BASE_URL` HTTPS Railway | Mismo APK, cambiando `BASE_URL` a mano (revertir antes del commit) |
+| Android | APK 0.0.3 debug (sin llave de release); `BASE_URL` HTTPS Railway | Mismo APK, cambiando `BASE_URL` a mano (revertir antes del commit) |
 | Gateway | Railway, Dockerfile | `./mvnw spring-boot:run` o compose |
 | FastAPI | Railway, Dockerfile | Uvicorn desde `venv` o compose |
 | Base de datos | PostgreSQL por `DB_URL`. ⚠️ El código no permite saber si es un plugin de Railway o un servicio externo | PostgreSQL local o H2 (`MODE=PostgreSQL`) |

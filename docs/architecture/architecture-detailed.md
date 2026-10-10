@@ -1,12 +1,12 @@
 # Arquitectura técnica detallada
 
-Actualizada al 6 de octubre de 2026, contra los commits Android `089040f`, gateway `c81c257` y FastAPI `dd03113`.
+Actualizada al 10 de octubre de 2026, contra el APK 0.0.3 y los commits gateway `a254db8` y FastAPI `6a0acec`.
 
 ## Diagrama 2 — Componentes, módulos y dependencias
 
 ```mermaid
 flowchart TB
-    subgraph MOBILE[Android — AsistenteRedIDBI 0.0.2]
+    subgraph MOBILE[Android — AsistenteRedIDBI 0.0.3]
         UI[Fragments + XML + Navigation<br/>auth, home, chat técnico,<br/>mapa editable, minuta, perfil, historial]
         STATE[ViewModels + LiveData<br/>Coroutines]
         DOMAIN[Use cases + modelos<br/>interfaces de repositorio]
@@ -246,7 +246,7 @@ Notas:
   - Operación: `CORS_ALLOWED_ORIGINS`, `UPLOADS_DIR`, `JPA_DDL_AUTO`, `JPA_SHOW_SQL`, `SERVER_PORT`, `DRAFT_TTL_DAYS`, `DRAFT_WARN_DAYS_BEFORE`, `REMINDERS_CRON`.
 - **FastAPI:** `OPENAI_API_KEY`, `OPENAI_MODEL`, `CHAT_PROPOSAL_ENGINE`, `CHAT_HTTP_TIMEOUT`, `FLOWISE_*`. El `.env.example` todavía lista `DATABASE_URL` y JWT, que no se usan.
 - **Android:**
-  - `BASE_URL` compilada como `https://asistenteredidbi.up.railway.app/` en `AuthModule.kt`. Para probar en local se cambia a mano a `10.0.2.2:8080`, y hay que revertirlo antes de cualquier commit.
+  - `BASE_URL` compilada como `https://asistenteredidbi.up.railway.app/` en `AuthModule.kt`. Para probar en local se cambia a mano a `10.0.3.2:8080`, y hay que revertirlo antes de cualquier commit.
   - Firebase se activa solo cuando existe `app/google-services.json`.
 - **Producción:** los secretos viven en las variables de entorno de Railway.
   - ⚠️ El código no permite saber si existe rotación de claves.
