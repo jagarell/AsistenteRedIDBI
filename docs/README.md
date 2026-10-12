@@ -20,7 +20,16 @@ Producción (Railway): `https://asistenteredidbi.up.railway.app` (gateway).
 2. [`CONTEXTO_PROYECTO.md`](CONTEXTO_PROYECTO.md): estado actual del proyecto, qué hace cada pieza y trampas conocidas (actualizado al 2026-10-06).
 3. [`flujo/FLUJO_NODOS.md`](flujo/FLUJO_NODOS.md): el chat técnico de 76 nodos. Incluye diagrama, todos los nodos, evidencias, casos especiales y contrato de API. Se genera desde `flujo_asistente_red.json`.
 4. [`base-conocimiento/BASE_CONOCIMIENTO_MINUTAS.md`](base-conocimiento/BASE_CONOCIMIENTO_MINUTAS.md) **(nuevo)**: cómo cargar las minutas manuales en PDF a la base, con el Excel [`Base_Conocimiento_Minutas.xlsx`](base-conocimiento/Base_Conocimiento_Minutas.xlsx), para nutrir las recomendaciones.
-5. [`notas-de-desarrollo/`](notas-de-desarrollo/): notas de trabajo de octubre de 2026.
+5. [`analisis/`](analisis/) **(nuevo, propuestas no implementadas):**
+   - [`ESTADO_VERSION_0_0_3.md`](analisis/ESTADO_VERSION_0_0_3.md): qué está hecho en la 0.0.3 y qué falta de lo acordado.
+   - [`LOGICA_ANALISIS.md`](analisis/LOGICA_ANALISIS.md): cómo se calculan los porcentajes de Análisis IA y la lógica nueva de Conectividad.
+   - [`EVIDENCIAS_Y_CONECTIVIDAD.md`](analisis/EVIDENCIAS_Y_CONECTIVIDAD.md): validación de evidencias con IA, fotos obligatorias, speedtest por cable y WiFi por zona.
+   - [`MAPA_DE_RED.md`](analisis/MAPA_DE_RED.md): etiquetas Ubic./IP, íconos, tipos de línea y editor de topología.
+   - [`PRUEBA_RETROSPECTIVA.md`](analisis/PRUEBA_RETROSPECTIVA.md): motor vs. 44 minutas reales (77.8 % → 81.7 % con R16) y sección Referencias del Análisis IA.
+   - [`VALIDACION_EVIDENCIAS.md`](analisis/VALIDACION_EVIDENCIAS.md): dataset de evidencias de referencia y cómo la app rechaza una foto que no corresponde.
+   - [`TECLADO_CHAT.md`](analisis/TECLADO_CHAT.md): el teclado tapa la caja de texto del chat (Android 15, targetSdk 35) y su corrección.
+   - [`EDICION_Y_ESTADOS_MINUTA.md`](analisis/EDICION_Y_ESTADOS_MINUTA.md): vista previa, estados, notificaciones, WhatsApp y correo siempre activos; sin validar, marca de agua SIN VALIDAR y edición.
+6. [`notas-de-desarrollo/`](notas-de-desarrollo/): notas de trabajo de octubre de 2026.
    - [`project_estado_apk_0_0_2.md`](notas-de-desarrollo/project_estado_apk_0_0_2.md): **estado actual**. Qué está hecho, decisiones, pendientes y trampas.
    - [`project_flow_engine_76_nodos.md`](notas-de-desarrollo/project_flow_engine_76_nodos.md): chat de 76 nodos, evidencias con IA, minuta PDF y cómo probar en local sin tocar producción.
    - [`project_roles_push_continuar.md`](notas-de-desarrollo/project_roles_push_continuar.md): roles Técnico/Supervisor, notificaciones push y "Continuar".

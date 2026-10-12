@@ -1,0 +1,353 @@
+{
+ "version": "2026-10-11",
+ "mensaje_no_corresponde": "La imagen no corresponde a lo solicitado ({nombre}). Parece {tipo_detectado}. Vuelve a tomar o subir la foto, o salta la evidencia.",
+ "mensaje_no_legible": "La imagen no es legible. Vuelve a tomar la foto de {nombre}.",
+ "tipos": [
+  {
+   "tipo": "speedtest",
+   "codigo_apk": "E1 / E1b",
+   "codigo_kb": "E1",
+   "nombre": "Speedtest (prueba de velocidad)",
+   "debe_mostrar": "Descarga, subida y ping con la prueba terminada; proveedor o servidor visible",
+   "palabras_ocr": [
+    "Mbps",
+    "descarga",
+    "download",
+    "subida",
+    "upload",
+    "ping",
+    "ms",
+    "speedtest",
+    "fast.com"
+   ],
+   "rasgos_visuales": "Captura de pantalla de app/web con dos o tres números grandes y unidades Mbps",
+   "confusiones_tipicas": "Captura de otra app; prueba a medias (sin subida)",
+   "umbral_similitud": 0.6,
+   "referencias": 2
+  },
+  {
+   "tipo": "ipconfig",
+   "codigo_apk": "E1c",
+   "codigo_kb": "E4",
+   "nombre": "ipconfig de la PC o laptop",
+   "debe_mostrar": "Consola con IPv4, máscara de subred y puerta de enlace",
+   "palabras_ocr": [
+    "ipconfig",
+    "IPv4",
+    "Máscara de subred",
+    "Subnet Mask",
+    "Puerta de enlace",
+    "Default Gateway",
+    "Adaptador"
+   ],
+   "rasgos_visuales": "Ventana de consola (fondo negro o azul) con texto monoespaciado",
+   "confusiones_tipicas": "Foto del escritorio, del escáner de IP",
+   "umbral_similitud": 0.6,
+   "referencias": 1
+  },
+  {
+   "tipo": "escaner_ip",
+   "codigo_apk": "E1d",
+   "codigo_kb": "E8",
+   "nombre": "Escáner de IP",
+   "debe_mostrar": "Lista de equipos con IP (y fabricante/MAC si se ve)",
+   "palabras_ocr": [
+    "Advanced IP Scanner",
+    "Fing",
+    "IP",
+    "MAC",
+    "Fabricante",
+    "Manufacturer",
+    "192.168."
+   ],
+   "rasgos_visuales": "Tabla con varias filas de direcciones IP",
+   "confusiones_tipicas": "ipconfig (una sola IP); speedtest",
+   "umbral_similitud": 0.6,
+   "referencias": 1
+  },
+  {
+   "tipo": "router_ubicacion",
+   "codigo_apk": "E2u",
+   "codigo_kb": "E2",
+   "nombre": "Ubicación del router",
+   "debe_mostrar": "El router en su lugar, con el entorno (mueble, pared, cables)",
+   "palabras_ocr": [],
+   "rasgos_visuales": "Equipo de red pequeño con luces/antenas en un entorno; plano medio",
+   "confusiones_tipicas": "Foto solo de la etiqueta; foto de la caja sin router",
+   "umbral_similitud": 0.55,
+   "referencias": 4
+  },
+  {
+   "tipo": "router_puertos",
+   "codigo_apk": "E2",
+   "codigo_kb": "E2",
+   "nombre": "Puertos del router",
+   "debe_mostrar": "Parte trasera con todos los puertos LAN visibles",
+   "palabras_ocr": [
+    "LAN",
+    "WAN",
+    "POWER",
+    "RESET",
+    "TEL"
+   ],
+   "rasgos_visuales": "Primer plano de conectores RJ45 en fila",
+   "confusiones_tipicas": "Foto frontal del router (solo luces)",
+   "umbral_similitud": 0.55,
+   "referencias": 1
+  },
+  {
+   "tipo": "router_etiqueta",
+   "codigo_apk": "E2e",
+   "codigo_kb": "E3",
+   "nombre": "Etiqueta del router",
+   "debe_mostrar": "Marca, modelo y SN legibles (credenciales se ocultan al guardar)",
+   "palabras_ocr": [
+    "Model",
+    "Modelo",
+    "S/N",
+    "SN",
+    "MAC",
+    "Huawei",
+    "ZTE",
+    "TP-Link",
+    "GPON"
+   ],
+   "rasgos_visuales": "Etiqueta blanca con texto pequeño, códigos de barras/QR",
+   "confusiones_tipicas": "Etiqueta de impresora",
+   "umbral_similitud": 0.55,
+   "referencias": 1
+  },
+  {
+   "tipo": "impresora_etiqueta",
+   "codigo_apk": "E5a",
+   "codigo_kb": "E5",
+   "nombre": "Etiqueta de la impresora",
+   "debe_mostrar": "Marca y modelo de la impresora",
+   "palabras_ocr": [
+    "Model",
+    "Modelo",
+    "Epson",
+    "Bixolon",
+    "CBX",
+    "Xprinter",
+    "3nStar",
+    "TM-T20",
+    "POS"
+   ],
+   "rasgos_visuales": "Impresora térmica o su etiqueta",
+   "confusiones_tipicas": "Etiqueta del router",
+   "umbral_similitud": 0.55,
+   "referencias": 2
+  },
+  {
+   "tipo": "impresora_conexiones",
+   "codigo_apk": "E5b",
+   "codigo_kb": "E5",
+   "nombre": "Conexiones de la impresora",
+   "debe_mostrar": "Parte trasera con los cables conectados (LAN/USB/energía)",
+   "palabras_ocr": [
+    "LAN",
+    "USB",
+    "DC",
+    "24V"
+   ],
+   "rasgos_visuales": "Primer plano de la parte trasera con conectores",
+   "confusiones_tipicas": "Puertos del router",
+   "umbral_similitud": 0.55,
+   "referencias": 1
+  },
+  {
+   "tipo": "impresora_selftest",
+   "codigo_apk": "E5",
+   "codigo_kb": "E5",
+   "nombre": "Selftest de la impresora",
+   "debe_mostrar": "Ticket de autoprueba con la IP (impresora de red) o la configuración",
+   "palabras_ocr": [
+    "Self Test",
+    "Autoprueba",
+    "IP Address",
+    "Subnet",
+    "Gateway",
+    "Interface",
+    "DHCP"
+   ],
+   "rasgos_visuales": "Ticket de papel térmico largo con texto",
+   "confusiones_tipicas": "Foto de la impresora sin ticket",
+   "umbral_similitud": 0.6,
+   "referencias": 1
+  },
+  {
+   "tipo": "frontis",
+   "codigo_apk": "E9a",
+   "codigo_kb": "E9",
+   "nombre": "Frontis del local",
+   "debe_mostrar": "Fachada o entrada con el nombre del local",
+   "palabras_ocr": [],
+   "rasgos_visuales": "Exterior: fachada, letrero, vereda",
+   "confusiones_tipicas": "Zona interior",
+   "umbral_similitud": 0.5,
+   "referencias": 1
+  },
+  {
+   "tipo": "zona_atencion",
+   "codigo_apk": "E9b (zona)",
+   "codigo_kb": "E9",
+   "nombre": "Zona de atención (salón, mostrador, despacho…)",
+   "debe_mostrar": "El espacio donde se atiende: mesas, mostrador o pasillo",
+   "palabras_ocr": [],
+   "rasgos_visuales": "Interior amplio con mesas, sillas o mostrador",
+   "confusiones_tipicas": "Foto de una sola silla o de una pared (contraejemplo)",
+   "umbral_similitud": 0.5,
+   "referencias": 5
+  },
+  {
+   "tipo": "lugar_preparacion",
+   "codigo_apk": "E9b (preparación)",
+   "codigo_kb": "E9",
+   "nombre": "Lugar de preparación (cocina, barra, parrilla…)",
+   "debe_mostrar": "El área de trabajo con equipos de cocina o barra",
+   "palabras_ocr": [],
+   "rasgos_visuales": "Cocina/barra: superficies de acero, cocinas, botellas, campana",
+   "confusiones_tipicas": "Despensa o almacén (contraejemplo)",
+   "umbral_similitud": 0.5,
+   "referencias": 2
+  },
+  {
+   "tipo": "caja",
+   "codigo_apk": "E9b (caja)",
+   "codigo_kb": "E9",
+   "nombre": "Caja",
+   "debe_mostrar": "El punto de cobro con PC, POS o tablet",
+   "palabras_ocr": [],
+   "rasgos_visuales": "Mostrador con computador/monitor o terminal POS",
+   "confusiones_tipicas": "Pantalla de la PC sin contexto",
+   "umbral_similitud": 0.5,
+   "referencias": 4
+  },
+  {
+   "tipo": "anydesk",
+   "codigo_apk": "E7",
+   "codigo_kb": "OTRA",
+   "nombre": "AnyDesk del equipo de caja",
+   "debe_mostrar": "Ventana de AnyDesk con el código del puesto (se guarda aparte, cifrado)",
+   "palabras_ocr": [
+    "AnyDesk",
+    "Este puesto de trabajo",
+    "This Desk",
+    "Dirección"
+   ],
+   "rasgos_visuales": "Ventana de AnyDesk (rojo/naranja) con número grande",
+   "confusiones_tipicas": "Información del sistema de Windows",
+   "umbral_similitud": 0.6,
+   "referencias": 2
+  },
+  {
+   "tipo": "equipo_caja_datos",
+   "codigo_apk": "(opcional)",
+   "codigo_kb": "OTRA",
+   "nombre": "Datos del equipo de caja",
+   "debe_mostrar": "Procesador, RAM, sistema operativo",
+   "palabras_ocr": [
+    "Procesador",
+    "RAM",
+    "Windows",
+    "Sistema",
+    "Información"
+   ],
+   "rasgos_visuales": "Pantalla de Configuración > Sistema > Información",
+   "confusiones_tipicas": "AnyDesk",
+   "umbral_similitud": 0.6,
+   "referencias": 1
+  },
+  {
+   "tipo": "tablet_datos",
+   "codigo_apk": "(opcional)",
+   "codigo_kb": "OTRA",
+   "nombre": "Datos de la tablet",
+   "debe_mostrar": "Modelo, Android, RAM",
+   "palabras_ocr": [
+    "Acerca de la tablet",
+    "Modelo",
+    "Android",
+    "RAM"
+   ],
+   "rasgos_visuales": "Pantalla de ajustes de Android",
+   "confusiones_tipicas": "Foto de la caja",
+   "umbral_similitud": 0.6,
+   "referencias": 2
+  },
+  {
+   "tipo": "gabinete",
+   "codigo_apk": "(opcional)",
+   "codigo_kb": "E6",
+   "nombre": "Gabinete de red",
+   "debe_mostrar": "Gabinete o rack con equipos de red",
+   "palabras_ocr": [],
+   "rasgos_visuales": "Caja metálica con switch/patch panel",
+   "confusiones_tipicas": "Router suelto",
+   "umbral_similitud": 0.5,
+   "referencias": 1
+  },
+  {
+   "tipo": "cableado_energia",
+   "codigo_apk": "(opcional)",
+   "codigo_kb": "E6",
+   "nombre": "Cableado y energía",
+   "debe_mostrar": "Recorrido de cables o tomas de energía",
+   "palabras_ocr": [],
+   "rasgos_visuales": "Cables, canaletas, tomacorrientes, regletas",
+   "confusiones_tipicas": "Puertos del router",
+   "umbral_similitud": 0.5,
+   "referencias": 3
+  },
+  {
+   "tipo": "equipo_red_en_mano",
+   "codigo_apk": "(opcional)",
+   "codigo_kb": "E2",
+   "nombre": "Equipo de red en mano",
+   "debe_mostrar": "Router, switch o repetidor sostenido en mano",
+   "palabras_ocr": [],
+   "rasgos_visuales": "Equipo de red en primer plano con una mano",
+   "confusiones_tipicas": "Ubicación del router",
+   "umbral_similitud": 0.5,
+   "referencias": 1
+  },
+  {
+   "tipo": "access_point_techo",
+   "codigo_apk": "(opcional)",
+   "codigo_kb": "E6",
+   "nombre": "Access point / repetidor instalado",
+   "debe_mostrar": "Equipo en techo o pared alta",
+   "palabras_ocr": [],
+   "rasgos_visuales": "Dispositivo circular o pequeño en techo/pared",
+   "confusiones_tipicas": "Lámpara",
+   "umbral_similitud": 0.5,
+   "referencias": 1
+  },
+  {
+   "tipo": "camaras_monitor",
+   "codigo_apk": "(opcional)",
+   "codigo_kb": "E6",
+   "nombre": "Cámaras (monitor del DVR/NVR)",
+   "debe_mostrar": "Monitor con la cuadrícula de cámaras",
+   "palabras_ocr": [],
+   "rasgos_visuales": "Pantalla dividida en cuadrículas de video",
+   "confusiones_tipicas": "Pantalla de la PC de caja",
+   "umbral_similitud": 0.5,
+   "referencias": 1
+  },
+  {
+   "tipo": "topologia",
+   "codigo_apk": "(la genera la app)",
+   "codigo_kb": "MAPA",
+   "nombre": "Mapa de red",
+   "debe_mostrar": "No se sube: lo genera la app",
+   "palabras_ocr": [],
+   "rasgos_visuales": "Diagrama con íconos y líneas",
+   "confusiones_tipicas": "—",
+   "umbral_similitud": null,
+   "referencias": 3
+  }
+ ],
+ "contraejemplos": 2
+}

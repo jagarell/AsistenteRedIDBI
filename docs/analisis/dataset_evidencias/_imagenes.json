@@ -1,0 +1,389 @@
+[
+ {
+  "archivo": "imagenes/speedtest/speedtest_01.jpg",
+  "tipo": "speedtest",
+  "origen": "barrio.pdf",
+  "pagina": 1,
+  "enmascarado": false,
+  "es_contraejemplo": false,
+  "nota": ""
+ },
+ {
+  "archivo": "imagenes/speedtest/speedtest_02.jpg",
+  "tipo": "speedtest",
+  "origen": "rock.pdf",
+  "pagina": 6,
+  "enmascarado": false,
+  "es_contraejemplo": false,
+  "nota": ""
+ },
+ {
+  "archivo": "imagenes/ipconfig/ipconfig_01.jpg",
+  "tipo": "ipconfig",
+  "origen": "rock.pdf",
+  "pagina": 6,
+  "enmascarado": false,
+  "es_contraejemplo": false,
+  "nota": ""
+ },
+ {
+  "archivo": "imagenes/escaner_ip/escaner_ip_01.jpg",
+  "tipo": "escaner_ip",
+  "origen": "rock.pdf",
+  "pagina": 7,
+  "enmascarado": false,
+  "es_contraejemplo": false,
+  "nota": ""
+ },
+ {
+  "archivo": "imagenes/router_ubicacion/router_ubicacion_01.jpg",
+  "tipo": "router_ubicacion",
+  "origen": "donoscar.pdf",
+  "pagina": 1,
+  "enmascarado": false,
+  "es_contraejemplo": false,
+  "nota": ""
+ },
+ {
+  "archivo": "imagenes/router_ubicacion/router_ubicacion_02.jpg",
+  "tipo": "router_ubicacion",
+  "origen": "donoscar.pdf",
+  "pagina": 1,
+  "enmascarado": false,
+  "es_contraejemplo": false,
+  "nota": ""
+ },
+ {
+  "archivo": "imagenes/router_ubicacion/router_ubicacion_03.jpg",
+  "tipo": "router_ubicacion",
+  "origen": "donoscar.pdf",
+  "pagina": 1,
+  "enmascarado": false,
+  "es_contraejemplo": false,
+  "nota": ""
+ },
+ {
+  "archivo": "imagenes/router_ubicacion/router_ubicacion_04.jpg",
+  "tipo": "router_ubicacion",
+  "origen": "rock.pdf",
+  "pagina": 6,
+  "enmascarado": false,
+  "es_contraejemplo": false,
+  "nota": ""
+ },
+ {
+  "archivo": "imagenes/router_puertos/router_puertos_01.jpg",
+  "tipo": "router_puertos",
+  "origen": "donoscar.pdf",
+  "pagina": 2,
+  "enmascarado": false,
+  "es_contraejemplo": false,
+  "nota": ""
+ },
+ {
+  "archivo": "imagenes/router_etiqueta/router_etiqueta_01.jpg",
+  "tipo": "router_etiqueta",
+  "origen": "rock.pdf",
+  "pagina": 6,
+  "enmascarado": true,
+  "es_contraejemplo": false,
+  "nota": ""
+ },
+ {
+  "archivo": "imagenes/impresora_etiqueta/impresora_etiqueta_01.jpg",
+  "tipo": "impresora_etiqueta",
+  "origen": "rock.pdf",
+  "pagina": 5,
+  "enmascarado": false,
+  "es_contraejemplo": false,
+  "nota": ""
+ },
+ {
+  "archivo": "imagenes/impresora_etiqueta/impresora_etiqueta_02.jpg",
+  "tipo": "impresora_etiqueta",
+  "origen": "rock.pdf",
+  "pagina": 5,
+  "enmascarado": false,
+  "es_contraejemplo": false,
+  "nota": ""
+ },
+ {
+  "archivo": "imagenes/impresora_conexiones/impresora_conexiones_01.jpg",
+  "tipo": "impresora_conexiones",
+  "origen": "rock.pdf",
+  "pagina": 5,
+  "enmascarado": false,
+  "es_contraejemplo": false,
+  "nota": ""
+ },
+ {
+  "archivo": "imagenes/impresora_selftest/impresora_selftest_01.jpg",
+  "tipo": "impresora_selftest",
+  "origen": "rock.pdf",
+  "pagina": 5,
+  "enmascarado": false,
+  "es_contraejemplo": false,
+  "nota": ""
+ },
+ {
+  "archivo": "imagenes/frontis/frontis_01.jpg",
+  "tipo": "frontis",
+  "origen": "rock.pdf",
+  "pagina": 4,
+  "enmascarado": false,
+  "es_contraejemplo": false,
+  "nota": ""
+ },
+ {
+  "archivo": "imagenes/zona_atencion/zona_atencion_01.jpg",
+  "tipo": "zona_atencion",
+  "origen": "rock.pdf",
+  "pagina": 4,
+  "enmascarado": false,
+  "es_contraejemplo": false,
+  "nota": ""
+ },
+ {
+  "archivo": "imagenes/zona_atencion/zona_atencion_02.jpg",
+  "tipo": "zona_atencion",
+  "origen": "rock.pdf",
+  "pagina": 4,
+  "enmascarado": false,
+  "es_contraejemplo": false,
+  "nota": ""
+ },
+ {
+  "archivo": "imagenes/zona_atencion/zona_atencion_03.jpg",
+  "tipo": "zona_atencion",
+  "origen": "barrio.pdf",
+  "pagina": 2,
+  "enmascarado": false,
+  "es_contraejemplo": false,
+  "nota": ""
+ },
+ {
+  "archivo": "imagenes/zona_atencion/zona_atencion_04.jpg",
+  "tipo": "zona_atencion",
+  "origen": "sicilia.pdf",
+  "pagina": 3,
+  "enmascarado": false,
+  "es_contraejemplo": false,
+  "nota": ""
+ },
+ {
+  "archivo": "imagenes/zona_atencion/zona_atencion_05.jpg",
+  "tipo": "zona_atencion",
+  "origen": "sicilia.pdf",
+  "pagina": 3,
+  "enmascarado": false,
+  "es_contraejemplo": false,
+  "nota": ""
+ },
+ {
+  "archivo": "imagenes/lugar_preparacion/lugar_preparacion_01.jpg",
+  "tipo": "lugar_preparacion",
+  "origen": "sicilia.pdf",
+  "pagina": 3,
+  "enmascarado": false,
+  "es_contraejemplo": false,
+  "nota": ""
+ },
+ {
+  "archivo": "imagenes/lugar_preparacion/lugar_preparacion_02.jpg",
+  "tipo": "lugar_preparacion",
+  "origen": "sicilia.pdf",
+  "pagina": 3,
+  "enmascarado": false,
+  "es_contraejemplo": false,
+  "nota": ""
+ },
+ {
+  "archivo": "imagenes/caja/caja_01.jpg",
+  "tipo": "caja",
+  "origen": "donoscar.pdf",
+  "pagina": 1,
+  "enmascarado": false,
+  "es_contraejemplo": false,
+  "nota": ""
+ },
+ {
+  "archivo": "imagenes/caja/caja_02.jpg",
+  "tipo": "caja",
+  "origen": "barrio.pdf",
+  "pagina": 2,
+  "enmascarado": false,
+  "es_contraejemplo": false,
+  "nota": ""
+ },
+ {
+  "archivo": "imagenes/caja/caja_03.jpg",
+  "tipo": "caja",
+  "origen": "rock.pdf",
+  "pagina": 8,
+  "enmascarado": false,
+  "es_contraejemplo": false,
+  "nota": ""
+ },
+ {
+  "archivo": "imagenes/caja/caja_04.jpg",
+  "tipo": "caja",
+  "origen": "rock.pdf",
+  "pagina": 8,
+  "enmascarado": false,
+  "es_contraejemplo": false,
+  "nota": ""
+ },
+ {
+  "archivo": "imagenes/anydesk/anydesk_01.jpg",
+  "tipo": "anydesk",
+  "origen": "rock.pdf",
+  "pagina": 3,
+  "enmascarado": true,
+  "es_contraejemplo": false,
+  "nota": ""
+ },
+ {
+  "archivo": "imagenes/anydesk/anydesk_02.jpg",
+  "tipo": "anydesk",
+  "origen": "rock.pdf",
+  "pagina": 3,
+  "enmascarado": false,
+  "es_contraejemplo": false,
+  "nota": ""
+ },
+ {
+  "archivo": "imagenes/equipo_caja_datos/equipo_caja_datos_01.jpg",
+  "tipo": "equipo_caja_datos",
+  "origen": "rock.pdf",
+  "pagina": 8,
+  "enmascarado": true,
+  "es_contraejemplo": false,
+  "nota": ""
+ },
+ {
+  "archivo": "imagenes/tablet_datos/tablet_datos_01.jpg",
+  "tipo": "tablet_datos",
+  "origen": "rock.pdf",
+  "pagina": 8,
+  "enmascarado": false,
+  "es_contraejemplo": false,
+  "nota": ""
+ },
+ {
+  "archivo": "imagenes/tablet_datos/tablet_datos_02.jpg",
+  "tipo": "tablet_datos",
+  "origen": "rock.pdf",
+  "pagina": 8,
+  "enmascarado": false,
+  "es_contraejemplo": false,
+  "nota": ""
+ },
+ {
+  "archivo": "imagenes/gabinete/gabinete_01.jpg",
+  "tipo": "gabinete",
+  "origen": "sicilia.pdf",
+  "pagina": 2,
+  "enmascarado": false,
+  "es_contraejemplo": false,
+  "nota": ""
+ },
+ {
+  "archivo": "imagenes/cableado_energia/cableado_energia_01.jpg",
+  "tipo": "cableado_energia",
+  "origen": "donoscar.pdf",
+  "pagina": 2,
+  "enmascarado": false,
+  "es_contraejemplo": false,
+  "nota": ""
+ },
+ {
+  "archivo": "imagenes/cableado_energia/cableado_energia_02.jpg",
+  "tipo": "cableado_energia",
+  "origen": "donoscar.pdf",
+  "pagina": 2,
+  "enmascarado": false,
+  "es_contraejemplo": false,
+  "nota": ""
+ },
+ {
+  "archivo": "imagenes/cableado_energia/cableado_energia_03.jpg",
+  "tipo": "cableado_energia",
+  "origen": "donoscar.pdf",
+  "pagina": 2,
+  "enmascarado": false,
+  "es_contraejemplo": false,
+  "nota": ""
+ },
+ {
+  "archivo": "imagenes/equipo_red_en_mano/equipo_red_en_mano_01.jpg",
+  "tipo": "equipo_red_en_mano",
+  "origen": "donoscar.pdf",
+  "pagina": 2,
+  "enmascarado": false,
+  "es_contraejemplo": false,
+  "nota": ""
+ },
+ {
+  "archivo": "imagenes/access_point_techo/access_point_techo_01.jpg",
+  "tipo": "access_point_techo",
+  "origen": "barrio.pdf",
+  "pagina": 2,
+  "enmascarado": false,
+  "es_contraejemplo": false,
+  "nota": ""
+ },
+ {
+  "archivo": "imagenes/camaras_monitor/camaras_monitor_01.jpg",
+  "tipo": "camaras_monitor",
+  "origen": "barrio.pdf",
+  "pagina": 2,
+  "enmascarado": false,
+  "es_contraejemplo": false,
+  "nota": ""
+ },
+ {
+  "archivo": "imagenes/topologia/topologia_01.jpg",
+  "tipo": "topologia",
+  "origen": "barrio.pdf",
+  "pagina": 3,
+  "enmascarado": false,
+  "es_contraejemplo": false,
+  "nota": ""
+ },
+ {
+  "archivo": "imagenes/topologia/topologia_02.jpg",
+  "tipo": "topologia",
+  "origen": "donoscar.pdf",
+  "pagina": 3,
+  "enmascarado": false,
+  "es_contraejemplo": false,
+  "nota": ""
+ },
+ {
+  "archivo": "imagenes/topologia/topologia_03.jpg",
+  "tipo": "topologia",
+  "origen": "sicilia.pdf",
+  "pagina": 2,
+  "enmascarado": false,
+  "es_contraejemplo": false,
+  "nota": ""
+ },
+ {
+  "archivo": "imagenes/_contraejemplo/_contraejemplo_01.jpg",
+  "tipo": "_contraejemplo",
+  "origen": "sicilia.pdf",
+  "pagina": 2,
+  "enmascarado": false,
+  "es_contraejemplo": true,
+  "nota": "Despensa/almacén (no es lugar de preparación ni zona)"
+ },
+ {
+  "archivo": "imagenes/_contraejemplo/_contraejemplo_02.jpg",
+  "tipo": "_contraejemplo",
+  "origen": "rock.pdf",
+  "pagina": 7,
+  "enmascarado": false,
+  "es_contraejemplo": true,
+  "nota": "Pared/baño (no es evidencia de red)"
+ }
+]

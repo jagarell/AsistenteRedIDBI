@@ -432,3 +432,18 @@ Además:
 Valores guardados: P22 ahora es `SI/NO/TABLET/NO_SE/OTRO` (antes `PC/LAPTOP/NO_HAY`) y P14 es `FIBRA/COAXIAL/NO_SE/NO_TIENE/CHIP` (antes `FIBRA/COBRE/INALAMBRICA/NO_SE`). Las evaluaciones guardadas con los valores anteriores se siguen leyendo bien (minuta, mapa y reglas).
 
 Sigue sin hacerse: las tablas `kb_*` y el importador del Excel de minutas manuales (ver `../base-conocimiento/BASE_CONOCIMIENTO_MINUTAS.md`). El motor de recomendaciones todavía usa las reglas fijas del código, no la base de conocimiento.
+
+## 16. Cambios propuestos después de la 0.0.3 (no implementados)
+
+Esta sección solo enlaza; el flujo implementado es el de las secciones anteriores.
+
+| Tema | Dónde está el diseño |
+|---|---|
+| P08 como estado del local, antecedentes automáticos, pasos a seguir editables, anexos de video y observaciones | [`../base-conocimiento/BASE_CONOCIMIENTO_MINUTAS.md`](../base-conocimiento/BASE_CONOCIMIENTO_MINUTAS.md), sección 4d |
+| P09 con rubro y tipo de comida, perfiles por rubro, canales y zonas de atención, caja compartida (P12e) | Misma base de conocimiento, sección 4c |
+| Regla general "Otro" en toda pregunta CHOICE o MULTI_SELECT | Misma base de conocimiento, "Regla general: opción Otro" |
+| TP-Link con chip por caídas, sin proveedor o patio de comidas grande (R56) | Misma base de conocimiento, sección 4c |
+| Validación de evidencias, fotos obligatorias, speedtest por cable, WiFi por zona | [`../analisis/EVIDENCIAS_Y_CONECTIVIDAD.md`](../analisis/EVIDENCIAS_Y_CONECTIVIDAD.md) |
+| Mapa de red y editor | [`../analisis/MAPA_DE_RED.md`](../analisis/MAPA_DE_RED.md) |
+| Vista previa, estados, notificaciones, edición | [`../analisis/EDICION_Y_ESTADOS_MINUTA.md`](../analisis/EDICION_Y_ESTADOS_MINUTA.md) |
+

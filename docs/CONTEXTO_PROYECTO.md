@@ -1,6 +1,6 @@
 # Contexto del proyecto — Asistente Red IDBI ("Analista IA")
 
-Última actualización: 2026-10-06. Resume el estado real del proyecto para retomarlo en otra sesión sin redescubrir todo.
+Última actualización: 2026-10-11 (sobre la versión 0.0.3 de GitHub). Resume el estado real del proyecto para retomarlo en otra sesión sin redescubrir todo.
 
 La versión anterior de este documento (2026-09-14) describía el chat de 23 nodos. Ese chat **ya no existe**: hoy corre el flujo de 76 nodos.
 
@@ -48,7 +48,7 @@ Commits desplegados al 2026-10-10: gateway `a254db8`, FastAPI `6a0acec` y Androi
 
 Las minutas hechas a mano (PDF) se cargan con el Excel [`base-conocimiento/Base_Conocimiento_Minutas.xlsx`](base-conocimiento/Base_Conocimiento_Minutas.xlsx) en tablas `kb_*`. El objetivo es que las recomendaciones se basen en casos reales.
 
-- Ya hay 18 minutas cargadas (2023–2026: Sicilia, Don Oscar, Barrio Pesquero, Rock & Burgers, Dorcher, Malala, Hotel La Confianza, 7 sedes Rikoton y 3 de Gelato Alore), con 52 reglas, 13 acciones estándar y la tabla de decisión de impresión IDPos.
+- Ya hay **44 minutas cargadas** (MH-001 a MH-044, 2023–2026) con el rubro confirmado por el equipo, 64 reglas (R58–R64 propuestas), 13 acciones estándar, perfiles por rubro, canales de atención y la hoja confidencial de credenciales.
 - **Reglas de negocio IDPos** (sección 4b de `base-conocimiento/BASE_CONOCIMIENTO_MINUTAS.md`):
   - **Comandas:** se deducen de las áreas de preparación (bar, cocina, jugos, cafetería, parrillas, makis, ramen, panadería…).
   - **Controlador de impresiones:** va en la PC o laptop de caja. Si no hay ninguna, en un Raspberry, solo con impresoras de red; una USB solo funciona con laptop o PC.
@@ -65,6 +65,21 @@ Las minutas hechas a mano (PDF) se cargan con el Excel [`base-conocimiento/Base_
     - **Sigue propuesto:** las tablas `kb_*`, el importador del Excel y las recomendaciones desde la base de conocimiento.
 - Diseño, importador y prompt para Claude Code: [`base-conocimiento/BASE_CONOCIMIENTO_MINUTAS.md`](base-conocimiento/BASE_CONOCIMIENTO_MINUTAS.md).
 - **Todo esto se hace solo en local.**
+
+## Propuesto después de la 0.0.3 (2026-10-10 y 2026-10-11, no implementado)
+
+Qué está hecho y qué falta, punto por punto: [`analisis/ESTADO_VERSION_0_0_3.md`](analisis/ESTADO_VERSION_0_0_3.md).
+
+- **Estados y edición de la minuta (propuesta 2026-10-11):** botón Ver (vista previa); al generar el PDF pasa a COMPLETA y se notifica al supervisor (la notificación abre esa minuta); el supervisor puede editar y validar; al validar se notifica al técnico. WhatsApp y correo están siempre activos; un PDF sin validar sale como no verificado, sin persona que valida y con la marca de agua "SIN VALIDAR". Hoy lo que se edita en la app no llega al PDF. Detalle en `analisis/EDICION_Y_ESTADOS_MINUTA.md`.
+- **Conectividad (pantalla Análisis IA):** sin internet 0 %. Según el plan contratado: hasta 399 Mbps 30 %, 400–699 60 %, 700–899 80 %, 900 o más 100 %. Si falta WiFi en alguna área: −10 puntos una sola vez + OBSERVADO. Se necesitan 200 Mbps por salón; si no alcanza, OBSERVADO y subir el plan. Con cámaras: plan de 1000 Mbps y red de cámaras separada. Detalle en `analisis/LOGICA_ANALISIS.md`. *Plan necesario (2026-10-11): mínimo por equipo (10 Mbps WiFi, 5 Mbps PC por cable) y recomendado ~150 Mbps por zona de atención.*
+- **Áreas y cajas:** Restobar en P09. Proveedor "Otro" con nombre escrito. En Discoteca, Bar o Restobar, P11 ofrece Barra 1–3 y Cocina 1–2; con "Otro" se escribe el área. La ubicación de cada área es Piso 1…N, Terraza u Otro (escrito). Con más de una caja, cada barra se asocia a una caja.
+- **Preguntas por rubro:** P09 junta rubro y tipo de comida (15 opciones). Cada rubro carga un perfil que sugiere las áreas (se confirman con un toque), pregunta si la caja comparte área con una zona de preparación (Caja-Barra, Caja-Parrilla), oculta lo que no aplica ("No aplica (por rubro)") y arma las impresoras. R56 (cualquier rubro): TP-Link con chip y plan básico, solo para impresoras y sistema de impresiones (reemplaza al internet del local para la impresión), si hay caídas (P17), no hay proveedor (P14 = No tiene o No sé) o la dirección menciona el patio de comidas de un centro comercial grande (Refugio, Larcomar, Real Plaza, Jockey…; se deduce, no se pregunta). Detalle en `base-conocimiento/BASE_CONOCIMIENTO_MINUTAS.md`, sección 4c.
+- **Cierre de la minuta:** P08 pasa a ser el estado del local (En operación, En obra, Por inaugurar, Ya cuenta con sistema anterior, Otro). Los pasos a seguir (cliente / ID) se generan solos y el técnico los edita. El video del local es un apartado fijo al cierre (enlaces opcionales; si no hay, la sección Anexos no sale en el PDF). Después del análisis se abre un apartado de observaciones (técnico, serie de facturación, ¿el cliente acepta la recomendación?, método de pago, otro), que en la minuta va después de las recomendaciones. Detalle en la sección 4d de la base de conocimiento.
+- **Regla general "Otro":** en toda pregunta con "Otro" u "Otra", el chat pide escribir cuál es. El texto se guarda (`{campo}Otro`, respuesta `OTRO: texto`) y se usa en la minuta, la evaluación y como opción en las preguntas siguientes. Cubre P08a, P09a, P11b, P11d, P12d, P13a, P22f, P28a y P29a.
+- **Segmento:** todas las impresoras deben estar en el segmento del router (puerta de enlace del ipconfig E4); si no, aviso al técnico al subir el autotest (R55).
+- **Canales de atención:** Mesa, Recojo, Para llevar, Backoffice, Delivery y Otro (selección múltiple); cada canal tiene sus zonas sugeridas + Otro. El WiFi se revisa en todas las zonas y lugares de preparación (sección 4c de la base de conocimiento).
+- **Evidencias y speedtest:** la IA valida que la foto sea la evidencia pedida y legible (si no, se repite o se salta); fotos obligatorias del frontis, de cada zona, lugar de preparación y caja; el speedtest del plan se hace **por cable directo al router** (Cat6, RJ45 gigabit); WiFi por zona opcional con umbrales para el punto de venta. Detalle en [`analisis/EVIDENCIAS_Y_CONECTIVIDAD.md`](analisis/EVIDENCIAS_Y_CONECTIVIDAD.md).
+- **Mapa de red:** solo equipos de red con "Ubic." e "IP", impresoras como "IMP. {nombre}", "Switch x8/x16/x24/x48", íconos nuevos, rayos de energía azul/rojo, 5 tipos de línea (incluida la flecha USB), desvincular, borrar varios y rehacer. Detalle en [`analisis/MAPA_DE_RED.md`](analisis/MAPA_DE_RED.md).
 
 ## Pendientes
 
@@ -114,7 +129,7 @@ cd ~/IdeaProjects/idbi-fastapi
 - **Puerto 8080.** Puede estar ocupado por otro proyecto (Voya). Revisa con `lsof -i :8080 -sTCP:LISTEN` que el proceso sea `IdbiApiGatewayApplication`.
 - **Emulador.** Lánzalo con `env -u HTTP_PROXY -u HTTPS_PROXY …` (ver `notas-de-desarrollo/project_emulator_proxy_conflict.md`).
 - **Moshi.** No uses `kotlin.Pair` en modelos que pasan por `ChatProgressStore`.
-- **Credenciales.** Nunca incluyas credenciales (AnyDesk, claves WiFi, contraseñas de router) en minutas, documentos ni en la base de conocimiento.
+- **Credenciales.** Las credenciales leídas de la evidencia (claves WiFi, router, AnyDesk, usuario de equipo) van solo en la tabla `kb_minuta_credencial` (clave cifrada, acceso ADMIN) y en la hoja del mismo nombre del Excel (sin contraseña, versionado en el repositorio privado). Nunca en código, documentos `.md` ni logs.
 - **Tablas huérfanas.** Quedan tablas de un backend abandonado: `locals`, `technical_evaluations`, `network_devices`. Ningún código las usa.
 
 ## Código muerto conocido
