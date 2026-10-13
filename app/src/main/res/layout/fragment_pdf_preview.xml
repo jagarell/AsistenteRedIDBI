@@ -29,6 +29,7 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="12dp"
             android:layout_weight="1"
+            android:id="@+id/tvTitle"
             android:text="Propuesta PDF"
             android:textColor="@android:color/white"
             android:textSize="22sp"
@@ -68,22 +69,94 @@
                 android:visibility="gone" />
         </FrameLayout>
 
-        <TextView
-            android:id="@+id/tvPageIndicator"
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:gravity="center"
-            android:text="1 / 1"
-            android:textColor="#9CA3AF"
-            android:textSize="13sp"
-            android:textStyle="bold" />
+            android:layout_marginTop="6dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp">
+
+            <TextView
+                android:id="@+id/btnPrev"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:gravity="center"
+                android:text="‹"
+                android:textColor="@color/primary_blue"
+                android:textSize="28sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tvPageIndicator"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:text="Página 1 de 1"
+                android:textColor="#4B5563"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/btnNext"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:gravity="center"
+                android:text="›"
+                android:textColor="@color/primary_blue"
+                android:textSize="28sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/btnZoomOut"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:gravity="center"
+                android:text="−"
+                android:textColor="@color/primary_blue"
+                android:textSize="26sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tvZoom"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:minWidth="48dp"
+                android:gravity="center"
+                android:text="100 %"
+                android:textColor="#4B5563"
+                android:textSize="13sp" />
+
+            <TextView
+                android:id="@+id/btnZoomIn"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:gravity="center"
+                android:text="+"
+                android:textColor="@color/primary_blue"
+                android:textSize="26sp"
+                android:textStyle="bold" />
+        </LinearLayout>
 
         <LinearLayout
+            android:id="@+id/shareBox"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:padding="20dp">
+
+            <TextView
+                android:id="@+id/tvPreviewNote"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:padding="8dp"
+                android:text="Así quedará el PDF. Vuelve a la propuesta y toca «Generar PDF» para emitirlo."
+                android:textColor="#6B7280"
+                android:textSize="13sp"
+                android:visibility="gone" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnDownload"

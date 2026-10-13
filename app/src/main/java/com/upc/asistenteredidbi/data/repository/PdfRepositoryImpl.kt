@@ -1,5 +1,6 @@
 package com.upc.asistenteredidbi.data.repository
 
+import com.upc.asistenteredidbi.data.mapper.toDomain
 import com.upc.asistenteredidbi.data.mapper.toDto
 import com.upc.asistenteredidbi.data.remote.PdfApiService
 import com.upc.asistenteredidbi.data.remote.dto.MinutaSendRequestDto
@@ -19,8 +20,21 @@ class PdfRepositoryImpl @Inject constructor(
         api.generateProposalPdf(data.toDto()).use { it.bytes() }
     }
 
-    override suspend fun generateMinutaPdf(evaluationId: Long): Result<ByteArray> = safeCall {
-        api.generateMinutaPdf(evaluationId).use { it.bytes() }
+    override suspend fun generateMinutaPdf(evaluationId: Long, preview: Boolean): Result<ByteArray> = safeCall {
+        api.generateMinutaPdf(evaluationId, preview).use { it.bytes() }
+    }
+
+    override suspend fun minutaInfo(evaluationId: Long): Result<com.upc.asistenteredidbi.domain.model.MinutaRecord?> = safeCall {
+        val response = api.minutaInfo(evaluationId)
+        response.body()?.toDomain()
+    }
+
+    override suspend fun getMinutaEditions(evaluationId: Long): Result<Map<String, Any?>> = safeCall {
+        api.getMinutaEditions(evaluationId)
+    }
+
+    override suspend fun saveMinutaEditions(evaluationId: Long, body: Map<String, Any?>): Result<Map<String, Any?>> = safeCall {
+        api.saveMinutaEditions(evaluationId, body)
     }
 
     override suspend fun sendMinuta(

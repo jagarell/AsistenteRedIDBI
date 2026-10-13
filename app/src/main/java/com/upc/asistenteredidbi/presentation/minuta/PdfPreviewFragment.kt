@@ -15,7 +15,7 @@ import androidx.navigation.fragment.findNavController
 import androidx.viewpager2.widget.ViewPager2
 import com.upc.asistenteredidbi.databinding.FragmentPdfPreviewBinding
 import com.upc.asistenteredidbi.presentation.common.PdfFileUtils
-import com.upc.asistenteredidbi.presentation.common.PdfPageRenderer
+import com.upc.asistenteredidbi.presentation.common.PdfPageSource
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 import java.io.File
@@ -28,6 +28,10 @@ class PdfPreviewFragment : Fragment() {
 
     private lateinit var pageAdapter: PdfPageAdapter
     private var pageCount = 0
+    private var source: PdfPageSource? = null
+
+    /** Vista previa antes de generar el PDF: no se descarga ni se comparte. */
+    private val isPreview: Boolean by lazy { arguments?.getBoolean("preview", false) ?: false }
 
     private val pdfFile: File? by lazy {
         arguments?.getString("pdfPath")?.takeIf { it.isNotBlank() }?.let { File(it) }
@@ -45,13 +49,31 @@ class PdfPreviewFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        pageAdapter = PdfPageAdapter()
+        binding.tvTitle.text = if (isPreview) "Vista previa" else "Propuesta PDF"
+        if (isPreview) {
+            binding.btnDownload.isVisible = false
+            binding.btnWhatsapp.isVisible = false
+            binding.btnEmail.isVisible = false
+            binding.tvPreviewNote.isVisible = true
+        }
+        pageAdapter = PdfPageAdapter(
+            scope = viewLifecycleOwner.lifecycleScope,
+            pageCount = { pageCount },
+            load = { index -> source!!.render(index) },
+            onZoomChanged = { z -> _binding?.tvZoom?.text = "${(z * 100).toInt()} %" }
+        )
         binding.pager.adapter = pageAdapter
+        binding.pager.offscreenPageLimit = 1
         binding.pager.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
             override fun onPageSelected(position: Int) {
-                binding.tvPageIndicator.text = "${position + 1} / $pageCount"
+                binding.tvPageIndicator.text = "Página ${position + 1} de $pageCount"
+                binding.tvZoom.text = "100 %"
             }
         })
+        binding.btnPrev.setOnClickListener { binding.pager.setCurrentItem(maxOf(0, binding.pager.currentItem - 1), true) }
+        binding.btnNext.setOnClickListener { binding.pager.setCurrentItem(minOf(pageCount - 1, binding.pager.currentItem + 1), true) }
+        binding.btnZoomIn.setOnClickListener { pageAdapter.zoomViewAt(binding.pager.currentItem)?.zoomBy(1.5f) }
+        binding.btnZoomOut.setOnClickListener { pageAdapter.zoomViewAt(binding.pager.currentItem)?.zoomBy(1f / 1.5f) }
 
         binding.btnBack.setOnClickListener { findNavController().navigateUp() }
         binding.btnDownload.setOnClickListener { downloadPdf() }
@@ -68,25 +90,24 @@ class PdfPreviewFragment : Fragment() {
             binding.tvEmpty.isVisible = true
             return
         }
-
-        viewLifecycleOwner.lifecycleScope.launch {
-            val widthPx = resources.displayMetrics.widthPixels - (32 * resources.displayMetrics.density).toInt()
-            runCatching { PdfPageRenderer.renderPages(file, widthPx) }
-                .onSuccess { bitmaps ->
-                    binding.progress.isVisible = false
-                    if (bitmaps.isEmpty()) {
-                        binding.tvEmpty.isVisible = true
-                    } else {
-                        pageCount = bitmaps.size
-                        pageAdapter.submitPages(bitmaps)
-                        binding.tvPageIndicator.text = "1 / $pageCount"
-                    }
-                }
-                .onFailure {
-                    binding.progress.isVisible = false
+        // Una hoja a la vez, a doble resolución para que el zoom se lea nítido.
+        val widthPx = (resources.displayMetrics.widthPixels * 2).coerceAtMost(2400)
+        runCatching { PdfPageSource(file, widthPx) }
+            .onSuccess { src ->
+                source = src
+                pageCount = src.pageCount
+                binding.progress.isVisible = false
+                if (pageCount == 0) {
                     binding.tvEmpty.isVisible = true
+                } else {
+                    binding.tvPageIndicator.text = "Página 1 de $pageCount"
+                    pageAdapter.refresh()
                 }
-        }
+            }
+            .onFailure {
+                binding.progress.isVisible = false
+                binding.tvEmpty.isVisible = true
+            }
     }
 
     private fun downloadPdf() {
@@ -119,6 +140,8 @@ class PdfPreviewFragment : Fragment() {
 
     override fun onDestroyView() {
         binding.pager.adapter = null
+        source?.close()
+        source = null
         _binding = null
         super.onDestroyView()
     }

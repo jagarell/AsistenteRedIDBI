@@ -168,6 +168,13 @@
                 android:id="@+id/layoutAnalysisWifi"
                 layout="@layout/item_analysis_wifi" />
 
+            <!-- Aviso de observaciones y Referencias (se llenan desde el código) -->
+            <LinearLayout
+                android:id="@+id/containerExtras"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical" />
+
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"

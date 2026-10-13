@@ -4,7 +4,11 @@ import com.upc.asistenteredidbi.data.remote.dto.GenericMessageDto
 import com.upc.asistenteredidbi.data.remote.dto.MinutaSendRequestDto
 import com.upc.asistenteredidbi.data.remote.dto.ProposalPdfRequestDto
 import com.upc.asistenteredidbi.data.remote.dto.ProposalSendRequestDto
+import com.upc.asistenteredidbi.data.remote.dto.MinutaRecordResponseDto
 import okhttp3.ResponseBody
+import retrofit2.Response
+import retrofit2.http.PUT
+import retrofit2.http.Query
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST
@@ -24,8 +28,24 @@ interface PdfApiService {
     @Streaming
     @GET("api/evaluations/{evaluationId}/minuta/pdf")
     suspend fun generateMinutaPdf(
-        @Path("evaluationId") evaluationId: Long
+        @Path("evaluationId") evaluationId: Long,
+        /** true = vista previa (marca VISTA PREVIA): no cambia el estado. Sin preview, al generarse la minuta pasa a COMPLETA. */
+        @Query("preview") preview: Boolean = false
     ): ResponseBody
+
+    /** La minuta de esa evaluación (estado, quién la validó); 204 si todavía no existe. */
+    @GET("api/evaluations/{evaluationId}/minuta/info")
+    suspend fun minutaInfo(@Path("evaluationId") evaluationId: Long): Response<MinutaRecordResponseDto>
+
+    /** Ediciones de la minuta: datos principales, observaciones, propuesta editada. */
+    @GET("api/evaluations/{evaluationId}/minuta/ediciones")
+    suspend fun getMinutaEditions(@Path("evaluationId") evaluationId: Long): Map<String, Any?>
+
+    @PUT("api/evaluations/{evaluationId}/minuta/ediciones")
+    suspend fun saveMinutaEditions(
+        @Path("evaluationId") evaluationId: Long,
+        @Body body: Map<String, @JvmSuppressWildcards Any?>
+    ): Map<String, Any?>
 
     @POST("api/evaluations/{evaluationId}/minuta/send")
     suspend fun sendMinuta(

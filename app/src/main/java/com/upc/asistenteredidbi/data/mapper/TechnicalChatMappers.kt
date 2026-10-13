@@ -1,11 +1,16 @@
 package com.upc.asistenteredidbi.data.mapper
 
+import com.upc.asistenteredidbi.data.remote.dto.ChatFieldDto
 import com.upc.asistenteredidbi.data.remote.dto.ChatNodeDto
+import com.upc.asistenteredidbi.data.remote.dto.ChatOptionDto
 import com.upc.asistenteredidbi.data.remote.dto.TechnicalChatProposalDto
 import com.upc.asistenteredidbi.data.remote.dto.TechnicalChatResponseDto
 import com.upc.asistenteredidbi.data.remote.dto.TechnicalEquipmentRecommendationDto
 import com.upc.asistenteredidbi.data.remote.dto.TopologyDto
+import com.upc.asistenteredidbi.domain.model.ChatEvidencePrompt
 import com.upc.asistenteredidbi.domain.model.ChatEvidenceResult
+import com.upc.asistenteredidbi.domain.model.ChatFieldSpec
+import com.upc.asistenteredidbi.domain.model.ChatNotice
 import com.upc.asistenteredidbi.domain.model.ChatFollowUp
 import com.upc.asistenteredidbi.domain.model.ChatNodePrompt
 import com.upc.asistenteredidbi.domain.model.ChatOption
@@ -41,9 +46,14 @@ fun TechnicalChatResponseDto.toDomain(): TechnicalChatProgress {
         },
         crossChecks = crossChecks.orEmpty(),
         followUps = followUps.orEmpty().map { ChatFollowUp(it.key, it.text, it.options.orEmpty()) },
-        processedImages = processedImages.orEmpty()
+        processedImages = processedImages.orEmpty(),
+        notices = notices.orEmpty().map { ChatNotice(it.id.orEmpty(), it.tone ?: "info", it.tag.orEmpty(), it.text) }
     )
 }
+
+fun ChatOptionDto.toDomain() = ChatOption(value, label, other ?: false, numeric ?: false)
+
+fun ChatFieldDto.toDomain() = ChatFieldSpec(key, label, type ?: "number", options.orEmpty().map { it.toDomain() })
 
 fun ChatNodeDto.toDomain(): ChatNodePrompt = ChatNodePrompt(
     nodeId = nodeId,
@@ -51,7 +61,7 @@ fun ChatNodeDto.toDomain(): ChatNodePrompt = ChatNodePrompt(
     kind = kind,
     inputType = TechnicalChatInputType.fromApiValue(inputType),
     text = text,
-    options = options.orEmpty().map { ChatOption(it.value, it.label) },
+    options = options.orEmpty().map { it.toDomain() },
     required = required ?: true,
     block = block.orEmpty(),
     blockLabel = blockLabel.orEmpty(),
@@ -70,8 +80,34 @@ fun ChatNodeDto.toDomain(): ChatNodePrompt = ChatNodePrompt(
     minSelected = (validation?.get("minSelected") as? Number)?.toInt() ?: 0,
     context = context.orEmpty(),
     keyboard = keyboard ?: "text",
-    hint = hint.orEmpty()
+    hint = hint.orEmpty(),
+    suggestions = suggestions.orEmpty(),
+    selected = selected.orEmpty(),
+    noneLabel = noneLabel,
+    allowOther = allowOther ?: false,
+    multiline = multiline ?: false,
+    unit = unit,
+    optional = optional ?: false,
+    evidence = evidence?.let {
+        ChatEvidencePrompt(
+            read = it.read.orEmpty(), name = it.name.orEmpty(), status = it.status ?: "WAITING", message = it.message,
+            fields = it.fields.orEmpty().map { f -> f.toDomain() }, data = it.data.orEmpty(), label = it.label.orEmpty(),
+            unavailable = it.unavailable ?: false, mode = it.mode ?: "subir", lastTry = it.lastTry
+        )
+    },
+    fields = fields.orEmpty().map { it.toDomain() },
+    valueJson = value?.let { com.upc.asistenteredidbi.data.mapper.AnyJson.toJson(it) },
+    zones = zones.orEmpty(),
+    videoTypes = videoTypes.orEmpty(),
+    evidencesTotal = evidencesTotal ?: 0
 )
+
+/** Convierte lo que Moshi decodificó como `Any` (mapas, listas, números) a un JSON de texto. */
+object AnyJson {
+    private val adapter by lazy { com.squareup.moshi.Moshi.Builder().build().adapter(Any::class.java) }
+    fun toJson(value: Any): String = adapter.toJson(value)
+    fun fromJson(json: String?): Any? = if (json.isNullOrBlank()) null else adapter.fromJson(json)
+}
 
 fun TechnicalChatProposalDto.toDomain(): TechnicalChatProposal {
     return TechnicalChatProposal(

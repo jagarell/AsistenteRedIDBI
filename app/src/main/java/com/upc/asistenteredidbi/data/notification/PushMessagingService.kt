@@ -53,7 +53,17 @@ class PushMessagingService : FirebaseMessagingService() {
             return
         }
 
+        // Al tocarla se abre esa minuta: tipo, minutaId y evaluationId viajan en el push.
+        val open = android.content.Intent(this, com.upc.asistenteredidbi.MainActivity::class.java).apply {
+            flags = android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP or android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP
+            message.data.forEach { (k, v) -> putExtra(k, v) }
+        }
+        val pending = android.app.PendingIntent.getActivity(
+            this, System.currentTimeMillis().toInt(), open,
+            android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE
+        )
         val notification = NotificationCompat.Builder(this, NotificationChannels.PUSH_CHANNEL_ID)
+            .setContentIntent(pending)
             .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle(title)
             .setContentText(body)

@@ -39,7 +39,7 @@ class MapCanvasView @JvmOverloads constructor(
     attrs: AttributeSet? = null
 ) : View(context, attrs) {
 
-    enum class Mode { VIEW, EDIT, CONNECT }
+    enum class Mode { VIEW, EDIT, CONNECT, MULTI }
 
     /** Elemento seleccionado: kind = node | link | text | image. */
     data class Selection(val kind: String, val id: String)
@@ -53,7 +53,13 @@ class MapCanvasView @JvmOverloads constructor(
         /** En modo CONNECT: el técnico tocó origen y destino. */
         fun onConnect(sourceId: String, targetId: String) {}
         fun onConnectSourcePicked(sourceId: String) {}
+        /** En modo MULTI: el técnico tocó un elemento para marcarlo o desmarcarlo (Borrar varios). */
+        fun onMultiToggle(selection: Selection) {}
     }
+
+    /** Elementos marcados en "Seleccionar varios". */
+    var multiSelection: Set<String> = emptySet()
+        set(value) { field = value; invalidate() }
 
     var listener: Listener? = null
 
@@ -173,7 +179,7 @@ class MapCanvasView @JvmOverloads constructor(
         for (l in map.links) {
             val a = byId[l.source]?.let { nodePos(it) } ?: continue
             val b = byId[l.target]?.let { nodePos(it) } ?: continue
-            drawLink(canvas, l, a, b)
+            drawLink(canvas, l, a, b, byId)
         }
 
         for (img in map.images) drawImage(canvas, img)
@@ -183,46 +189,123 @@ class MapCanvasView @JvmOverloads constructor(
         canvas.restore()
     }
 
-    private fun drawLink(canvas: Canvas, l: MapLinkModel, a: Pair<Float, Float>, b: Pair<Float, Float>) {
-        val selected = selection?.kind == "link" && selection?.id == l.id
-        linkPaint.color = when {
-            selected -> Color.parseColor("#1565C0")
-            l.observed -> Color.parseColor("#C62828")
-            else -> Color.parseColor("#78909C")
+    /** Camino de una línea: en escalera (baja, cruza y baja) entre filas distintas, recta en la misma fila o en una flecha USB. */
+    private fun linkPath(l: MapLinkModel, a: Pair<Float, Float>, b: Pair<Float, Float>): List<Pair<Float, Float>> {
+        if (l.kind == "usb" || Math.abs(a.second - b.second) < 18f * d) return listOf(a, b)
+        val (up, dn) = if (a.second < b.second) a to b else b to a
+        val my = dn.second - nodeRadius - 22f * d
+        return listOf(up, up.first to my, dn.first to my, dn)
+    }
+
+    private fun drawLink(canvas: Canvas, l: MapLinkModel, a: Pair<Float, Float>, b: Pair<Float, Float>, byId: Map<String, MapNodeModel>) {
+        val selected = (selection?.kind == "link" && selection?.id == l.id) || l.id in multiSelection
+        val child = if (l.kind == "usb") byId[l.source] else byId[l.target]
+        val host = if (l.kind == "usb") byId[l.target] else byId[l.source]
+        val color = Color.parseColor(
+            l.color ?: when {
+                l.observed -> "#D32F2F"
+                child?.isPending == true || (l.kind == "usb" && host?.isPending == true) -> "#9E9E9E"
+                else -> "#1565C0"
+            }
+        )
+        val width = when (l.kind) { "main" -> 5f; "camera" -> 2f; else -> 3f } * d * (if (staticPreview) 0.8f else 1f)
+        val points = linkPath(l, a, b).toMutableList()
+        var arrowTip: Pair<Float, Float>? = null
+        var arrowDir: Pair<Float, Float>? = null
+        if (l.kind == "usb") {
+            // Flecha de la impresora a la PC o laptop, con la punta en ese equipo.
+            val dx = b.first - a.first; val dy = b.second - a.second
+            val len = hypot(dx, dy).coerceAtLeast(1f)
+            val ux = dx / len; val uy = dy / len
+            arrowTip = (b.first - ux * (nodeRadius + 3f * d)) to (b.second - uy * (nodeRadius + 3f * d))
+            arrowDir = ux to uy
+            points[0] = (a.first + ux * (nodeRadius + 2f * d)) to (a.second + uy * (nodeRadius + 2f * d))
+            points[1] = (arrowTip.first - ux * 9f * d) to (arrowTip.second - uy * 9f * d)
         }
-        linkPaint.strokeWidth = (if (selected) 4f else 2.5f) * d
-        linkPaint.pathEffect = when {
-            l.observed || l.style == "dashed" -> DashPathEffect(floatArrayOf(10f * d, 6f * d), 0f)
-            l.style == "dotted" -> DashPathEffect(floatArrayOf(2f * d, 6f * d), 0f)
+        val path = android.graphics.Path().apply {
+            moveTo(points[0].first, points[0].second)
+            for (p in points.drop(1)) lineTo(p.first, p.second)
+        }
+        if (selected) {
+            linkPaint.color = Color.parseColor("#90CAF9"); linkPaint.strokeWidth = width + 6f * d; linkPaint.pathEffect = null
+            canvas.drawPath(path, linkPaint)
+        }
+        linkPaint.color = color
+        linkPaint.strokeWidth = width
+        linkPaint.strokeJoin = Paint.Join.ROUND
+        linkPaint.pathEffect = when (l.kind) {
+            "camera" -> DashPathEffect(floatArrayOf(4f * d, 3f * d), 0f)
+            "wifi" -> DashPathEffect(floatArrayOf(9f * d, 4f * d), 0f)
             else -> null
         }
-        canvas.drawLine(a.first, a.second, b.first, b.second, linkPaint)
+        canvas.drawPath(path, linkPaint)
         linkPaint.pathEffect = null
+        if (arrowTip != null && arrowDir != null) {
+            val (ux, uy) = arrowDir
+            val hx = arrowTip.first - ux * 9f * d; val hy = arrowTip.second - uy * 9f * d
+            val head = android.graphics.Path().apply {
+                moveTo(arrowTip.first, arrowTip.second)
+                lineTo(hx - uy * 5.5f * d, hy + ux * 5.5f * d)
+                lineTo(hx + uy * 5.5f * d, hy - ux * 5.5f * d)
+                close()
+            }
+            fillPaint.color = color
+            canvas.drawPath(head, fillPaint)
+            // ícono USB junto a la punta
+            iconRes(R.drawable.ic_usb)?.let {
+                val s = (16f * d).toInt()
+                val ix = (arrowTip.first - ux * 22f * d - uy * 14f * d).toInt(); val iy = (arrowTip.second - uy * 22f * d + ux * 14f * d).toInt()
+                it.setBounds(ix - s / 2, iy - s / 2, ix + s / 2, iy + s / 2)
+                it.setTint(Color.parseColor("#455A64"))
+                it.draw(canvas)
+            }
+        }
+    }
+
+    private fun iconRes(res: Int): android.graphics.drawable.Drawable? = iconCache.getOrPut("res$res") {
+        ContextCompat.getDrawable(context, res)?.mutate()
     }
 
     private fun drawNode(canvas: Canvas, n: MapNodeModel) {
         val (cx, cy) = nodePos(n)
-        val color = Color.parseColor(n.color ?: MapNodeTypes.colorHex(n.type))
-        if (n.pending) {
+        val pending = n.isPending
+        val color = Color.parseColor(if (n.isBroken) "#D32F2F" else (n.color ?: MapNodeTypes.colorHex(n.type)))
+        if (pending) {
             fillPaint.color = Color.WHITE
             canvas.drawCircle(cx, cy, nodeRadius, fillPaint)
-            ringPaint.color = color
-            ringPaint.pathEffect = DashPathEffect(floatArrayOf(6f * d, 4f * d), 0f)
+            ringPaint.color = Color.parseColor("#455A64")
+            ringPaint.strokeWidth = 2f * d
+            ringPaint.pathEffect = DashPathEffect(floatArrayOf(5f * d, 4f * d), 0f)
             canvas.drawCircle(cx, cy, nodeRadius, ringPaint)
             ringPaint.pathEffect = null
+            ringPaint.strokeWidth = 3f * d
         } else {
             fillPaint.color = color
             canvas.drawCircle(cx, cy, nodeRadius, fillPaint)
         }
         icon(n.type)?.let {
-            val s = (nodeRadius * 0.9f).toInt()
+            val s = (nodeRadius * 1.05f).toInt()
             it.setBounds((cx - s / 2).toInt(), (cy - s / 2).toInt(), (cx + s / 2).toInt(), (cy + s / 2).toInt())
-            it.setTint(if (n.pending) color else Color.WHITE)
+            it.setTint(if (pending) Color.parseColor("#455A64") else Color.WHITE)
             it.draw(canvas)
         }
-        val selected = selection?.kind == "node" && selection?.id == n.id
-        if (selected) {
+        // Rayo de energía: azul si hay toma cerca, rojo si falta. Mide el 45 % del ícono del equipo.
+        n.power?.let { power ->
+            iconRes(R.drawable.ic_bolt)?.let { bolt ->
+                val bs = (nodeRadius * 1.1f).toInt()
+                val bx = (cx + nodeRadius * 0.55f).toInt(); val by = (cy - nodeRadius * 1.45f).toInt()
+                bolt.setBounds(bx - 1, by - 1, bx + bs + 1, by + bs + 1)
+                bolt.setTint(Color.WHITE); bolt.draw(canvas)
+                bolt.setBounds(bx + 2, by + 2, bx + bs - 2, by + bs - 2)
+                bolt.setTint(Color.parseColor(if (power == "ok") "#1565C0" else "#D32F2F")); bolt.draw(canvas)
+            }
+        }
+        if (selection?.kind == "node" && selection?.id == n.id) {
             ringPaint.color = Color.parseColor("#1565C0")
+            canvas.drawCircle(cx, cy, nodeRadius + 4f * d, ringPaint)
+        }
+        if (n.id in multiSelection) {
+            ringPaint.color = Color.parseColor("#D32F2F")
             canvas.drawCircle(cx, cy, nodeRadius + 4f * d, ringPaint)
         }
         if (connectSourceId == n.id) {
@@ -231,7 +314,22 @@ class MapCanvasView @JvmOverloads constructor(
             canvas.drawCircle(cx, cy, nodeRadius + 5f * d, ringPaint)
             ringPaint.pathEffect = null
         }
-        canvas.drawText(n.label.take(if (staticPreview) 14 else 26), cx, cy + nodeRadius + 14f * d, labelPaint)
+        // Nombre, ubicación e IP debajo del ícono.
+        var y = cy + nodeRadius + 14f * d
+        labelPaint.color = Color.parseColor(if (n.isBroken) "#B42318" else "#1F2937")
+        canvas.drawText(n.label.take(if (staticPreview) 16 else 26), cx, y, labelPaint)
+        val small = TextPaint(labelPaint).apply { typeface = Typeface.DEFAULT; textSize = labelPaint.textSize * 0.82f }
+        small.color = Color.parseColor("#4B5563")
+        val lines = buildList {
+            n.detail?.takeIf { it.isNotBlank() }?.let { add(it to false) }
+            n.location?.takeIf { it.isNotBlank() }?.let { add("Ubic.: $it" to false) }
+            if (MapNodeTypes.showsIp(n.type)) add(("IP: " + if (n.usb) "no aplica (USB)" else (n.ip ?: "sin dato")) to n.ipBad)
+        }
+        for ((text, bad) in lines) {
+            y += small.textSize * 1.15f
+            small.color = Color.parseColor(if (bad) "#B42318" else "#4B5563")
+            canvas.drawText(text.take(if (staticPreview) 18 else 30), cx, y, small)
+        }
     }
 
     private fun drawText(canvas: Canvas, t: MapTextModel) {
@@ -277,10 +375,14 @@ class MapCanvasView @JvmOverloads constructor(
     private fun icon(type: String): android.graphics.drawable.Drawable? = iconCache.getOrPut(type) {
         val res = when (type) {
             "internet" -> R.drawable.ic_network
-            "router" -> R.drawable.ic_router
-            "switch" -> R.drawable.ic_server
-            "access_point", "repeater" -> R.drawable.ic_wifi
-            "computer", "pos" -> R.drawable.ic_monitor
+            "router", "tplink" -> R.drawable.ic_router
+            "switch", "switch_managed" -> R.drawable.ic_lan
+            "access_point", "ap", "repeater", "mesh" -> R.drawable.ic_wifi
+            "server" -> R.drawable.ic_server
+            "pc", "computer" -> R.drawable.ic_monitor
+            "laptop" -> R.drawable.ic_laptop
+            "pos", "tablet" -> R.drawable.ic_tablet
+            "raspberry" -> R.drawable.ic_memory
             "printer" -> R.drawable.ic_document
             "camera" -> R.drawable.ic_camera
             else -> R.drawable.ic_devices
@@ -313,7 +415,8 @@ class MapCanvasView @JvmOverloads constructor(
         for (l in map.links) {
             val a = byId[l.source]?.let { nodePos(it) } ?: continue
             val b = byId[l.target]?.let { nodePos(it) } ?: continue
-            if (distToSegment(bx, by, a.first, a.second, b.first, b.second) <= 9f * d) return Selection("link", l.id)
+            val pts = linkPath(l, a, b)
+            if (pts.zipWithNext().any { (p, q) -> distToSegment(bx, by, p.first, p.second, q.first, q.second) <= 10f * d }) return Selection("link", l.id)
         }
         return null
     }
@@ -417,6 +520,10 @@ class MapCanvasView @JvmOverloads constructor(
 
     private fun handleTap(bx: Float, by: Float) {
         val h = hit(bx, by)
+        if (mode == Mode.MULTI) {
+            h?.let { listener?.onMultiToggle(it) }
+            return
+        }
         if (mode == Mode.CONNECT) {
             val node = h?.takeIf { it.kind == "node" } ?: return
             val src = connectSourceId
@@ -432,6 +539,12 @@ class MapCanvasView @JvmOverloads constructor(
             return
         }
         select(h)
+    }
+
+    /** Deja elegido el origen de una conexión (el equipo que ya estaba seleccionado). */
+    fun presetConnectSource(id: String?) {
+        connectSourceId = id
+        invalidate()
     }
 
     /** Vuelve el zoom y el desplazamiento al estado inicial. */

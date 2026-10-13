@@ -91,6 +91,7 @@ class MainActivity : AppCompatActivity() {
         }
         drawer.navHistorial.setOnClickListener { navigateFromDrawer(R.id.action_home_to_historial) }
         drawer.navPropuestas.setOnClickListener { navigateFromDrawer(R.id.action_home_to_minutas) }
+        drawer.navNotificaciones.setOnClickListener { navigateFromDrawer(R.id.action_home_to_notifications) }
         drawer.navConfiguracion.setOnClickListener { navigateFromDrawer(R.id.action_home_to_config) }
         drawer.navMiPerfil.setOnClickListener { navigateFromDrawer(R.id.action_home_to_perfil) }
 
@@ -166,8 +167,27 @@ class MainActivity : AppCompatActivity() {
         )
     }
 
+    /** Al tocar una notificación push se abre la minuta de la que habla (tipo, minutaId y evaluationId vienen en el push). */
+    private fun openFromNotification(intent: android.content.Intent?) {
+        val evaluationId = intent?.getStringExtra("evaluationId")?.takeIf { it.isNotBlank() } ?: return
+        val minutaId = intent.getStringExtra("minutaId")?.toLongOrNull() ?: -1L
+        intent.removeExtra("evaluationId")
+        if (navController.currentDestination?.id == R.id.loginFragment) return
+        navController.navigate(R.id.minutaProposalFragment, Bundle().apply {
+            putString("evaluationId", evaluationId)
+            putLong("minutaId", minutaId)
+        })
+    }
+
+    override fun onNewIntent(intent: android.content.Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        openFromNotification(intent)
+    }
+
     private fun navigateToHome() {
         if (navController.currentDestination?.id == R.id.assistantHomeFragment) {
+            openFromNotification(intent)
             return
         }
 
@@ -181,6 +201,7 @@ class MainActivity : AppCompatActivity() {
                 )
                 .build()
         )
+        openFromNotification(intent)
     }
 
     override fun onSupportNavigateUp(): Boolean {

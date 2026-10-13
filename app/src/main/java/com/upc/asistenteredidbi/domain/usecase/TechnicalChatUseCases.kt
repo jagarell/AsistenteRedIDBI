@@ -40,12 +40,14 @@ class AnswerTechnicalChatWithPhotosUseCase @Inject constructor(
     suspend operator fun invoke(
         evaluationId: Long,
         state: String,
-        photos: List<File>
+        photos: List<File>,
+        mode: String = "subir"
     ): Result<TechnicalChatProgress> {
         return repository.answerTechnicalChatWithPhotos(
             evaluationId = evaluationId,
             state = state,
-            photos = photos
+            photos = photos,
+            mode = mode
         )
     }
 }
@@ -61,8 +63,22 @@ class AmendTechnicalChatUseCase @Inject constructor(
         evidenceScope: String? = null,
         fields: Map<String, Any?> = emptyMap(),
         clarificationKey: String? = null,
-        clarificationAnswer: String? = null
+        clarificationAnswer: String? = null,
+        nodeId: String? = null,
+        deleted: List<String>? = null,
+        restore: Boolean? = null
     ): Result<TechnicalChatProgress> = repository.amendTechnicalChat(
-        evaluationId, state, evidenceCode, evidenceScope, fields, clarificationKey, clarificationAnswer
+        evaluationId, state, evidenceCode, evidenceScope, fields, clarificationKey, clarificationAnswer, nodeId, deleted, restore
     )
+}
+
+class EditTechnicalChatUseCase @Inject constructor(
+    private val repository: ChatRepository
+) {
+    suspend operator fun invoke(
+        evaluationId: Long,
+        state: String,
+        nodeId: String,
+        mode: String
+    ): Result<TechnicalChatProgress> = repository.editTechnicalChat(evaluationId, state, nodeId, mode)
 }

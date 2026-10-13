@@ -2,7 +2,15 @@ package com.upc.asistenteredidbi.domain.model
 
 /** Tipos de nodo del flujo de minuta técnica (ver `app/chat/flow_engine.py` en idbi-fastapi). */
 enum class TechnicalChatInputType {
-    TEXT, NUMBER, CHOICE, MULTI_SELECT, YES_NO, EVIDENCE, ALERT, SUMMARY;
+    TEXT, NUMBER, CHOICE, MULTI_SELECT, YES_NO, EVIDENCE, ALERT, SUMMARY,
+    /** Cuadro de datos que se valida (router): Correcto / Corregir. */
+    READ_CARD,
+    /** Enlaces de video del Anexo B (varios). */
+    LINKS,
+    /** Pasos a seguir editables. */
+    STEPS,
+    /** Medición de WiFi por zona. */
+    WIFI_MEASURE;
 
     companion object {
         fun fromApiValue(value: String?): TechnicalChatInputType =
@@ -11,7 +19,39 @@ enum class TechnicalChatInputType {
 }
 
 /** Opción de una pregunta: `value` es lo que se manda al motor, `label` lo que se muestra. */
-data class ChatOption(val value: String, val label: String)
+data class ChatOption(
+    val value: String,
+    val label: String,
+    /** "Otro (escribir)": al elegirla se pide el texto. */
+    val other: Boolean = false,
+    /** El texto de "Otro" es un número (ej. cantidad de cajas). */
+    val numeric: Boolean = false
+)
+
+/** Campo editable de una lectura: `type` = number | text | sel. */
+data class ChatFieldSpec(
+    val key: String,
+    val label: String,
+    val type: String = "number",
+    val options: List<ChatOption> = emptyList()
+)
+
+/** Estado de la foto que se pide: WAITING, REVIEW (hay lectura por validar), IL (no legible), NC (no corresponde) o WRONG. */
+data class ChatEvidencePrompt(
+    val read: String = "",
+    val name: String = "",
+    val status: String = "WAITING",
+    val message: String? = null,
+    val fields: List<ChatFieldSpec> = emptyList(),
+    val data: Map<String, Any?> = emptyMap(),
+    val label: String = "",
+    val unavailable: Boolean = false,
+    val mode: String = "subir",
+    val lastTry: String? = null
+)
+
+/** Aviso del asistente entre la respuesta y la siguiente pregunta. `tone`: info, warn o bad. */
+data class ChatNotice(val id: String = "", val tone: String = "info", val tag: String = "", val text: String)
 
 /** Nodo que el motor pide responder ahora (pregunta, evidencia, aviso o resumen). */
 data class ChatNodePrompt(
@@ -46,7 +86,26 @@ data class ChatNodePrompt(
     /** Teclado: "text", "number", "phone" o "date". */
     val keyboard: String = "text",
     /** Texto de ayuda del campo (ej. "Número entre 1 y 20"). */
-    val hint: String = ""
+    val hint: String = "",
+    /** Respuestas rápidas de una pregunta de texto (ej. "Saltar"). */
+    val suggestions: List<String> = emptyList(),
+    /** MULTI_SELECT: opciones que vienen marcadas por el rubro. */
+    val selected: List<String> = emptyList(),
+    /** MULTI_SELECT: texto del botón "ninguno" (ej. "Ninguna"). */
+    val noneLabel: String? = null,
+    val allowOther: Boolean = false,
+    val multiline: Boolean = false,
+    val unit: String? = null,
+    /** Foto opcional (zonas de atención): se puede saltar. */
+    val optional: Boolean = false,
+    val evidence: ChatEvidencePrompt? = null,
+    /** READ_CARD: campos del cuadro. */
+    val fields: List<ChatFieldSpec> = emptyList(),
+    /** READ_CARD y STEPS: valor inicial como JSON. */
+    val valueJson: String? = null,
+    val zones: List<String> = emptyList(),
+    val videoTypes: List<String> = emptyList(),
+    val evidencesTotal: Int = 0
 )
 
 /** Pregunta de confirmación del asistente tras leer una evidencia (ej. "¿cuál es el proveedor correcto?"). */
@@ -84,9 +143,11 @@ data class TechnicalChatProgress(
     /** Avisos de validación cruzada tras subir una evidencia. */
     val crossChecks: List<String> = emptyList(),
     val followUps: List<ChatFollowUp> = emptyList(),
-    /** Solo E3: fotos con credenciales desenfocadas (base64). Transitorio: el
+    /** Solo la etiqueta del router: fotos con credenciales desenfocadas (base64). Transitorio: el
      *  ViewModel las escribe a disco y las quita antes de guardar el snapshot. */
-    val processedImages: List<String> = emptyList()
+    val processedImages: List<String> = emptyList(),
+    /** Avisos para mostrar entre la respuesta y la siguiente pregunta. */
+    val notices: List<ChatNotice> = emptyList()
 )
 
 data class TechnicalChatProposal(

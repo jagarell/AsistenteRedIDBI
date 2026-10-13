@@ -28,7 +28,7 @@ import java.io.File
  *  ChatProgressStore, y Moshi no trae un adapter para kotlin.Pair — sin esto
  *  falla el guardado de CUALQUIER mensaje del chat (crash "Platform class
  *  kotlin.Pair ... requires explicit JsonAdapter"). */
-data class ChatResultField(val label: String, val value: String)
+data class ChatResultField(val label: String, val value: String, /** Con clave, la fila lleva una X roja para eliminar esa lectura. */ val key: String = "")
 
 /** Fila de una lista (ej. un dispositivo del escáner de IP). `status`: "ok", "warn" o "". */
 data class ChatListRow(val tag: String, val label: String, val status: String = "")
@@ -63,7 +63,9 @@ data class ChatCard(
     /** PROGRESS: pasos de "Armando la topología". */
     val steps: List<ChatStep> = emptyList(),
     /** MAP: el mapa que se dibuja en miniatura. */
-    val map: NetworkMap? = null
+    val map: NetworkMap? = null,
+    /** NOTICE: info, warn o bad. */
+    val tone: String = "info"
 )
 
 /** Bloque de texto de una tarjeta: título en negrita + líneas (viñetas, o en la misma línea si `inline`). */
@@ -91,7 +93,9 @@ data class ChatMessage(
     val isEditable: Boolean = false,
     val card: ChatCard? = null,
     /** Fotos que subió el técnico (rutas locales ya comprimidas); `text` lleva el pie. */
-    val imagePaths: List<String> = emptyList()
+    val imagePaths: List<String> = emptyList(),
+    /** En la burbuja del técnico: nodo al que respondió (para editar esa respuesta). */
+    val answerNodeId: String? = null
 )
 
 class ChatMessagesAdapter(
@@ -310,6 +314,22 @@ class ChatMessagesAdapter(
         card.maxWidth(minOf(280.dp(context), available))
 
         when (data.kind) {
+            "NOTICE" -> {
+                val (bg, stroke, fg) = when (data.tone) {
+                    "bad" -> Triple("#FDECEA", "#F5B7B1", "#B42318")
+                    "warn" -> Triple("#FFF4E5", "#F5C26B", "#7A4A0A")
+                    else -> Triple("#EAF2FD", "#BBD3F5", "#1F4E9E")
+                }
+                card.background = rounded(Color.parseColor(bg), 16f, context, Color.parseColor(stroke))
+                if (data.title.isNotBlank()) card.addView(small(context, data.title, Color.parseColor(fg), top = 0).apply { typeface = Typeface.DEFAULT_BOLD })
+                data.text?.let { card.addView(body(context, it, Color.parseColor(fg))) }
+                return
+            }
+            "ERROR" -> {
+                card.background = rounded(Color.parseColor("#FDECEA"), 16f, context, Color.parseColor("#F5B7B1"))
+                data.text?.let { card.addView(body(context, it, Color.parseColor("#B42318"))) }
+                return
+            }
             "ALERT" -> {
                 card.background = rounded(Color.parseColor("#FFF4E5"), 16f, context, Color.parseColor("#F5C26B"))
                 card.addView(title(context, "⚠ ${data.title}", Color.parseColor("#B45309")))
@@ -519,6 +539,7 @@ class ChatMessagesAdapter(
     private fun keyValueRow(context: Context, field: ChatResultField): View =
         LinearLayout(context).apply {
             orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
             setPadding(0, 2.dp(context), 0, 2.dp(context))
             addView(TextView(context).apply {
                 text = field.label
@@ -533,6 +554,19 @@ class ChatMessagesAdapter(
                 setTextColor(Color.parseColor("#1F5FBF"))
                 layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
             })
+            if (field.key.isNotBlank()) {
+                // X roja: elimina esta lectura (no aparece en el chat, la minuta ni el anexo).
+                addView(TextView(context).apply {
+                    text = "✕"
+                    textSize = 15f
+                    typeface = Typeface.DEFAULT_BOLD
+                    gravity = Gravity.CENTER
+                    setTextColor(Color.parseColor("#D32F2F"))
+                    contentDescription = "Eliminar la lectura ${field.label}"
+                    layoutParams = LinearLayout.LayoutParams(32.dp(context), 32.dp(context))
+                    setOnClickListener { onCardAction("RD_DEL:${field.key}") }
+                })
+            }
         }
 
     private fun listRow(context: Context, row: ChatListRow): View =

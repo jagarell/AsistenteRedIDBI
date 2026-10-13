@@ -16,7 +16,7 @@ import com.upc.asistenteredidbi.domain.model.MinutaRecordStatus
  * COMPLETA — el backend refuerza la misma regla.
  */
 class MinutaRecordAdapter(
-    private val onComplete: (MinutaRecord) -> Unit,
+    private val onOpen: (MinutaRecord) -> Unit,
     private val onValidate: (MinutaRecord) -> Unit
 ) : RecyclerView.Adapter<MinutaRecordAdapter.VH>() {
 
@@ -76,10 +76,9 @@ class MinutaRecordAdapter(
             binding.tvValidatedBy.isVisible = item.status == MinutaRecordStatus.VALIDADA
             binding.tvValidatedBy.text = "Validada por: ${item.validatedByName ?: "-"}"
 
-            // "Completar": disponible para cualquier técnico/supervisor mientras
-            // esté en borrador (cualquiera puede continuar la minuta de otro).
-            binding.btnComplete.isVisible = item.status == MinutaRecordStatus.BORRADOR
-            binding.btnComplete.setOnClickListener { onComplete(item) }
+            // Ya no hay "Completar" en la lista: la minuta pasa a COMPLETA al generar el PDF.
+            binding.btnComplete.isVisible = false
+            binding.root.setOnClickListener { onOpen(item) }
 
             // "Validar": sólo visible para SUPERVISOR y sólo si está COMPLETA.
             binding.btnValidate.isVisible =

@@ -51,7 +51,7 @@ import java.util.UUID
 @AndroidEntryPoint
 class TopologyEditorFragment : Fragment() {
 
-    private enum class Tool { NONE, CONNECT, LINE, TEXT, IMAGE }
+    private enum class Tool { NONE, CONNECT, LINE, TEXT, IMAGE, POWER, MULTI }
 
     private val viewModel: TopologyEditorViewModel by viewModels()
 
@@ -64,10 +64,21 @@ class TopologyEditorFragment : Fragment() {
     private val thumbs = HashMap<String, Bitmap?>()
 
     private var tool = Tool.NONE
-    private var lineStyle = "solid"
+    private var lineStyle = "cable"
+    private var powerMode = "ok"
+    private val multi = linkedSetOf<String>()
     private var sourceId: String? = null
 
     private val blue = Color.parseColor("#1565C0")
+
+    private companion object {
+        val LINE_NAMES = linkedMapOf("main" to "Gruesa", "cable" to "Fina", "camera" to "Fina de trazos cortos", "wifi" to "Media de trazos medianos", "usb" to "Flecha USB")
+        val LINE_GLYPH = mapOf("main" to "━━", "cable" to "──", "camera" to "┈┈", "wifi" to "╌╌", "usb" to "──▶")
+        val LINE_HELP = mapOf(
+            "main" to "Conexiones principales (internet → router → switch)", "cable" to "Cable de red hacia un equipo",
+            "camera" to "Cámaras de seguridad", "wifi" to "WiFi", "usb" to "Impresora por USB solo a una PC o laptop"
+        )
+    }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         val context = requireContext()
@@ -123,7 +134,22 @@ class TopologyEditorFragment : Fragment() {
             listener = object : MapCanvasView.Listener {
                 override fun onBeforeChange() = viewModel.pushUndo(canvas.map)
                 override fun onMapChanged(map: NetworkMap) = viewModel.setMap(map)
-                override fun onSelectionChanged(selection: MapCanvasView.Selection?) = refreshChrome()
+                override fun onSelectionChanged(selection: MapCanvasView.Selection?) {
+                    refreshChrome()
+                    if (tool == Tool.POWER && selection?.kind == "node") {
+                        mutate { m -> m.copy(nodes = m.nodes.map { n -> if (n.id == selection.id) n.copy(power = powerMode.takeIf { it != "none" }) else n }) }
+                        return
+                    }
+                    // Al tocar una línea: cambiar tipo de línea, color o eliminar (igual que un equipo).
+                    if (selection?.kind == "link" && tool == Tool.NONE) {
+                        current().links.firstOrNull { it.id == selection.id }?.let { showLinkMenu(it) }
+                    }
+                }
+                override fun onMultiToggle(selection: MapCanvasView.Selection) {
+                    if (!multi.add(selection.id)) multi.remove(selection.id)
+                    canvas.multiSelection = multi.toSet()
+                    refreshChrome()
+                }
                 override fun onNodeLongPress(node: MapNodeModel) = showNodeMenu(node)
                 override fun onConnectSourcePicked(sourceId: String) {
                     this@TopologyEditorFragment.sourceId = sourceId
@@ -157,7 +183,8 @@ class TopologyEditorFragment : Fragment() {
                 Triple("add", "Agregar", R.drawable.ic_add),
                 Triple("connect", "Conectar", R.drawable.ic_link),
                 Triple("delete", "Borrar", R.drawable.ic_delete),
-                Triple("undo", "Deshacer", R.drawable.ic_undo)
+                Triple("undo", "Deshacer", R.drawable.ic_undo),
+                Triple("redo", "Rehacer", R.drawable.ic_redo)
             ).forEach { (id, label, icon) ->
                 val item = LinearLayout(context).apply {
                     orientation = LinearLayout.VERTICAL
@@ -188,6 +215,7 @@ class TopologyEditorFragment : Fragment() {
                     saveButton.alpha = if (s.isSaving || s.isLoading) 0.5f else 1f
                     saveButton.text = if (s.isSaving) "Guardando…" else "Guardar"
                     toolbar["undo"]?.alpha = if (s.canUndo) 1f else 0.4f
+                    toolbar["redo"]?.alpha = if (s.canRedo) 1f else 0.4f
                     s.errorMessage?.let {
                         Toast.makeText(requireContext(), it, Toast.LENGTH_LONG).show()
                         viewModel.clearError()
@@ -207,26 +235,87 @@ class TopologyEditorFragment : Fragment() {
     private fun onToolbar(id: String) {
         when (id) {
             "add" -> showAddMenu()
-            "connect" -> if (tool == Tool.CONNECT) endTool() else startTool(Tool.CONNECT)
-            "delete" -> deleteSelected()
+            "connect" -> onConnectTapped()
+            "delete" -> onDeleteTapped()
             "undo" -> {
                 endTool()
                 viewModel.undo()
             }
+            "redo" -> {
+                endTool()
+                viewModel.redo()
+            }
         }
+    }
+
+    /** Con una línea elegida, "Conectar" pasa a rojo y la desvincula; con un equipo elegido, se toca el otro equipo. */
+    private fun connectWouldUnlink(): Boolean = canvas.selection?.kind == "link" && tool == Tool.NONE
+
+    private fun onConnectTapped() {
+        val sel = canvas.selection
+        when {
+            sel?.kind == "link" && tool == Tool.NONE -> {
+                mutate { m -> m.copy(links = m.links.filterNot { it.id == sel.id }) }
+                canvas.select(null)
+                Toast.makeText(requireContext(), "Equipos desconectados", Toast.LENGTH_SHORT).show()
+            }
+            tool == Tool.CONNECT -> endTool()
+            else -> {
+                startTool(Tool.CONNECT)
+                if (sel?.kind == "node") {
+                    sourceId = sel.id
+                    canvas.presetConnectSource(sel.id)
+                    refreshBanner()
+                }
+            }
+        }
+    }
+
+    private fun onDeleteTapped() {
+        if (tool == Tool.MULTI) {
+            if (multi.isEmpty()) { endTool(); return }
+            AlertDialog.Builder(requireContext()).setTitle("¿Borrar ${multi.size} elemento${if (multi.size > 1) "s" else ""}?")
+                .setPositiveButton("Borrar") { _, _ -> deleteMany(multi.toSet()); endTool() }
+                .setNegativeButton("Cancelar", null).show()
+            return
+        }
+        val sel = canvas.selection
+        AlertDialog.Builder(requireContext()).setTitle("Borrar")
+            .setItems(arrayOf(if (sel != null) "Borrar el elemento seleccionado" else "Borrar el elemento (toca uno primero)", "Seleccionar varios")) { _, which ->
+                if (which == 0) deleteSelected() else startTool(Tool.MULTI)
+            }.show()
+    }
+
+    private fun deleteMany(ids: Set<String>) {
+        mutate { m ->
+            m.copy(
+                nodes = m.nodes.filterNot { it.id in ids },
+                links = m.links.filterNot { it.id in ids || it.source in ids || it.target in ids },
+                texts = m.texts.filterNot { it.id in ids },
+                images = m.images.filterNot { it.id in ids }
+            )
+        }
+        canvas.select(null)
     }
 
     private fun startTool(newTool: Tool) {
         endTool(keepPanel = false)
         tool = newTool
         sourceId = null
-        canvas.mode = if (newTool == Tool.CONNECT || newTool == Tool.LINE) MapCanvasView.Mode.CONNECT else MapCanvasView.Mode.EDIT
+        canvas.mode = when (newTool) {
+            Tool.CONNECT, Tool.LINE -> MapCanvasView.Mode.CONNECT
+            Tool.MULTI -> MapCanvasView.Mode.MULTI
+            else -> MapCanvasView.Mode.EDIT
+        }
+        if (newTool != Tool.MULTI) { multi.clear(); canvas.multiSelection = emptySet() }
         refreshChrome()
     }
 
     private fun endTool(keepPanel: Boolean = false) {
         tool = Tool.NONE
         sourceId = null
+        multi.clear()
+        canvas.multiSelection = emptySet()
         canvas.mode = MapCanvasView.Mode.EDIT
         if (!keepPanel) {
             panelHost.removeAllViews()
@@ -239,16 +328,25 @@ class TopologyEditorFragment : Fragment() {
         refreshBanner()
         val active = when (tool) {
             Tool.CONNECT -> "connect"
-            Tool.LINE, Tool.TEXT, Tool.IMAGE -> "add"
+            Tool.LINE, Tool.TEXT, Tool.IMAGE, Tool.POWER -> "add"
+            Tool.MULTI -> "delete"
             else -> null
         }
         toolbar.forEach { (id, item) ->
             val selected = id == active
-            item.background = if (selected) rounded(Color.parseColor("#E3EEFC"), 12f) else null
+            // "Conectar" se pone rojo y pasa a desvincular cuando el equipo elegido ya está conectado al seleccionado.
+            val unlink = id == "connect" && connectWouldUnlink()
+            item.background = if (selected) rounded(Color.parseColor(if (unlink) "#FDECEA" else "#E3EEFC"), 12f) else null
             for (i in 0 until item.childCount) {
                 val child = item.getChildAt(i)
-                val color = if (selected) blue else Color.parseColor("#4B5563")
-                if (child is ImageView) child.setColorFilter(color) else if (child is TextView) child.setTextColor(color)
+                val color = if (unlink) Color.parseColor("#D32F2F") else if (selected) blue else Color.parseColor("#4B5563")
+                if (child is ImageView) {
+                    if (id == "connect") child.setImageResource(if (unlink) R.drawable.ic_link_off else R.drawable.ic_link)
+                    child.setColorFilter(color)
+                } else if (child is TextView) {
+                    child.setTextColor(color)
+                    if (id == "delete") child.text = if (tool == Tool.MULTI) "Borrar (${multi.size})" else "Borrar"
+                }
             }
         }
         linePopup.visibility = if (tool == Tool.LINE) View.VISIBLE else View.GONE
@@ -264,10 +362,15 @@ class TopologyEditorFragment : Fragment() {
                 "#E0F2F1", "#00695C"
             )
             Tool.LINE -> Triple(
-                (if (lineStyle == "solid") "Línea recta" else "Línea discontinua") +
+                "Línea ${LINE_NAMES[lineStyle]?.lowercase()}" +
                     (if (source != null) " · origen: $source · ahora toca el destino" else " · toca el origen"),
-                if (lineStyle == "solid") "#ECEFF3" else "#F0E6F8", if (lineStyle == "solid") "#4B5563" else "#6A1B9A"
+                "#ECEFF3", "#4B5563"
             )
+            Tool.POWER -> Triple(
+                "Energía · toca el equipo para ${when (powerMode) { "ok" -> "poner el rayo azul (hay toma)"; "missing" -> "poner el rayo rojo (falta toma)"; else -> "quitar el rayo" }}",
+                "#E3F2FD", "#1565C0"
+            )
+            Tool.MULTI -> Triple("Seleccionar varios · toca los elementos que quieres borrar y luego Borrar", "#FDECEA", "#B42318")
             Tool.TEXT -> Triple("Caja de texto · arrástrala a su lugar", "#FFF3E0", "#B26A00")
             Tool.IMAGE -> Triple("Imagen · arrastra para mover · elige el tamaño abajo", "#E8F5E9", "#2E7D32")
             Tool.NONE -> Triple("Arrastra los equipos · mantén presionado para más opciones", "#F3F5F9", "#6B7280")
@@ -279,9 +382,9 @@ class TopologyEditorFragment : Fragment() {
 
     private fun buildLinePopup() {
         linePopup.removeAllViews()
-        listOf("solid" to "—  Recta", "dashed" to "···  Discontinua").forEach { (style, label) ->
+        LINE_NAMES.forEach { (style, label) ->
             linePopup.addView(TextView(requireContext()).apply {
-                text = label
+                text = "${LINE_GLYPH[style]}  $label"
                 textSize = 12f
                 typeface = Typeface.DEFAULT_BOLD
                 val selected = lineStyle == style
@@ -290,6 +393,7 @@ class TopologyEditorFragment : Fragment() {
                 setPadding(dp(12), dp(6), dp(12), dp(6))
                 setOnClickListener {
                     lineStyle = style
+                    sourceId = null
                     refreshChrome()
                 }
             })
@@ -323,9 +427,9 @@ class TopologyEditorFragment : Fragment() {
         })
         data class Row(val title: String, val subtitle: String, val icon: Int, val tint: String, val bg: String, val action: () -> Unit)
         listOf(
-            Row("Elemento de red", "Router, switch, AP, PC, impresora…", R.drawable.ic_network, "#1565C0", "#E3EEFC") { showElementSheet() },
-            Row("Línea recta", "Conexión por cable entre dos elementos", R.drawable.ic_remove, "#546E7A", "#ECEFF1") { lineStyle = "solid"; startTool(Tool.LINE) },
-            Row("Línea discontinua", "Enlace WiFi o inalámbrico", R.drawable.ic_more_horiz, "#7E57C2", "#EDE7F6") { lineStyle = "dashed"; startTool(Tool.LINE) },
+            Row("Elemento de red", "Router, TP-Link, switch, AP, PC, Raspberry, impresora…", R.drawable.ic_network, "#1565C0", "#E3EEFC") { showElementSheet() },
+            Row("Energía", "Rayo azul (hay toma), rojo (falta toma) o quitarlo", R.drawable.ic_bolt, "#1565C0", "#E3EEFC") { showPowerSheet() },
+            Row("Línea", "Gruesa, fina, trazos cortos, trazos medianos o flecha USB", R.drawable.ic_remove, "#546E7A", "#ECEFF1") { lineStyle = "cable"; startTool(Tool.LINE) },
             Row("Caja de texto", "Nota o etiqueta sobre el mapa", R.drawable.ic_text_fields, "#EF8F00", "#FFF3E0") { addTextBox() },
             Row("Imagen", "Foto del equipo, gabinete o plano", R.drawable.ic_image, "#2E7D32", "#E8F5E9") { pickImage() }
         ).forEach { row ->
@@ -354,6 +458,16 @@ class TopologyEditorFragment : Fragment() {
         dialog.show()
         // La hoja de Material tiñe el fondo; el prototipo lo lleva blanco.
         dialog.findViewById<View>(com.google.android.material.R.id.design_bottom_sheet)?.setBackgroundColor(Color.TRANSPARENT)
+    }
+
+    /** Energía: rayo azul (hay toma), rojo (falta toma) o quitar el rayo; luego se toca el equipo. */
+    private fun showPowerSheet() {
+        val items = arrayOf("Rayo azul: hay toma de energía junto al equipo", "Rayo rojo: falta toma de energía", "Quitar el rayo")
+        AlertDialog.Builder(requireContext()).setTitle("Energía")
+            .setItems(items) { _, which ->
+                powerMode = when (which) { 0 -> "ok"; 1 -> "missing"; else -> "none" }
+                startTool(Tool.POWER)
+            }.show()
     }
 
     /** Hoja "Elemento de red": tipo, nombre y a qué se conecta. */
@@ -467,8 +581,12 @@ class TopologyEditorFragment : Fragment() {
     }
 
     private fun autoLink(a: MapNodeModel, b: MapNodeModel): MapLinkModel {
-        val wireless = setOf("access_point", "repeater")
-        val style = if (a.type in wireless || b.type in wireless || b.type == "pos" && a.type != "switch") "dashed" else "solid"
+        val wireless = setOf("access_point", "ap", "repeater", "mesh", "tablet", "pos")
+        val style = when {
+            a.type == "camera" || b.type == "camera" -> "camera"
+            a.type in wireless || b.type in wireless -> "wifi"
+            else -> "cable"
+        }
         return MapLinkModel(id = newId("l"), source = a.id, target = b.id, style = style)
     }
 
@@ -488,12 +606,34 @@ class TopologyEditorFragment : Fragment() {
         val map = current()
         val a = map.nodes.firstOrNull { it.id == source } ?: return
         val b = map.nodes.firstOrNull { it.id == target } ?: return
+        val existing = map.links.firstOrNull { (it.source == source && it.target == target) || (it.source == target && it.target == source) }
+        if (existing != null && tool == Tool.CONNECT) {
+            // Ya estaban conectados: tocar de nuevo los desvincula.
+            mutate { it.copy(links = it.links.filterNot { l -> l.id == existing.id }) }
+            Toast.makeText(requireContext(), "${a.label} y ${b.label} ya no están conectados", Toast.LENGTH_SHORT).show()
+            endTool()
+            return
+        }
+        var from = a
+        var to = b
         val style = when (tool) {
             Tool.LINE -> lineStyle
             else -> autoLink(a, b).style
         }
-        if (map.links.none { (it.source == source && it.target == target) || (it.source == target && it.target == source) }) {
-            mutate { it.copy(links = it.links + MapLinkModel(id = newId("l"), source = source, target = target, style = style)) }
+        if (style == "usb") {
+            // La flecha USB solo existe de una impresora a una PC o laptop.
+            val printer = listOf(a, b).firstOrNull { it.type == "printer" }
+            val host = listOf(a, b).firstOrNull { it.type in setOf("pc", "laptop", "computer") }
+            if (printer == null || host == null) {
+                Toast.makeText(requireContext(), "Una impresora USB solo se conecta a una PC o laptop", Toast.LENGTH_LONG).show()
+                endTool()
+                return
+            }
+            from = printer
+            to = host
+        }
+        if (existing == null) {
+            mutate { it.copy(links = it.links + MapLinkModel(id = newId("l"), source = from.id, target = to.id, style = style)) }
         }
         endTool()
     }
@@ -516,13 +656,69 @@ class TopologyEditorFragment : Fragment() {
         endTool()
     }
 
+    // ---- menú de una línea (tocarla) ------------------------------------------------------------------
+    private fun showLinkMenu(link: MapLinkModel) {
+        val context = requireContext()
+        val map = current()
+        val a = map.nodes.firstOrNull { it.id == link.source }?.label.orEmpty()
+        val b = map.nodes.firstOrNull { it.id == link.target }?.label.orEmpty()
+        val box = LinearLayout(context).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(22), dp(18), dp(22), dp(8)) }
+        box.addView(TextView(context).apply { text = "$a ↔ $b"; textSize = 18f; typeface = Typeface.DEFAULT_BOLD; setTextColor(Color.parseColor("#1F2937")) })
+        box.addView(TextView(context).apply { text = "Línea ${LINE_NAMES[link.kind]?.lowercase() ?: link.kind}"; textSize = 12f; setTextColor(Color.parseColor("#6B7280")); setPadding(0, 0, 0, dp(8)) })
+        lateinit var dialog: AlertDialog
+        fun row(text: String, icon: Int, color: String, action: () -> Unit) = box.addView(LinearLayout(context).apply {
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(0, dp(12), 0, dp(12))
+            addView(ImageView(context).apply { setImageResource(icon); setColorFilter(Color.parseColor(color)); layoutParams = LinearLayout.LayoutParams(dp(22), dp(22)).apply { marginEnd = dp(18) } })
+            addView(TextView(context).apply { this.text = text; textSize = 15f; setTextColor(Color.parseColor(color)) })
+            setOnClickListener { dialog.dismiss(); action() }
+        })
+        row("Cambiar tipo de línea", R.drawable.ic_remove, "#1F2937") { chooseLineType(link) }
+        row("Cambiar color", R.drawable.ic_palette, "#1F2937") { chooseLineColor(link) }
+        row("Eliminar", R.drawable.ic_delete, "#C62828") { deleteSelected() }
+        dialog = AlertDialog.Builder(context).setView(box).create()
+        dialog.show()
+        roundDialog(dialog)
+    }
+
+    private fun chooseLineType(link: MapLinkModel) {
+        val keys = LINE_NAMES.keys.toList()
+        AlertDialog.Builder(requireContext()).setTitle("Tipo de línea")
+            .setItems(keys.map { "${LINE_GLYPH[it]}  ${LINE_NAMES[it]} · ${LINE_HELP[it]}" }.toTypedArray()) { _, i ->
+                mutate { m -> m.copy(links = m.links.map { if (it.id == link.id) it.copy(style = keys[i]) else it }) }
+            }.show()
+    }
+
+    private fun chooseLineColor(link: MapLinkModel) {
+        val colors = listOf("#1565C0", "#9E9E9E", "#D32F2F", "#2E7D32", "#6A1B9A", "#00838F", "#EF6C00", "#263238")
+        val context = requireContext()
+        lateinit var dialog: AlertDialog
+        val box = LinearLayout(context).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(22), dp(18), dp(22), dp(18)) }
+        box.addView(TextView(context).apply { text = "Color de la línea"; textSize = 18f; typeface = Typeface.DEFAULT_BOLD; setTextColor(Color.parseColor("#1F2937")); setPadding(0, 0, 0, dp(14)) })
+        colors.chunked(4).forEach { rowColors ->
+            box.addView(LinearLayout(context).apply {
+                gravity = Gravity.CENTER
+                rowColors.forEach { hex ->
+                    addView(View(context).apply {
+                        background = GradientDrawable().apply { shape = GradientDrawable.OVAL; setColor(Color.parseColor(hex)) }
+                        layoutParams = LinearLayout.LayoutParams(dp(48), dp(48)).apply { setMargins(dp(8), dp(6), dp(8), dp(6)) }
+                        setOnClickListener { dialog.dismiss(); mutate { m -> m.copy(links = m.links.map { if (it.id == link.id) it.copy(color = hex) else it }) } }
+                    })
+                }
+            })
+        }
+        dialog = AlertDialog.Builder(context).setView(box).create()
+        dialog.show()
+        roundDialog(dialog)
+    }
+
     // ---- menú de un equipo (mantener presionado) ------------------------------------------------------
     private fun showNodeMenu(node: MapNodeModel) {
         val context = requireContext()
         val map = current()
         val link = map.links.firstOrNull { it.source == node.id || it.target == node.id }
         val peer = link?.let { l -> map.nodes.firstOrNull { it.id == (if (l.source == node.id) l.target else l.source) } }
-        val way = when (link?.style) { "dashed" -> "WiFi"; "dotted" -> "USB"; else -> "Cable" }
+        val way = when (link?.kind) { "wifi" -> "WiFi"; "usb" -> "USB"; "camera" -> "Cámara"; else -> "Cable" }
         val subtitle = MapNodeTypes.label(node.type) + (peer?.let { " · $way al ${it.label}" } ?: "")
 
         val box = LinearLayout(context).apply {
@@ -543,7 +739,14 @@ class TopologyEditorFragment : Fragment() {
             setOnClickListener { dialog.dismiss(); action() }
         })
         row("Renombrar", R.drawable.ic_edit, "#1F2937") { promptRename(node) }
+        row("Ubicación e IP", R.drawable.ic_edit, "#1F2937") { promptDetails(node) }
         row("Cambiar tipo", R.drawable.ic_devices, "#1F2937") { chooseType(node) }
+        row(if (node.isPending) "Marcar como existente" else "Marcar por implementar", R.drawable.ic_devices, "#1F2937") {
+            mutate { m -> m.copy(nodes = m.nodes.map { if (it.id == node.id) it.copy(status = if (node.isPending) "ok" else "pending", pending = !node.isPending) else it }) }
+        }
+        row(if (node.isBroken) "Quitar «con falla»" else "Marcar con falla", R.drawable.ic_devices, "#B42318") {
+            mutate { m -> m.copy(nodes = m.nodes.map { if (it.id == node.id) it.copy(status = if (node.isBroken) "ok" else "broken") else it }) }
+        }
         row("Cambiar color", R.drawable.ic_palette, "#1F2937") { chooseColor(node) }
         row("Eliminar", R.drawable.ic_delete, "#C62828") {
             canvas.select(MapCanvasView.Selection("node", node.id))
@@ -571,6 +774,19 @@ class TopologyEditorFragment : Fragment() {
             .setPositiveButton("Guardar") { _, _ ->
                 val name = input.text?.toString().orEmpty().trim()
                 if (name.isNotBlank()) mutate { m -> m.copy(nodes = m.nodes.map { if (it.id == node.id) it.copy(label = name) else it }) }
+            }.setNegativeButton("Cancelar", null).show()
+    }
+
+    /** Dónde está el equipo y su IP (cuando salió "sin dato" en el mapa). */
+    private fun promptDetails(node: MapNodeModel) {
+        val context = requireContext()
+        val form = LinearLayout(context).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(24), dp(8), dp(24), 0) }
+        val loc = EditText(context).apply { hint = "Ubicación (ej. Cocina)"; setText(node.location.orEmpty()) }
+        val ip = EditText(context).apply { hint = "IP (ej. 192.168.1.40)"; setText(node.ip.orEmpty()); inputType = InputType.TYPE_CLASS_TEXT }
+        form.addView(loc); form.addView(ip)
+        AlertDialog.Builder(context).setTitle(node.label).setView(form)
+            .setPositiveButton("Guardar") { _, _ ->
+                mutate { m -> m.copy(nodes = m.nodes.map { if (it.id == node.id) it.copy(location = loc.text.toString().trim().ifBlank { null }, ip = ip.text.toString().trim().ifBlank { null }) else it }) }
             }.setNegativeButton("Cancelar", null).show()
     }
 
@@ -777,10 +993,14 @@ class TopologyEditorFragment : Fragment() {
     }
 
     private fun iconFor(type: String) = when (type) {
-        "router" -> R.drawable.ic_router
-        "switch" -> R.drawable.ic_server
-        "access_point", "repeater" -> R.drawable.ic_wifi
-        "computer", "pos" -> R.drawable.ic_monitor
+        "router", "tplink" -> R.drawable.ic_router
+        "switch", "switch_managed" -> R.drawable.ic_lan
+        "access_point", "ap", "repeater", "mesh" -> R.drawable.ic_wifi
+        "server" -> R.drawable.ic_server
+        "pc", "computer" -> R.drawable.ic_monitor
+        "laptop" -> R.drawable.ic_laptop
+        "tablet", "pos" -> R.drawable.ic_tablet
+        "raspberry" -> R.drawable.ic_memory
         "printer" -> R.drawable.ic_document
         "camera" -> R.drawable.ic_camera
         else -> R.drawable.ic_devices

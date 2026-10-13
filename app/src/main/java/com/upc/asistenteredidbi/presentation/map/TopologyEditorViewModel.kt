@@ -22,6 +22,7 @@ data class TopologyEditorState(
     val isSaving: Boolean = false,
     val map: NetworkMap = NetworkMap(),
     val canUndo: Boolean = false,
+    val canRedo: Boolean = false,
     val evidences: List<ChatEvidenceItem> = emptyList(),
     val errorMessage: String? = null,
     val saved: Boolean = false
@@ -42,6 +43,7 @@ class TopologyEditorViewModel @Inject constructor(
     val state: StateFlow<TopologyEditorState> = _state.asStateFlow()
 
     private val undoStack = ArrayDeque<NetworkMap>()
+    private val redoStack = ArrayDeque<NetworkMap>()
 
     init {
         viewModelScope.launch {
@@ -66,7 +68,8 @@ class TopologyEditorViewModel @Inject constructor(
     fun pushUndo(snapshot: NetworkMap = _state.value.map) {
         undoStack.addLast(snapshot)
         if (undoStack.size > 50) undoStack.removeFirst()
-        _state.update { it.copy(canUndo = true) }
+        redoStack.clear()
+        _state.update { it.copy(canUndo = true, canRedo = false) }
     }
 
     fun setMap(map: NetworkMap) {
@@ -75,7 +78,14 @@ class TopologyEditorViewModel @Inject constructor(
 
     fun undo() {
         val previous = undoStack.removeLastOrNull() ?: return
-        _state.update { it.copy(map = previous, canUndo = undoStack.isNotEmpty()) }
+        redoStack.addLast(_state.value.map)
+        _state.update { it.copy(map = previous, canUndo = undoStack.isNotEmpty(), canRedo = true) }
+    }
+
+    fun redo() {
+        val next = redoStack.removeLastOrNull() ?: return
+        undoStack.addLast(_state.value.map)
+        _state.update { it.copy(map = next, canUndo = true, canRedo = redoStack.isNotEmpty()) }
     }
 
     fun save() {

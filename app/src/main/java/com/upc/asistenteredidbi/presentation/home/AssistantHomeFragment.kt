@@ -5,6 +5,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
+import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
@@ -116,13 +117,25 @@ class AssistantHomeFragment : Fragment() {
         binding.rvRecentes.adapter = recentAdapter
     }
 
+    @javax.inject.Inject
+    lateinit var notificationApi: com.upc.asistenteredidbi.data.remote.NotificationApiService
+
+    override fun onResume() {
+        super.onResume()
+        // Punto rojo en la campana cuando hay notificaciones sin leer.
+        viewLifecycleOwner.lifecycleScope.launch {
+            val unread = runCatching { notificationApi.listNotifications().unread }.getOrDefault(0)
+            _binding?.notificationBadge?.isVisible = unread > 0
+        }
+    }
+
     private fun setupClicks() {
         binding.btnMenu.setOnClickListener {
             (activity as MainActivity).openDrawer()
         }
 
         binding.btnNotification.setOnClickListener {
-            Toast.makeText(requireContext(), "Notificaciones", Toast.LENGTH_SHORT).show()
+            findNavController().navigate(R.id.action_home_to_notifications)
         }
 
         binding.btnProfile.setOnClickListener {

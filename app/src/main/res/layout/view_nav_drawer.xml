@@ -163,6 +163,15 @@
             </LinearLayout>
 
             <LinearLayout
+                android:id="@+id/navNotificaciones"
+                style="@style/DrawerNavRow">
+
+                <ImageView style="@style/DrawerNavIcon" app:srcCompat="@drawable/ic_notification" />
+
+                <TextView style="@style/DrawerNavLabel" android:text="Notificaciones" />
+            </LinearLayout>
+
+            <LinearLayout
                 android:id="@+id/navConfiguracion"
                 style="@style/DrawerNavRow">
 

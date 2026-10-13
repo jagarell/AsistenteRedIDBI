@@ -43,7 +43,20 @@ class MinutasListFragment : Fragment() {
 
     private fun setupRecycler() {
         adapter = MinutaRecordAdapter(
-            onComplete = { viewModel.complete(it.id) },
+            onOpen = { record ->
+                val evaluationId = record.evaluationId
+                if (evaluationId == null) {
+                    Toast.makeText(requireContext(), "Esta minuta no tiene evaluación asociada", Toast.LENGTH_SHORT).show()
+                } else {
+                    findNavController().navigate(
+                        com.upc.asistenteredidbi.R.id.minutaProposalFragment,
+                        android.os.Bundle().apply {
+                            putString("evaluationId", evaluationId.toString())
+                            putLong("minutaId", record.id)
+                        }
+                    )
+                }
+            },
             onValidate = { viewModel.validate(it.id) }
         )
         binding.rvMinutas.layoutManager = LinearLayoutManager(requireContext())

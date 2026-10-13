@@ -44,13 +44,48 @@ data class AnalysisResponseDto(
     val results: List<AnalysisItemDto>,
     val summary: String,
     val asIsFindings: List<String> = emptyList(),
-    val recommendations: List<String>
+    val recommendations: List<String>,
+    /** APTO | OBSERVADO | NO APTO */
+    val estado: String? = null,
+    val recommendationItems: List<AnalysisRecommendationDto> = emptyList(),
+    val steps: List<AnalysisStepDto> = emptyList(),
+    val references: AnalysisReferencesDto? = null
 )
 
 data class AnalysisItemDto(
     val title: String,
     val status: String,
-    val score: Int,
+    /** null = no aplica (por ejemplo WiFi sin mozos con tablet). */
+    val score: Int? = null,
     val description: String,
-    val color: String
+    val color: String,
+    val criteria: List<AnalysisCriterionDto> = emptyList()
 )
+
+/** Un criterio con peso: cumplimiento medido de 0 a 1 (null = no aplica). */
+data class AnalysisCriterionDto(
+    val name: String,
+    val weight: Int,
+    val compliance: Double? = null,
+    val detail: String = ""
+)
+
+data class AnalysisRecommendationDto(
+    val id: String,
+    val type: String,
+    val title: String,
+    val detail: String,
+    val equipment: String? = null
+)
+
+data class AnalysisStepDto(val p: String, val t: String)
+
+data class AnalysisReferencesDto(
+    val similar: List<ReferenceCaseDto> = emptyList(),
+    val recommendations: List<ReferenceRecommendationDto> = emptyList(),
+    val suggested: List<ReferenceSuggestionDto> = emptyList()
+)
+
+data class ReferenceCaseDto(val name: String, val rubro: String, val pct: Int, val why: String = "")
+data class ReferenceRecommendationDto(val t: String, val n: Int = 0)
+data class ReferenceSuggestionDto(val r: String, val n: Int, val t: String, val d: String)

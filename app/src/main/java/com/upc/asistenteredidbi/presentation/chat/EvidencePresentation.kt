@@ -30,6 +30,14 @@ object EvidencePresentation {
     fun title(code: String): String = when (code) {
         "E1" -> "Speedtest"
         "E1b" -> "Speedtest con chip"
+        "E1c" -> "ipconfig"
+        "E1d" -> "Escáner de IP"
+        "E2u" -> "Ubicación del router"
+        "E2e" -> "Etiqueta del router"
+        "E5a" -> "Etiqueta de la impresora"
+        "E5b" -> "Conexiones de la impresora"
+        "EV" -> "Foto del local"
+        "EVQ" -> "Foto del equipo"
         "E2" -> "Foto del router"
         "E3" -> "Etiqueta del router"
         "E4" -> "ipconfig de la caja"
@@ -73,6 +81,14 @@ object EvidencePresentation {
     }
 
     private fun hint(code: String): String? = when (code) {
+        "E1c" -> "Leeré la IP, la máscara y la puerta de enlace: con eso sé en qué red está el local."
+        "E1d" -> "Leeré los equipos de la red, las impresoras y si hay cámaras (DVR o NVR)."
+        "E2" -> "Contaré los puertos del router: cuántos hay y cuántos están libres."
+        "E2e" -> "Ocultaré usuario, contraseña y clave WiFi de la etiqueta."
+        "E5a" -> "Leeré el modelo y el número de serie."
+        "E5b" -> "Veré qué cable está conectado: red, USB o ninguno (WiFi)."
+        "E7" -> "Leeré el código de AnyDesk."
+        "EV", "EVQ" -> "Reviso que sea la foto que pedí."
         "E1" -> "Leeré la velocidad, el ping y el proveedor por ti."
         "E1b" -> "Leeré la velocidad que da el chip en el local."
         "E2" -> "Contaré los puertos LAN del router: cuántos hay y cuántos están libres."
@@ -246,6 +262,57 @@ object EvidencePresentation {
             )
         }
     }
+
+    /** Valor de un campo de lectura tal como se muestra ("520", "Cable de red"). */
+    fun fieldValue(spec: com.upc.asistenteredidbi.domain.model.ChatFieldSpec, raw: Any?): String = when {
+        raw == null -> ""
+        spec.type == "sel" -> spec.options.firstOrNull { it.value == raw.toString() }?.label ?: raw.toString()
+        raw is Number -> fmt(raw.toDouble())
+        else -> raw.toString()
+    }
+
+    /**
+     * "Esto leí en la captura": lo que leyó la IA, editable. Cada lectura lleva una X roja para
+     * eliminarla (queda en `_del` y no aparece en el chat, la minuta ni el anexo); "Restaurar" la devuelve.
+     */
+    fun readingCard(node: ChatNodePrompt, draft: Map<String, Any?>, deleted: Set<String>): ChatCard {
+        val ev = node.evidence
+        val fields = ev?.fields.orEmpty()
+        val rows = fields.filter { it.key !in deleted }.map {
+            ChatResultField(it.label.replace(Regex(" \\(.*\\)$"), ""), fieldValue(it, draft[it.key]).ifBlank { "—" }, it.key)
+        }
+        val notes = buildList {
+            if (ev?.unavailable == true) add("La lectura automática no está disponible ahora. Toca «Editar datos» y escribe lo que ves en la foto.")
+            if (ev?.read == "selftestUsb") add("Impresora USB: el selftest no muestra IP ni MAC de red. La IA solo confirma la marca y el modelo.")
+            if (ev?.read == "selftest" && (draft["marca"] == null || draft["modelo"] == null)) add("La etiqueta no mostró la marca o el modelo: complétalos con lo que sale en el selftest.")
+        }
+        val hasDeleted = deleted.isNotEmpty()
+        return ChatCard(
+            kind = "RESULT", title = "Esto leí en la captura", badge = "+ IA",
+            rows = rows,
+            text = if (rows.isEmpty()) "Eliminaste todas las lecturas: la foto queda como evidencia, sin datos leídos." else null,
+            note = notes.joinToString("\n").ifBlank { null },
+            footer = (if (hasDeleted) "${deleted.size} lectura${if (deleted.size > 1) "s" else ""} eliminada${if (deleted.size > 1) "s" else ""}: no aparecerá${if (deleted.size > 1) "n" else ""} en la minuta. " else "") +
+                "Puedes editar los datos antes de confirmar. Toca la ✕ roja para eliminar una lectura.",
+            actions = buildList {
+                add(ChatAction("Correcto", "RD_OK", "primary", row = 0))
+                add(ChatAction("Editar datos", "RD_EDIT", "outline", row = 1))
+                add(ChatAction("No es correcto", "RD_WRONG", "outline", row = 1))
+                if (hasDeleted) add(ChatAction("Restaurar lecturas", "RD_RESTORE", "outline", row = 2))
+            }
+        )
+    }
+
+    /** Cuadro del router (IP, proveedor, marca, modelo, SN, puertos): Correcto / Corregir. */
+    fun routerCard(node: ChatNodePrompt, draft: Map<String, Any?>): ChatCard = ChatCard(
+        kind = "RESULT", title = "Router", badge = "+ IA",
+        rows = node.fields.map { ChatResultField(it.label, fieldValue(it, draft[it.key]).ifBlank { "sin dato" }) },
+        footer = "Si algo no se lee o no es correcto, toca Corregir.",
+        actions = listOf(
+            ChatAction("Correcto", "RD_OK", "primary", row = 0),
+            ChatAction("Corregir", "RD_EDIT", "outline", row = 0)
+        )
+    )
 
     /** Datos corregibles de una evidencia (los de lista, como el escáner de IP, no se editan). */
     fun editableFields(result: ChatEvidenceResult): List<EditableField> {
