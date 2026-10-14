@@ -96,7 +96,7 @@
             android:textAllCaps="false"
             android:textSize="13sp"
             android:textStyle="bold"
-            app:backgroundTint="@color/success_green"
+            app:backgroundTint="@color/primary_blue"
             app:cornerRadius="12dp" />
 
     </LinearLayout>

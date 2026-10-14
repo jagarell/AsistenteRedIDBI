@@ -29,5 +29,10 @@ fun EvaluationListItemDto.toDomain(): EvaluationSummaryItem = EvaluationSummaryI
     clientName = null,
     status = gatewayStatusToDomain(status),
     overallScore = score?.toFloat(),
-    createdAt = createdAt
+    createdAt = createdAt,
+    address = address,
+    stage = com.upc.asistenteredidbi.domain.model.EvaluationStage.from(minutaStatus),
+    minutaId = minutaId,
+    validatedByName = validatedByName,
+    technicianName = technicianName
 )

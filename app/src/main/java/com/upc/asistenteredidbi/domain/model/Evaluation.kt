@@ -22,8 +22,26 @@ data class EvaluationSummaryItem(
     val clientName: String?,
     val status: EvaluationStatus,
     val overallScore: Float?,
-    val createdAt: String
+    val createdAt: String,
+    val address: String? = null,
+    /** Estado que ve el técnico en Historial e Inicio. */
+    val stage: EvaluationStage = EvaluationStage.EN_CURSO,
+    val minutaId: Long? = null,
+    val validatedByName: String? = null,
+    val technicianName: String? = null
 )
+
+/** Mismos estados que el prototipo: En análisis (chat sin terminar) → Borrador → Completa → Validada. */
+enum class EvaluationStage(val label: String) {
+    EN_CURSO("En análisis"), BORRADOR("Borrador"), COMPLETA("Completa"), VALIDADA("Validada");
+
+    /** La evaluación ya tiene propuesta (el chat terminó). */
+    val isFinished: Boolean get() = this != EN_CURSO
+
+    companion object {
+        fun from(value: String?): EvaluationStage = entries.firstOrNull { it.name == value?.uppercase() } ?: EN_CURSO
+    }
+}
 
 data class EvaluationFilters(
     val clientName: String? = null,

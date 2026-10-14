@@ -5,7 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.upc.asistenteredidbi.data.session.ChatLocalFiles
 import com.upc.asistenteredidbi.data.session.ChatProgressStore
 import com.upc.asistenteredidbi.domain.model.EvaluationFilters
-import com.upc.asistenteredidbi.domain.model.EvaluationStatus
+import com.upc.asistenteredidbi.domain.model.EvaluationStage
 import com.upc.asistenteredidbi.domain.model.EvaluationSummaryItem
 import com.upc.asistenteredidbi.domain.usecase.AnnulEvaluationUseCase
 import com.upc.asistenteredidbi.domain.usecase.ListEvaluationsUseCase
@@ -18,12 +18,15 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-enum class HistorialTab(val label: String, val status: EvaluationStatus?) {
-    TODOS("Todos", null),
-    COMPLETADOS("Completados", EvaluationStatus.GENERADA),
-    BORRADORES("Borradores", EvaluationStatus.BORRADOR),
-    EN_ANALISIS("En análisis", EvaluationStatus.EN_PROGRESO)
+enum class HistorialTab(val label: String, val matches: (EvaluationStage) -> Boolean) {
+    TODOS("Todos", { true }),
+    COMPLETADOS("Completados", { it == EvaluationStage.COMPLETA || it == EvaluationStage.VALIDADA }),
+    BORRADORES("Borradores", { it == EvaluationStage.BORRADOR }),
+    EN_ANALISIS("En Análisis", { it == EvaluationStage.EN_CURSO })
 }
+
+/** Filtros rápidos de fecha del prototipo; con rango propio se usan [HistorialUiState.dateFrom] y [HistorialUiState.dateTo]. */
+enum class DateQuick(val label: String) { TODAS("Todas las fechas"), HOY("Hoy"), SIETE("Últimos 7 días"), MES("Este mes"), RANGO("Rango") }
 
 data class HistorialUiState(
     val isLoading: Boolean = false,
@@ -35,7 +38,8 @@ data class HistorialUiState(
     val newEvaluationId: Long? = null,
     /** Filtro por fecha de creación (inclusive), "yyyy-MM-dd"; null = sin filtro. */
     val dateFrom: String? = null,
-    val dateTo: String? = null
+    val dateTo: String? = null,
+    val dateQuick: DateQuick = DateQuick.TODAS
 ) {
     /** Lo que entra por el filtro de fecha: base de los contadores y de la lista. */
     val inDateRange: List<EvaluationSummaryItem>
@@ -46,7 +50,7 @@ data class HistorialUiState(
 
     val filteredEvaluations: List<EvaluationSummaryItem>
         get() = inDateRange
-            .filter { selectedTab.status == null || it.status == selectedTab.status }
+            .filter { selectedTab.matches(it.stage) }
             .filter { searchQuery.isBlank() || it.establishmentName.contains(searchQuery, ignoreCase = true) || it.clientName?.contains(searchQuery, ignoreCase = true) == true }
 }
 
@@ -74,8 +78,23 @@ class HistorialViewModel @Inject constructor(
     fun onSearchQueryChange(value: String) = _uiState.update { it.copy(searchQuery = value) }
     fun onTabSelected(tab: HistorialTab) = _uiState.update { it.copy(selectedTab = tab) }
 
-    fun setDateRange(from: String?, to: String?) = _uiState.update { it.copy(dateFrom = from, dateTo = to) }
+    fun setDateRange(from: String?, to: String?, quick: DateQuick = DateQuick.RANGO) =
+        _uiState.update { it.copy(dateFrom = from, dateTo = to, dateQuick = if (from == null && to == null) DateQuick.TODAS else quick) }
+
     fun clearDateRange() = setDateRange(null, null)
+
+    /** Filtros "Hoy", "Últimos 7 días" y "Este mes", calculados con el día de hoy del teléfono. */
+    fun setQuickDate(quick: DateQuick) {
+        val fmt = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US)
+        val cal = java.util.Calendar.getInstance()
+        val today = fmt.format(cal.time)
+        when (quick) {
+            DateQuick.TODAS, DateQuick.RANGO -> clearDateRange()
+            DateQuick.HOY -> setDateRange(today, today, quick)
+            DateQuick.SIETE -> { cal.add(java.util.Calendar.DAY_OF_YEAR, -6); setDateRange(fmt.format(cal.time), today, quick) }
+            DateQuick.MES -> { cal.set(java.util.Calendar.DAY_OF_MONTH, 1); setDateRange(fmt.format(cal.time), today, quick) }
+        }
+    }
 
     /** Anula una evaluación en borrador; si era la del chat guardado, también se descarta ese chat. */
     fun annul(evaluationId: String) {

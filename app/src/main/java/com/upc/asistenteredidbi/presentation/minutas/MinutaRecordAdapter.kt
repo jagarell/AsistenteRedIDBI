@@ -55,23 +55,14 @@ class MinutaRecordAdapter(
             binding.tvAddress.text = item.address?.takeIf { it.isNotBlank() } ?: "Sin dirección registrada"
             binding.tvTechnician.text = "Técnico: ${item.technicianName ?: "Sin asignar"}"
 
-            when (item.status) {
-                MinutaRecordStatus.BORRADOR -> {
-                    binding.tvStatus.text = "Borrador"
-                    binding.tvStatus.setTextColor(context.getColor(R.color.orange_status))
-                    binding.tvStatus.setBackgroundResource(R.drawable.bg_status_draft)
+            com.upc.asistenteredidbi.presentation.common.StagePill.apply(
+                binding.tvStatus,
+                when (item.status) {
+                    MinutaRecordStatus.BORRADOR -> com.upc.asistenteredidbi.domain.model.EvaluationStage.BORRADOR
+                    MinutaRecordStatus.COMPLETA -> com.upc.asistenteredidbi.domain.model.EvaluationStage.COMPLETA
+                    MinutaRecordStatus.VALIDADA -> com.upc.asistenteredidbi.domain.model.EvaluationStage.VALIDADA
                 }
-                MinutaRecordStatus.COMPLETA -> {
-                    binding.tvStatus.text = "Completada"
-                    binding.tvStatus.setTextColor(context.getColor(R.color.primary_blue))
-                    binding.tvStatus.setBackgroundResource(R.drawable.bg_status_sent)
-                }
-                MinutaRecordStatus.VALIDADA -> {
-                    binding.tvStatus.text = "Validada"
-                    binding.tvStatus.setTextColor(context.getColor(R.color.success_green))
-                    binding.tvStatus.setBackgroundResource(R.drawable.bg_status_completed)
-                }
-            }
+            )
 
             binding.tvValidatedBy.isVisible = item.status == MinutaRecordStatus.VALIDADA
             binding.tvValidatedBy.text = "Validada por: ${item.validatedByName ?: "-"}"

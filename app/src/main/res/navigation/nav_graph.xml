@@ -100,6 +100,10 @@
             app:destination="@id/notificationsFragment" />
 
         <action
+            android:id="@+id/action_home_to_minuta"
+            app:destination="@id/minutaFragment" />
+
+        <action
             android:id="@+id/action_home_to_historial"
             app:destination="@id/historialFragment" />
 

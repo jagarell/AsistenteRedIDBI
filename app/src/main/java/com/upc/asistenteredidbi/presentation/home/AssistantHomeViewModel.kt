@@ -4,11 +4,13 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.upc.asistenteredidbi.data.session.ChatLocalFiles
 import com.upc.asistenteredidbi.data.session.ChatProgressStore
-import com.upc.asistenteredidbi.domain.model.MinutaRecord
+import com.upc.asistenteredidbi.data.session.SessionManager
+import com.upc.asistenteredidbi.domain.model.EvaluationStage
+import com.upc.asistenteredidbi.domain.model.EvaluationSummaryItem
 import com.upc.asistenteredidbi.domain.model.ProfileStats
 import com.upc.asistenteredidbi.domain.usecase.GetProfileStatusUseCase
 import com.upc.asistenteredidbi.domain.usecase.GetProfileUseCase
-import com.upc.asistenteredidbi.domain.usecase.ListMinutasUseCase
+import com.upc.asistenteredidbi.domain.usecase.ListEvaluationsUseCase
 import com.upc.asistenteredidbi.domain.usecase.StartEvaluationUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -20,10 +22,13 @@ import javax.inject.Inject
 
 data class AssistantHomeUiState(
     val userFirstName: String = "",
+    val userFullName: String = "",
     val userCompany: String = "",
     val isLoading: Boolean = false,
     val stats: ProfileStats? = null,
-    val recentMinutas: List<MinutaRecord> = emptyList(),
+    /** Las mismas evaluaciones del Historial, de la más nueva a la más vieja. */
+    val evaluations: List<EvaluationSummaryItem> = emptyList(),
+    val isSupervisor: Boolean = false,
     val errorMessage: String? = null,
 
     val isStartingEvaluation: Boolean = false,
@@ -39,7 +44,8 @@ data class AssistantHomeUiState(
 class AssistantHomeViewModel @Inject constructor(
     private val getProfileUseCase: GetProfileUseCase,
     private val getProfileStatusUseCase: GetProfileStatusUseCase,
-    private val listMinutasUseCase: ListMinutasUseCase,
+    private val listEvaluationsUseCase: ListEvaluationsUseCase,
+    private val sessionManager: SessionManager,
     private val startEvaluationUseCase: StartEvaluationUseCase,
     private val chatProgressStore: ChatProgressStore,
     private val chatLocalFiles: ChatLocalFiles
@@ -56,19 +62,18 @@ class AssistantHomeViewModel @Inject constructor(
                 _uiState.update {
                     it.copy(
                         userFirstName = user.fullName.substringBefore(" "),
+                        userFullName = user.fullName,
                         userCompany = user.company.orEmpty()
                     )
                 }
             }
 
-            getProfileStatusUseCase().onSuccess { stats ->
-                _uiState.update { it.copy(stats = stats) }
-            }
+            _uiState.update { it.copy(isSupervisor = sessionManager.isSupervisor()) }
 
-            listMinutasUseCase()
-                .onSuccess { minutas ->
+            listEvaluationsUseCase()
+                .onSuccess { evaluations ->
                     _uiState.update {
-                        it.copy(isLoading = false, recentMinutas = minutas.take(5))
+                        it.copy(isLoading = false, evaluations = evaluations.sortedByDescending { e -> e.createdAt })
                     }
                 }
                 .onFailure { error ->

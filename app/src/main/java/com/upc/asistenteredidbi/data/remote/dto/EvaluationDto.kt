@@ -30,7 +30,13 @@ data class EvaluationListItemDto(
     val restaurantName: String,
     val status: String,
     val score: Int?,
-    val createdAt: String
+    val createdAt: String,
+    val address: String? = null,
+    /** EN_CURSO, BORRADOR, COMPLETA o VALIDADA: lo deriva el gateway (chat terminado + estado de la minuta). */
+    val minutaStatus: String? = null,
+    val minutaId: Long? = null,
+    val validatedByName: String? = null,
+    val technicianName: String? = null
 )
 
 data class AnalyzeAnswersRequestDto(

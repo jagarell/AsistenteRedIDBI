@@ -3,7 +3,6 @@ package com.upc.asistenteredidbi.presentation.home
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
-import com.upc.asistenteredidbi.R
 import com.upc.asistenteredidbi.databinding.ItemHomeRecentBinding
 
 class HomeRecentAdapter(
@@ -40,24 +39,7 @@ class HomeRecentAdapter(
         fun bind(item: HomeRecentItem) {
             binding.tvTitle.text = item.title
             binding.tvDate.text = item.date
-            binding.tvStatus.text = item.status
-
-            when (item.statusType) {
-                StatusType.COMPLETADO -> {
-                    binding.tvStatus.setBackgroundResource(R.drawable.bg_status_completed)
-                    binding.tvStatus.setTextColor(binding.root.context.getColor(R.color.status_completed_text))
-                }
-
-                StatusType.BORRADOR -> {
-                    binding.tvStatus.setBackgroundResource(R.drawable.bg_status_draft)
-                    binding.tvStatus.setTextColor(binding.root.context.getColor(R.color.status_draft_text))
-                }
-
-                StatusType.ENVIADO -> {
-                    binding.tvStatus.setBackgroundResource(R.drawable.bg_status_sent)
-                    binding.tvStatus.setTextColor(binding.root.context.getColor(R.color.status_sent_text))
-                }
-            }
+            com.upc.asistenteredidbi.presentation.common.StagePill.apply(binding.tvStatus, item.stage)
 
             binding.root.setOnClickListener {
                 onItemClick(item)

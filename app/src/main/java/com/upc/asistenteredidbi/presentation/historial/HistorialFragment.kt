@@ -16,7 +16,7 @@ import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.upc.asistenteredidbi.R
 import com.upc.asistenteredidbi.databinding.FragmentHistorialBinding
-import com.upc.asistenteredidbi.domain.model.EvaluationStatus
+import com.upc.asistenteredidbi.domain.model.EvaluationStage
 import com.upc.asistenteredidbi.domain.model.EvaluationSummaryItem
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
@@ -48,10 +48,18 @@ class HistorialFragment : Fragment() {
 
     private fun setupRecycler() {
         adapter = HistoryAdapter { item ->
-            findNavController().navigate(
-                R.id.action_historial_to_minuta,
-                Bundle().apply { putString("evaluationId", item.id) }
-            )
+            // Igual que el prototipo: con propuesta se abre el análisis (y de ahí la minuta); si el chat no terminó, se retoma.
+            if (item.stage.isFinished) {
+                findNavController().navigate(
+                    R.id.action_historial_to_minuta,
+                    Bundle().apply { putString("evaluationId", item.id) }
+                )
+            } else {
+                findNavController().navigate(
+                    R.id.action_historial_to_chat,
+                    Bundle().apply { putString("evaluationId", item.id) }
+                )
+            }
         }
 
         binding.rvHistory.layoutManager = LinearLayoutManager(requireContext())
@@ -76,7 +84,7 @@ class HistorialFragment : Fragment() {
             0, androidx.recyclerview.widget.ItemTouchHelper.LEFT
         ) {
             override fun getSwipeDirs(rv: androidx.recyclerview.widget.RecyclerView, vh: androidx.recyclerview.widget.RecyclerView.ViewHolder): Int =
-                if (adapter.itemAt(vh.bindingAdapterPosition)?.status == HistoryStatus.BORRADOR) super.getSwipeDirs(rv, vh) else 0
+                if (adapter.itemAt(vh.bindingAdapterPosition)?.stage == EvaluationStage.BORRADOR) super.getSwipeDirs(rv, vh) else 0
 
             override fun onMove(
                 rv: androidx.recyclerview.widget.RecyclerView,
@@ -114,21 +122,13 @@ class HistorialFragment : Fragment() {
         androidx.recyclerview.widget.ItemTouchHelper(callback).attachToRecyclerView(binding.rvHistory)
     }
 
-    /** El embudo filtra por fecha de creación (rango de fechas). */
+    /** El embudo abre la hoja "Filtrar por fecha" del prototipo (rápidos + rango Desde/Hasta). */
     private fun showDateFilter() {
-        val state = viewModel.uiState.value
-        val utc = java.util.TimeZone.getTimeZone("UTC")
-        val format = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).apply { timeZone = utc }
-        val current = if (state.dateFrom != null && state.dateTo != null)
-            androidx.core.util.Pair(format.parse(state.dateFrom)!!.time, format.parse(state.dateTo)!!.time) else null
-        val picker = com.google.android.material.datepicker.MaterialDatePicker.Builder.dateRangePicker()
-            .setTitleText("Filtrar por fecha")
-            .apply { if (current != null) setSelection(current) }
-            .build()
-        picker.addOnPositiveButtonClickListener { range ->
-            viewModel.setDateRange(format.format(java.util.Date(range.first)), format.format(java.util.Date(range.second)))
-        }
-        picker.show(parentFragmentManager, "date_filter")
+        DateFilterSheet.show(
+            requireContext(), viewModel.uiState.value,
+            onQuick = { viewModel.setQuickDate(it) },
+            onRange = { from, to -> viewModel.setDateRange(from, to) }
+        )
     }
 
     private fun setupClicks() {
@@ -164,12 +164,14 @@ class HistorialFragment : Fragment() {
                 viewModel.uiState.collect { state ->
                     // Los contadores siguen el filtro de fecha (no el de estado).
                     val allItems = state.inDateRange.map { it.toHistoryItem() }
-                    val filtering = state.dateFrom != null && state.dateTo != null
+                    val filtering = state.dateFrom != null || state.dateTo != null
                     binding.tvDateFilter.isVisible = filtering
                     if (filtering) {
-                        binding.tvDateFilter.text =
-                            "${com.upc.asistenteredidbi.presentation.common.formatShortDate(state.dateFrom)} – " +
-                                "${com.upc.asistenteredidbi.presentation.common.formatShortDate(state.dateTo)}  ✕"
+                        val fmt: (String) -> String = { com.upc.asistenteredidbi.presentation.common.formatShortDate(it) }
+                        binding.tvDateFilter.text = when (state.dateQuick) {
+                            DateQuick.HOY, DateQuick.SIETE, DateQuick.MES -> "Fecha: ${state.dateQuick.label}  ✕"
+                            else -> "Fecha: ${state.dateFrom?.let(fmt) ?: "…"} – ${state.dateTo?.let(fmt) ?: "…"}  ✕"
+                        }
                     }
                     binding.btnFilter.setColorFilter(
                         if (filtering) android.graphics.Color.parseColor("#FFD54F") else android.graphics.Color.WHITE
@@ -179,9 +181,9 @@ class HistorialFragment : Fragment() {
 
                     binding.cardTotal.tvTotalCount.text = allItems.size.toString()
                     binding.cardCompleted.tvCompletedCount.text =
-                        allItems.count { it.status == HistoryStatus.COMPLETADO }.toString()
+                        allItems.count { it.stage == EvaluationStage.COMPLETA || it.stage == EvaluationStage.VALIDADA }.toString()
                     binding.cardPending.tvPendingCount.text =
-                        allItems.count { it.status == HistoryStatus.BORRADOR || it.status == HistoryStatus.EN_ANALISIS }.toString()
+                        allItems.count { it.stage == EvaluationStage.BORRADOR || it.stage == EvaluationStage.EN_CURSO }.toString()
 
                     binding.fabNewEvaluation.isEnabled = !state.isStartingEvaluation
 
@@ -204,13 +206,10 @@ class HistorialFragment : Fragment() {
     private fun EvaluationSummaryItem.toHistoryItem(): HistoryItem = HistoryItem(
         id = id,
         establishmentName = establishmentName,
-        location = "",
+        location = address.orEmpty(),
         date = com.upc.asistenteredidbi.presentation.common.formatShortDate(createdAt),
-        status = when (status) {
-            EvaluationStatus.BORRADOR -> HistoryStatus.BORRADOR
-            EvaluationStatus.EN_PROGRESO -> HistoryStatus.EN_ANALISIS
-            EvaluationStatus.GENERADA -> HistoryStatus.COMPLETADO
-        },
+        stage = stage,
+        minutaId = minutaId,
         progress = overallScore?.toInt() ?: 0
     )
 

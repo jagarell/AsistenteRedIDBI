@@ -191,8 +191,8 @@ class MinutaProposalFragment : Fragment() {
     private fun renderStatus() {
         if (_binding == null) return
         val (label, bg, fg) = when (minutaStatus) {
-            "VALIDADA" -> Triple("Validada", "#E6F4E7", "#2E7D32")
-            "COMPLETA" -> Triple("Completa", "#E3EEFC", "#1565C0")
+            "VALIDADA" -> Triple("Validada", "#E3F2FD", "#1565C0")
+            "COMPLETA" -> Triple("Completa", "#E8F5E9", "#2E7D32")
             else -> Triple("Borrador", "#FFF3E0", "#EF6C00")
         }
         binding.tvStatusPill.text = label

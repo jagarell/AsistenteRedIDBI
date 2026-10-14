@@ -1,17 +1,13 @@
 package com.upc.asistenteredidbi.presentation.historial
 
+import com.upc.asistenteredidbi.domain.model.EvaluationStage
+
 data class HistoryItem(
     val id: String,
     val establishmentName: String,
     val location: String,
     val date: String,
-    val status: HistoryStatus,
+    val stage: EvaluationStage,
+    val minutaId: Long?,
     val progress: Int
 )
-
-enum class HistoryStatus(val label: String) {
-    COMPLETADO("Completado"),
-    BORRADOR("Borrador"),
-    ENVIADO("Enviado"),
-    EN_ANALISIS("En Análisis")
-}

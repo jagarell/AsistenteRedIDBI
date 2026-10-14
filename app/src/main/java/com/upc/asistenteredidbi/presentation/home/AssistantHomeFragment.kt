@@ -16,8 +16,8 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.upc.asistenteredidbi.MainActivity
 import com.upc.asistenteredidbi.R
 import com.upc.asistenteredidbi.databinding.FragmentAssistantHomeBinding
-import com.upc.asistenteredidbi.domain.model.MinutaRecord
-import com.upc.asistenteredidbi.domain.model.MinutaRecordStatus
+import com.upc.asistenteredidbi.domain.model.EvaluationStage
+import com.upc.asistenteredidbi.domain.model.EvaluationSummaryItem
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 
@@ -50,20 +50,21 @@ class AssistantHomeFragment : Fragment() {
         viewLifecycleOwner.lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.uiState.collect { state ->
-                    if (state.userFirstName.isNotBlank()) {
-                        binding.tvUserName.text = state.userFirstName
+                    if (state.userFullName.isNotBlank()) {
+                        binding.tvUserName.text = state.userFullName
+                        // Iniciales del usuario en el círculo del perfil (antes decía "CR" fijo).
+                        binding.btnProfile.text = state.userFullName.split(" ").filter { it.isNotBlank() }
+                            .take(2).joinToString("") { it.first().uppercase() }
                     }
-                    if (state.userCompany.isNotBlank()) {
-                        binding.tvUserRole.text = state.userCompany
-                    }
+                    val roleLabel = if (state.isSupervisor) "Supervisor" else "Técnico"
+                    binding.tvUserRole.text = "$roleLabel · ${state.userCompany.ifBlank { "Asistente de Red" }}"
 
-                    state.stats?.let { stats ->
-                        binding.tvStatEvaluations.text = stats.totalEvaluations.toString()
-                        binding.tvStatProposals.text = stats.totalProposals.toString()
-                        binding.tvStatSent.text = stats.sentProposals.toString()
-                    }
+                    // Mismos números que el prototipo: evaluaciones, propuestas (chat terminado) y validadas.
+                    binding.tvStatEvaluations.text = state.evaluations.size.toString()
+                    binding.tvStatProposals.text = state.evaluations.count { it.stage.isFinished }.toString()
+                    binding.tvStatSent.text = state.evaluations.count { it.stage == EvaluationStage.VALIDADA }.toString()
 
-                    recentAdapter.submitList(state.recentMinutas.map { it.toHomeRecentItem() })
+                    recentAdapter.submitList(state.evaluations.take(4).map { it.toHomeRecentItem() })
 
                     binding.cardNewEvaluation.isEnabled = !state.isStartingEvaluation
 
@@ -94,23 +95,20 @@ class AssistantHomeFragment : Fragment() {
         }
     }
 
-    private fun MinutaRecord.toHomeRecentItem(): HomeRecentItem {
-        val statusType = when (status) {
-            MinutaRecordStatus.BORRADOR -> StatusType.BORRADOR
-            MinutaRecordStatus.COMPLETA -> StatusType.ENVIADO
-            MinutaRecordStatus.VALIDADA -> StatusType.COMPLETADO
-        }
-        return HomeRecentItem(
-            title = clientName,
-            date = com.upc.asistenteredidbi.presentation.common.formatShortDate(createdAt),
-            status = statusType.name.lowercase().replaceFirstChar { it.uppercase() },
-            statusType = statusType
-        )
-    }
+    private fun EvaluationSummaryItem.toHomeRecentItem() = HomeRecentItem(
+        evaluationId = id,
+        title = establishmentName,
+        date = com.upc.asistenteredidbi.presentation.common.formatShortDate(createdAt),
+        stage = stage
+    )
 
     private fun setupRecycler() {
-        recentAdapter = HomeRecentAdapter {
-            Toast.makeText(requireContext(), it.title, Toast.LENGTH_SHORT).show()
+        recentAdapter = HomeRecentAdapter { item ->
+            // Como en el prototipo: con propuesta abre el análisis; si el chat no terminó, lo retoma.
+            findNavController().navigate(
+                if (item.stage.isFinished) R.id.action_home_to_minuta else R.id.action_home_to_chat,
+                Bundle().apply { putString("evaluationId", item.evaluationId) }
+            )
         }
 
         binding.rvRecentes.layoutManager = LinearLayoutManager(requireContext())

@@ -43,37 +43,11 @@ class HistoryAdapter(
             binding.tvSubtitle.text = listOf(item.location, item.date)
                 .filter { it.isNotBlank() }
                 .joinToString(" · ")
-            binding.tvStatus.text = item.status.label
+            com.upc.asistenteredidbi.presentation.common.StagePill.apply(binding.tvStatus, item.stage)
             binding.progressHistory.progress = item.progress
             binding.tvProgress.text = "${item.progress}%"
             // La barra va siempre en azul, como en el prototipo; el estado lo da la etiqueta.
             binding.progressHistory.progressTintList = binding.root.context.getColorStateList(R.color.primary_blue)
-
-            when (item.status) {
-                HistoryStatus.COMPLETADO -> {
-                    binding.tvStatus.setTextColor(binding.root.context.getColor(R.color.success_green))
-                    binding.tvStatus.setBackgroundResource(R.drawable.bg_status_completed)
-                    
-                }
-
-                HistoryStatus.BORRADOR -> {
-                    binding.tvStatus.setTextColor(binding.root.context.getColor(R.color.orange_status))
-                    binding.tvStatus.setBackgroundResource(R.drawable.bg_status_draft)
-                    
-                }
-
-                HistoryStatus.ENVIADO -> {
-                    binding.tvStatus.setTextColor(binding.root.context.getColor(R.color.primary_blue))
-                    binding.tvStatus.setBackgroundResource(R.drawable.bg_status_sent)
-                    
-                }
-
-                HistoryStatus.EN_ANALISIS -> {
-                    binding.tvStatus.setTextColor(binding.root.context.getColor(R.color.purple_status))
-                    binding.tvStatus.setBackgroundResource(R.drawable.bg_status_analysis)
-                    
-                }
-            }
 
             binding.root.setOnClickListener { onItemClick(item) }
         }
