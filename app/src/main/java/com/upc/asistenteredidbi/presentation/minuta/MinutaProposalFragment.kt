@@ -85,11 +85,18 @@ class MinutaProposalFragment : Fragment() {
     lateinit var validateMinutaUseCase: ValidateMinutaUseCase
 
     @Inject
+    lateinit var rejectMinutaUseCase: com.upc.asistenteredidbi.domain.usecase.RejectMinutaUseCase
+
+    @Inject
     lateinit var editionsUseCase: MinutaEditionsUseCase
 
     /** BORRADOR | COMPLETA | VALIDADA, tal como está en el gateway. */
     private var minutaStatus = "BORRADOR"
     private var validatedBy: String? = null
+    /** Motivo con el que el supervisor devolvió la minuta; se muestra al técnico hasta que la complete otra vez. */
+    private var rejectionReason: String? = null
+    private var rejectedBy: String? = null
+    private var editMapButton: android.view.View? = null
     private var isSupervisor = false
     private var recordId = -1L
     private var editions: MutableMap<String, Any?> = mutableMapOf()
@@ -147,6 +154,8 @@ class MinutaProposalFragment : Fragment() {
                     recordId = record.id
                     minutaStatus = record.status.name
                     validatedBy = record.validatedByName
+                    rejectionReason = record.rejectionReason
+                    rejectedBy = record.rejectedByName
                 }
                 renderStatus()
             }
@@ -182,15 +191,13 @@ class MinutaProposalFragment : Fragment() {
         }
     }
 
-    private fun canEdit(): Boolean = when (minutaStatus) {
-        "VALIDADA" -> false
-        "COMPLETA" -> isSupervisor
-        else -> true
-    }
+    /** Solo el técnico edita, y solo mientras la minuta es Borrador (también si el supervisor la devolvió). */
+    private fun canEdit(): Boolean = !isSupervisor && minutaStatus == "BORRADOR"
 
     private fun renderStatus() {
         if (_binding == null) return
-        val (label, bg, fg) = when (minutaStatus) {
+        val rejected = minutaStatus == "BORRADOR" && !rejectionReason.isNullOrBlank()
+        val (label, bg, fg) = if (rejected) Triple("Rechazada", "#FDECEA", "#C62828") else when (minutaStatus) {
             "VALIDADA" -> Triple("Validada", "#E3F2FD", "#1565C0")
             "COMPLETA" -> Triple("Completa", "#E8F5E9", "#2E7D32")
             else -> Triple("Borrador", "#FFF3E0", "#EF6C00")
@@ -211,8 +218,17 @@ class MinutaProposalFragment : Fragment() {
         }
         binding.btnEdit.isEnabled = canEdit()
         binding.btnEdit.alpha = if (canEdit()) 1f else 0.4f
-        val note = if ((generated || minutaStatus != "BORRADOR") && minutaStatus != "VALIDADA")
-            "Aún no está validada: se comparte por WhatsApp o correo como no verificada, con la marca de agua SIN VALIDAR." else ""
+        binding.btnSaveDraft.isEnabled = canEdit()
+        binding.btnSaveDraft.alpha = if (canEdit()) 1f else 0.4f
+        editMapButton?.let { it.isEnabled = canEdit(); it.alpha = if (canEdit()) 1f else 0.4f }
+        binding.btnRejectMinuta.isVisible = isSupervisor && minutaStatus == "COMPLETA"
+        val note = when {
+            rejected && !isSupervisor ->
+                "${rejectedBy ?: "El supervisor"} rechazó esta minuta: $rejectionReason\nCorrígela con Editar y vuelve a generar el PDF para completarla."
+            (generated || minutaStatus != "BORRADOR") && minutaStatus != "VALIDADA" ->
+                "Aún no está validada: se comparte por WhatsApp o correo como no verificada, con la marca de agua SIN VALIDAR."
+            else -> ""
+        }
         binding.tvShareNote.text = note
         binding.tvShareNote.isVisible = note.isNotEmpty()
     }
@@ -242,6 +258,7 @@ class MinutaProposalFragment : Fragment() {
                 )
             }
         }
+        editMapButton = button
         card.addView(button)
     }
 
@@ -318,6 +335,12 @@ class MinutaProposalFragment : Fragment() {
             Toast.makeText(requireContext(), "Borrador guardado", Toast.LENGTH_SHORT).show()
         }
 
+        binding.btnRejectMinuta.setOnClickListener {
+            com.upc.asistenteredidbi.presentation.minutas.RejectMinutaDialog.show(
+                requireContext(), binding.tvEstablishmentName.text.toString()
+            ) { reason -> reject(reason) }
+        }
+
         binding.btnGeneratePdf.setOnClickListener {
             if (isSupervisor) validate() else openPdf(preview = false)
         }
@@ -340,6 +363,24 @@ class MinutaProposalFragment : Fragment() {
                     Toast.makeText(requireContext(), "Minuta validada", Toast.LENGTH_SHORT).show()
                 }
                 .onFailure { Toast.makeText(requireContext(), it.message ?: "No se pudo validar", Toast.LENGTH_SHORT).show() }
+            renderStatus()
+        }
+    }
+
+    /** El supervisor devuelve la minuta al técnico con el motivo: pasa a Borrador y el técnico recibe el aviso. */
+    private fun reject(reason: String) {
+        if (recordId <= 0 || minutaStatus != "COMPLETA") return
+        binding.btnRejectMinuta.isEnabled = false
+        viewLifecycleOwner.lifecycleScope.launch {
+            rejectMinutaUseCase(recordId, reason)
+                .onSuccess { record ->
+                    minutaStatus = record.status.name
+                    rejectionReason = record.rejectionReason
+                    rejectedBy = record.rejectedByName
+                    Toast.makeText(requireContext(), "Minuta rechazada. Se avisó al técnico.", Toast.LENGTH_SHORT).show()
+                }
+                .onFailure { Toast.makeText(requireContext(), it.message ?: "No se pudo rechazar", Toast.LENGTH_SHORT).show() }
+            binding.btnRejectMinuta.isEnabled = true
             renderStatus()
         }
     }

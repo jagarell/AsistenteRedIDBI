@@ -39,4 +39,10 @@ interface MinutaApiService {
     /** Valida una minuta COMPLETA. El backend exige rol SUPERVISOR. */
     @POST("api/minutas/{id}/validar")
     suspend fun validateMinuta(@Path("id") id: Long): MinutaRecordResponseDto
+
+    /** Devuelve una minuta COMPLETA al técnico con el motivo. El backend exige rol SUPERVISOR. */
+    @POST("api/minutas/{id}/rechazar")
+    suspend fun rejectMinuta(@Path("id") id: Long, @Body body: RejectMinutaRequest): MinutaRecordResponseDto
 }
+
+data class RejectMinutaRequest(val reason: String)

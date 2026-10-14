@@ -6,5 +6,6 @@ data class HomeRecentItem(
     val evaluationId: String,
     val title: String,
     val date: String,
-    val stage: EvaluationStage
+    val stage: EvaluationStage,
+    val rejected: Boolean = false
 )

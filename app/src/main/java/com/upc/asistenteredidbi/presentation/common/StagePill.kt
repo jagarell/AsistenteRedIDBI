@@ -14,9 +14,10 @@ object StagePill {
         EvaluationStage.VALIDADA -> "#E3F2FD" to "#1565C0"
     }
 
-    fun apply(view: TextView, stage: EvaluationStage) {
-        val (bg, fg) = colors(stage)
-        view.text = stage.label
+    /** `rejected`: borrador que el supervisor devolvió al técnico; se ve en rojo como "Rechazada". */
+    fun apply(view: TextView, stage: EvaluationStage, rejected: Boolean = false) {
+        val (bg, fg) = if (rejected) "#FDECEA" to "#C62828" else colors(stage)
+        view.text = if (rejected) "Rechazada" else stage.label
         view.setTextColor(Color.parseColor(fg))
         view.background = GradientDrawable().apply {
             setColor(Color.parseColor(bg))

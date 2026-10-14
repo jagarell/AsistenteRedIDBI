@@ -17,7 +17,8 @@ import com.upc.asistenteredidbi.domain.model.MinutaRecordStatus
  */
 class MinutaRecordAdapter(
     private val onOpen: (MinutaRecord) -> Unit,
-    private val onValidate: (MinutaRecord) -> Unit
+    private val onValidate: (MinutaRecord) -> Unit,
+    private val onReject: (MinutaRecord) -> Unit
 ) : RecyclerView.Adapter<MinutaRecordAdapter.VH>() {
 
     private val items = mutableListOf<MinutaRecord>()
@@ -61,8 +62,12 @@ class MinutaRecordAdapter(
                     MinutaRecordStatus.BORRADOR -> com.upc.asistenteredidbi.domain.model.EvaluationStage.BORRADOR
                     MinutaRecordStatus.COMPLETA -> com.upc.asistenteredidbi.domain.model.EvaluationStage.COMPLETA
                     MinutaRecordStatus.VALIDADA -> com.upc.asistenteredidbi.domain.model.EvaluationStage.VALIDADA
-                }
+                },
+                rejected = item.status == MinutaRecordStatus.BORRADOR && !item.rejectionReason.isNullOrBlank()
             )
+            val rejected = item.status == MinutaRecordStatus.BORRADOR && !item.rejectionReason.isNullOrBlank()
+            binding.tvRejection.isVisible = rejected
+            binding.tvRejection.text = "Rechazada por ${item.rejectedByName ?: "el supervisor"}: ${item.rejectionReason}"
 
             binding.tvValidatedBy.isVisible = item.status == MinutaRecordStatus.VALIDADA
             binding.tvValidatedBy.text = "Validada por: ${item.validatedByName ?: "-"}"
@@ -75,6 +80,8 @@ class MinutaRecordAdapter(
             binding.btnValidate.isVisible =
                 isSupervisor && item.status == MinutaRecordStatus.COMPLETA
             binding.btnValidate.setOnClickListener { onValidate(item) }
+            binding.btnReject.isVisible = binding.btnValidate.isVisible
+            binding.btnReject.setOnClickListener { onReject(item) }
         }
     }
 }

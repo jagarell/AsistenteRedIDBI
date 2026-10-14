@@ -28,8 +28,12 @@ data class EvaluationSummaryItem(
     val stage: EvaluationStage = EvaluationStage.EN_CURSO,
     val minutaId: Long? = null,
     val validatedByName: String? = null,
-    val technicianName: String? = null
-)
+    val technicianName: String? = null,
+    /** Motivo del rechazo mientras el supervisor la tiene devuelta al técnico. */
+    val rejectionReason: String? = null
+) {
+    val isRejected: Boolean get() = stage == EvaluationStage.BORRADOR && !rejectionReason.isNullOrBlank()
+}
 
 /** Mismos estados que el prototipo: En análisis (chat sin terminar) → Borrador → Completa → Validada. */
 enum class EvaluationStage(val label: String) {

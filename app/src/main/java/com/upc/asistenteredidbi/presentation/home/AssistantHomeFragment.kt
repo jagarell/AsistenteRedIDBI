@@ -99,7 +99,8 @@ class AssistantHomeFragment : Fragment() {
         evaluationId = id,
         title = establishmentName,
         date = com.upc.asistenteredidbi.presentation.common.formatShortDate(createdAt),
-        stage = stage
+        stage = stage,
+        rejected = isRejected
     )
 
     private fun setupRecycler() {

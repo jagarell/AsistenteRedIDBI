@@ -67,3 +67,9 @@ class ValidateMinutaUseCase @Inject constructor(
 ) {
     suspend operator fun invoke(id: Long): Result<MinutaRecord> = repository.validateMinuta(id)
 }
+
+class RejectMinutaUseCase @Inject constructor(
+    private val repository: MinutaRecordRepository
+) {
+    suspend operator fun invoke(id: Long, reason: String): Result<MinutaRecord> = repository.rejectMinuta(id, reason)
+}

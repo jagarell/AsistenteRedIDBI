@@ -18,3 +18,9 @@ Implementa el simulador de 2026-10-11 como especificación ejecutable.
 ## Pruebas locales
 - FastAPI: `VISION_MOCK=1 venv/bin/uvicorn app.main:app --port 8000`.
 - Gateway: puerto 8091 con H2 (8080 y 8081 pueden estar ocupados) y `BASE_URL = http://10.0.2.2:8091/`; no commitear ese valor.
+
+## Cambios de la 0.0.5 (2026-10-13)
+- Historial, Inicio y Minutas con los estados del prototipo (En análisis, Borrador, Completa, Validada) y filtro de fecha (rápidos + rango).
+- El supervisor **no edita**: solo aprueba (Validar) o rechaza con motivo. El técnico recibe el aviso, la minuta vuelve a Borrador (con «Rechazada» y el motivo), la corrige y la completa otra vez; entonces se avisa de nuevo a los supervisores.
+- Gateway: `POST /api/minutas/{id}/rechazar` {reason}; `Minuta.rejectionReason/rejectedByName/rejectedAt` (sin estado nuevo: la restricción de enum de la base no se actualiza); sin rol requerido responde 403.
+- Estado derivado por evaluación (`minutaStatus`): EN_CURSO si el chat no terminó, BORRADOR si terminó y no hay minuta, o el de la minuta.

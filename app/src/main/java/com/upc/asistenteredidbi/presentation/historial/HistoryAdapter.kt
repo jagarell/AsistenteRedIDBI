@@ -43,7 +43,7 @@ class HistoryAdapter(
             binding.tvSubtitle.text = listOf(item.location, item.date)
                 .filter { it.isNotBlank() }
                 .joinToString(" · ")
-            com.upc.asistenteredidbi.presentation.common.StagePill.apply(binding.tvStatus, item.stage)
+            com.upc.asistenteredidbi.presentation.common.StagePill.apply(binding.tvStatus, item.stage, item.rejected)
             binding.progressHistory.progress = item.progress
             binding.tvProgress.text = "${item.progress}%"
             // La barra va siempre en azul, como en el prototipo; el estado lo da la etiqueta.

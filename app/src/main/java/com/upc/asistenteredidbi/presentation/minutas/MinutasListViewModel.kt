@@ -33,6 +33,7 @@ class MinutasListViewModel @Inject constructor(
     private val listMinutasUseCase: ListMinutasUseCase,
     private val completeMinutaUseCase: CompleteMinutaUseCase,
     private val validateMinutaUseCase: ValidateMinutaUseCase,
+    private val rejectMinutaUseCase: com.upc.asistenteredidbi.domain.usecase.RejectMinutaUseCase,
     private val sessionManager: SessionManager
 ) : ViewModel() {
 
@@ -85,6 +86,16 @@ class MinutasListViewModel @Inject constructor(
                     _uiState.update {
                         it.copy(errorMessage = error.message ?: "No se pudo validar la minuta")
                     }
+                }
+        }
+    }
+
+    fun reject(id: Long, reason: String) {
+        viewModelScope.launch {
+            rejectMinutaUseCase(id, reason)
+                .onSuccess { updated -> replaceInList(updated) }
+                .onFailure { error ->
+                    _uiState.update { it.copy(errorMessage = error.message ?: "No se pudo rechazar la minuta") }
                 }
         }
     }

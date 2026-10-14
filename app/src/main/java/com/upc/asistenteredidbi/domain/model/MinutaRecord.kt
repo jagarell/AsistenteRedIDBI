@@ -39,5 +39,8 @@ data class MinutaRecord(
     val updatedAt: String?,
     val validatedById: Long?,
     val validatedByName: String?,
-    val validatedAt: String?
+    val validatedAt: String?,
+    /** Motivo con el que el supervisor devolvió la minuta; el técnico la corrige y vuelve a completarla. */
+    val rejectionReason: String? = null,
+    val rejectedByName: String? = null
 )

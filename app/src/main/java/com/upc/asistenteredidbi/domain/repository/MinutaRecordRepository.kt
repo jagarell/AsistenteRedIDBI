@@ -36,4 +36,6 @@ interface MinutaRecordRepository {
 
     /** Sólo debe invocarse si el usuario actual tiene rol SUPERVISOR. */
     suspend fun validateMinuta(id: Long): Result<MinutaRecord>
+
+    suspend fun rejectMinuta(id: Long, reason: String): Result<MinutaRecord>
 }

@@ -39,7 +39,7 @@ class HomeRecentAdapter(
         fun bind(item: HomeRecentItem) {
             binding.tvTitle.text = item.title
             binding.tvDate.text = item.date
-            com.upc.asistenteredidbi.presentation.common.StagePill.apply(binding.tvStatus, item.stage)
+            com.upc.asistenteredidbi.presentation.common.StagePill.apply(binding.tvStatus, item.stage, item.rejected)
 
             binding.root.setOnClickListener {
                 onItemClick(item)

@@ -36,7 +36,8 @@ data class EvaluationListItemDto(
     val minutaStatus: String? = null,
     val minutaId: Long? = null,
     val validatedByName: String? = null,
-    val technicianName: String? = null
+    val technicianName: String? = null,
+    val rejectionReason: String? = null
 )
 
 data class AnalyzeAnswersRequestDto(

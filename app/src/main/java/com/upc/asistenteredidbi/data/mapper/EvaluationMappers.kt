@@ -34,5 +34,6 @@ fun EvaluationListItemDto.toDomain(): EvaluationSummaryItem = EvaluationSummaryI
     stage = com.upc.asistenteredidbi.domain.model.EvaluationStage.from(minutaStatus),
     minutaId = minutaId,
     validatedByName = validatedByName,
-    technicianName = technicianName
+    technicianName = technicianName,
+    rejectionReason = rejectionReason
 )

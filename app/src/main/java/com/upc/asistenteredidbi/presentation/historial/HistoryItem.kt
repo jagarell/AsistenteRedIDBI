@@ -9,5 +9,6 @@ data class HistoryItem(
     val date: String,
     val stage: EvaluationStage,
     val minutaId: Long?,
+    val rejected: Boolean,
     val progress: Int
 )

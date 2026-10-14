@@ -460,6 +460,21 @@
             app:iconPadding="10dp"
             app:iconTint="@android:color/white" />
 
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnRejectMinuta"
+            style="@style/Widget.Material3.Button.OutlinedButton"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:layout_marginTop="8dp"
+            android:text="Rechazar minuta"
+            android:textAllCaps="false"
+            android:textColor="#C62828"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:visibility="gone"
+            app:cornerRadius="18dp"
+            app:strokeColor="#C62828" />
+
         <TextView
             android:id="@+id/tvShareNote"
             android:layout_width="match_parent"

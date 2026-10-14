@@ -57,7 +57,10 @@ class MinutasListFragment : Fragment() {
                     )
                 }
             },
-            onValidate = { viewModel.validate(it.id) }
+            onValidate = { viewModel.validate(it.id) },
+            onReject = { record ->
+                RejectMinutaDialog.show(requireContext(), record.clientName) { reason -> viewModel.reject(record.id, reason) }
+            }
         )
         binding.rvMinutas.layoutManager = LinearLayoutManager(requireContext())
         binding.rvMinutas.adapter = adapter

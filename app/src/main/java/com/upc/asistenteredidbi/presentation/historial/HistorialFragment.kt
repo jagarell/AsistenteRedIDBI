@@ -210,6 +210,7 @@ class HistorialFragment : Fragment() {
         date = com.upc.asistenteredidbi.presentation.common.formatShortDate(createdAt),
         stage = stage,
         minutaId = minutaId,
+        rejected = isRejected,
         progress = overallScore?.toInt() ?: 0
     )
 

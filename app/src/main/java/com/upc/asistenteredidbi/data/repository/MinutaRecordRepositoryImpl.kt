@@ -70,6 +70,10 @@ class MinutaRecordRepositoryImpl @Inject constructor(
         api.validateMinuta(id).toDomain()
     }
 
+    override suspend fun rejectMinuta(id: Long, reason: String): Result<MinutaRecord> = safeCall {
+        api.rejectMinuta(id, com.upc.asistenteredidbi.data.remote.RejectMinutaRequest(reason)).toDomain()
+    }
+
     private suspend fun <T> safeCall(block: suspend () -> T): Result<T> = withContext(Dispatchers.IO) {
         try {
             Result.success(block())
