@@ -27,8 +27,8 @@ android {
         applicationId = "com.upc.asistenteredidbi"
         minSdk = 24
         targetSdk = 35
-        versionCode = 5
-        versionName = "0.0.5"
+        versionCode = 7
+        versionName = "0.0.7"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

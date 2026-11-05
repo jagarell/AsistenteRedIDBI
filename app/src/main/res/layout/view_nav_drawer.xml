@@ -150,7 +150,16 @@
 
                 <ImageView style="@style/DrawerNavIcon" app:srcCompat="@drawable/ic_history" />
 
-                <TextView style="@style/DrawerNavLabel" android:text="Historial" />
+                <TextView style="@style/DrawerNavLabel" android:text="Reportes" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/navAsistente"
+                style="@style/DrawerNavRow">
+
+                <ImageView style="@style/DrawerNavIcon" app:srcCompat="@drawable/ic_bolt" />
+
+                <TextView style="@style/DrawerNavLabel" android:text="Asistente IA" />
             </LinearLayout>
 
             <LinearLayout

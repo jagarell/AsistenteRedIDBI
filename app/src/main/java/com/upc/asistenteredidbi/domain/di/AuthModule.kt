@@ -162,6 +162,12 @@ object AuthModule {
         return retrofit.create(AuthApiService::class.java)
     }
 
+    /** 0.0.7: Reportes, Asistente IA, minuta de soporte y aprendizaje. */
+    @Provides
+    @Singleton
+    fun provideApi007Service(retrofit: Retrofit): com.upc.asistenteredidbi.data.remote.Api007Service =
+        retrofit.create(com.upc.asistenteredidbi.data.remote.Api007Service::class.java)
+
     @Provides
     @Singleton
     fun provideRetrofit(

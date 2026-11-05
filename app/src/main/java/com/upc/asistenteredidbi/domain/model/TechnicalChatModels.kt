@@ -105,7 +105,9 @@ data class ChatNodePrompt(
     val valueJson: String? = null,
     val zones: List<String> = emptyList(),
     val videoTypes: List<String> = emptyList(),
-    val evidencesTotal: Int = 0
+    val evidencesTotal: Int = 0,
+    /** Tipo de documento que se puede adjuntar aquí (ruc, comp, recibo, tarjeta, frontis). */
+    val attachHint: String? = null
 )
 
 /** Pregunta de confirmación del asistente tras leer una evidencia (ej. "¿cuál es el proveedor correcto?"). */
@@ -147,8 +149,18 @@ data class TechnicalChatProgress(
      *  ViewModel las escribe a disco y las quita antes de guardar el snapshot. */
     val processedImages: List<String> = emptyList(),
     /** Avisos para mostrar entre la respuesta y la siguiente pregunta. */
-    val notices: List<ChatNotice> = emptyList()
+    val notices: List<ChatNotice> = emptyList(),
+    /** Respuestas que vinieron de un adjunto. */
+    val attachedNodeIds: List<String> = emptyList()
 )
+
+/** Dato leído de un documento adjunto, para revisar antes de usarlo. */
+data class AttachmentField(
+    val nodeId: String, val label: String, val valor: String,
+    val respondido: Boolean, val usar: Boolean, val error: String?
+)
+
+data class AttachmentReview(val titulo: String, val nota: String?, val campos: List<AttachmentField>)
 
 data class TechnicalChatProposal(
     val summary: String,

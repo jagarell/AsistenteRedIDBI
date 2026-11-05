@@ -277,7 +277,7 @@
             android:layout_width="220dp"
             android:layout_height="58dp"
             android:layout_marginTop="36dp"
-            android:text="Ver Historial"
+            android:text="Ver Reportes"
             android:textAllCaps="false"
             android:textSize="19sp"
             android:textStyle="bold"

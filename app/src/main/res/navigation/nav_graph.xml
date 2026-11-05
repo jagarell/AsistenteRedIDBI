@@ -108,6 +108,10 @@
             app:destination="@id/historialFragment" />
 
         <action
+            android:id="@+id/action_home_to_asistente"
+            app:destination="@id/asistenteFragment" />
+
+        <action
             android:id="@+id/action_home_to_perfil"
             app:destination="@id/perfilFragment" />
 
@@ -397,14 +401,13 @@
     </fragment>
 
     <!-- ───────────────────────────────────────────────────────
-         HISTORIAL
+         REPORTES (0.0.7: reemplaza Historial; se mantiene el id historialFragment para no romper las acciones)
     ──────────────────────────────────────────────────────── -->
 
     <fragment
         android:id="@+id/historialFragment"
-        android:name="com.upc.asistenteredidbi.presentation.historial.HistorialFragment"
-        android:label="Historial"
-        tools:layout="@layout/fragment_historial">
+        android:name="com.upc.asistenteredidbi.presentation.reportes.ReportesFragment"
+        android:label="Reportes">
 
         <action
             android:id="@+id/action_historial_to_minuta"
@@ -415,6 +418,15 @@
             app:destination="@id/technicalChatFragment" />
 
     </fragment>
+
+    <!-- ───────────────────────────────────────────────────────
+         ASISTENTE IA 0.0.7 (nueva minuta de implementación o soporte, actualizar minuta, ¿qué aprendiste hoy?)
+    ──────────────────────────────────────────────────────── -->
+
+    <fragment
+        android:id="@+id/asistenteFragment"
+        android:name="com.upc.asistenteredidbi.presentation.asistente.AsistenteFragment"
+        android:label="Asistente IA" />
 
     <!-- ───────────────────────────────────────────────────────
          MINUTAS (listado de todos los técnicos, validación por supervisor)

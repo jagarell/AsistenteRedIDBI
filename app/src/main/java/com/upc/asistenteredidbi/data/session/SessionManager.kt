@@ -49,7 +49,7 @@ class SessionManager @Inject constructor(
         }
 
     val isSupervisorFlow: Flow<Boolean> =
-        roleFlow.map { it == Role.SUPERVISOR }
+        roleFlow.map { it == Role.SUPERVISOR || it == Role.ADMINISTRADOR }  // el administrador también valida
 
     val userIdFlow: Flow<Long?> =
         context.dataStore.data.map { prefs -> prefs[KEY_USER_ID] }
@@ -130,7 +130,7 @@ class SessionManager @Inject constructor(
         roleFlow.first()
 
     suspend fun isSupervisor(): Boolean =
-        getRole() == Role.SUPERVISOR
+        getRole().let { it == Role.SUPERVISOR || it == Role.ADMINISTRADOR }
 
     suspend fun getUserId(): Long? =
         userIdFlow.first()

@@ -37,6 +37,21 @@ interface ChatRepository {
         mode: String = "subir"
     ): Result<TechnicalChatProgress>
 
+    /** Lee un documento del cliente. Devuelve el JSON del servidor (status, tipo, titulo, nota, campos). */
+    suspend fun readChatAttachment(
+        evaluationId: Long,
+        state: String,
+        tipo: String?,
+        photos: List<File>
+    ): Result<Map<String, Any?>>
+
+    /** Usa los campos marcados (nodeId, valor) del adjunto. */
+    suspend fun useChatAttachment(
+        evaluationId: Long,
+        state: String,
+        campos: List<Map<String, String>>
+    ): Result<TechnicalChatProgress>
+
     /** Editar una respuesta anterior. `mode`: rewind (chat en curso) o reopen (evaluación terminada). */
     suspend fun editTechnicalChat(
         evaluationId: Long,

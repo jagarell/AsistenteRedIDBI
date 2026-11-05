@@ -17,6 +17,9 @@ import com.upc.asistenteredidbi.domain.model.NetworkMap
 import com.upc.asistenteredidbi.domain.model.TechnicalChatInputType
 import com.upc.asistenteredidbi.domain.model.TechnicalChatProgress
 import com.upc.asistenteredidbi.domain.model.TechnicalChatProposal
+import com.upc.asistenteredidbi.domain.model.AttachmentField
+import com.upc.asistenteredidbi.domain.model.AttachmentReview
+import com.upc.asistenteredidbi.domain.repository.ChatRepository
 import com.upc.asistenteredidbi.domain.repository.EvaluationRepository
 import com.upc.asistenteredidbi.domain.usecase.AmendTechnicalChatUseCase
 import com.upc.asistenteredidbi.domain.usecase.AnswerTechnicalChatUseCase
@@ -42,6 +45,8 @@ import javax.inject.Inject
 data class TechnicalChatUiState(
     val isLoading: Boolean = false,
     val isSending: Boolean = false,
+    /** Datos leídos de un documento adjunto, esperando que el técnico los revise. */
+    val attachment: AttachmentReview? = null,
     val messages: List<ChatMessage> = emptyList(),
     /** Nodo que toca responder; null cuando el flujo terminó. */
     val node: ChatNodePrompt? = null,
@@ -85,6 +90,7 @@ class TechnicalChatViewModel @Inject constructor(
     private val evaluationRepository: EvaluationRepository,
     private val createMinutaUseCase: CreateMinutaUseCase,
     private val chatProgressStore: ChatProgressStore,
+    private val chatRepository: ChatRepository,
     private val localFiles: ChatLocalFiles,
     private val moshi: Moshi,
     savedStateHandle: SavedStateHandle
@@ -498,6 +504,76 @@ class TechnicalChatViewModel @Inject constructor(
                         )
                     }
                 }
+        }
+    }
+
+    // ---- adjuntos del cliente (ficha RUC, comprobante, recibo, tarjeta, letrero) -------------
+    /** Lee el documento con la IA y abre la hoja «Datos leídos del adjunto». */
+    fun leerAdjunto(uris: List<Uri>, tipo: String?) {
+        val state = _uiState.value
+        val flowState = state.flowState ?: return
+        if (uris.isEmpty() || state.isLoading || state.isSending || validEvaluationId == null) return
+        _uiState.update { it.copy(isSending = true, errorMessage = null) }
+        viewModelScope.launch {
+            val files: List<File> = try {
+                localFiles.savePhotos(evaluationId, uris.take(3))
+            } catch (e: PhotoProcessingException) {
+                _uiState.update { it.copy(isSending = false, errorMessage = e.message) }
+                return@launch
+            }
+            chatRepository.readChatAttachment(evaluationId, flowState, tipo, files)
+                .onSuccess { r ->
+                    when (r["status"]) {
+                        "OK" -> {
+                            @Suppress("UNCHECKED_CAST")
+                            val rows = (r["campos"] as? List<Map<String, Any?>>).orEmpty().map { c ->
+                                AttachmentField(
+                                    nodeId = c["nodeId"].toString(), label = c["label"].toString(),
+                                    valor = c["valor"].toString(), respondido = c["respondido"] == true,
+                                    usar = c["usar"] == true, error = c["error"]?.toString()
+                                )
+                            }
+                            if (rows.isEmpty()) {
+                                _uiState.update { it.copy(isSending = false, errorMessage = "No encontré datos útiles en el documento; escribe el dato.") }
+                            } else {
+                                _uiState.update {
+                                    it.copy(isSending = false, attachment = AttachmentReview(
+                                        r["titulo"]?.toString().orEmpty(), r["nota"]?.toString(), rows
+                                    ))
+                                }
+                            }
+                        }
+                        "PDF" -> _uiState.update { it.copy(isSending = false, errorMessage = "Los PDF aún no se leen: sube una foto del documento.") }
+                        "TIPO" -> _uiState.update { it.copy(isSending = false, errorMessage = "No reconocí el documento: elige su tipo y vuelve a adjuntar.") }
+                        else -> _uiState.update { it.copy(isSending = false, errorMessage = "No se pudo leer el documento; escribe el dato.") }
+                    }
+                }
+                .onFailure { e -> _uiState.update { it.copy(isSending = false, errorMessage = e.message ?: "No se pudo adjuntar") } }
+        }
+    }
+
+    fun descartarAdjunto() = _uiState.update { it.copy(attachment = null) }
+
+    /** Responde con los datos marcados (ya corregidos): la pregunta actual y, al llegar, las siguientes. */
+    fun usarAdjunto(campos: List<Pair<String, String>>) {
+        val state = _uiState.value
+        val flowState = state.flowState ?: return
+        if (campos.isEmpty() || state.isSending || validEvaluationId == null) return
+        _uiState.update { it.copy(isSending = true, attachment = null, errorMessage = null) }
+        viewModelScope.launch {
+            chatRepository.useChatAttachment(evaluationId, flowState, campos.map { mapOf("nodeId" to it.first, "valor" to it.second) })
+                .onSuccess { response ->
+                    if (response.validationError != null) {
+                        _uiState.update { it.copy(isSending = false, errorMessage = response.validationError) }
+                    } else {
+                        val note = ChatMessage(
+                            "📎 Usé ${campos.size} dato${if (campos.size > 1) "s" else ""} del adjunto.", true,
+                            id = state.messages.size.toLong()
+                        )
+                        applyResponse(state.messages + note, response)
+                    }
+                }
+                .onFailure { e -> _uiState.update { it.copy(isSending = false, errorMessage = e.message ?: "No se pudo usar el adjunto") } }
         }
     }
 
