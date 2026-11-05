@@ -640,6 +640,8 @@ class TechnicalChatFragment : Fragment() {
             binding.btnAttach.alpha = 0.45f
         }
         binding.etTextInput.isVisible = needsTextInput
+        // Con la evaluación terminada ya no se adjunta: el chat solo atiende cambios al mapa.
+        binding.btnAttach.isVisible = !freeChat
         binding.containerTextRow.isVisible = needsTextInput
 
         if (freeChat) {
@@ -898,7 +900,7 @@ class TechnicalChatFragment : Fragment() {
             }
         }
         val row = LinearLayout(ctx).apply { orientation = LinearLayout.HORIZONTAL; setPadding(0, dp(12), 0, 0) }
-        row.addView(MaterialButton(ctx).apply { text = "Tomar foto"; setOnClickListener { go(true) } },
+        row.addView(MaterialButton(ctx).apply { text = "Tomar foto"; backgroundTintList = ColorStateList.valueOf(Color.parseColor("#1565C0")); setOnClickListener { go(true) } },
             LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply { marginEnd = dp(8) })
         row.addView(MaterialButton(ctx, null, com.google.android.material.R.attr.materialButtonOutlinedStyle).apply {
             text = "Subir archivo"; setOnClickListener { go(false) } },
@@ -924,7 +926,7 @@ class TechnicalChatFragment : Fragment() {
             text = review.titulo; textSize = 13f; setTextColor(Color.parseColor("#6B7280")); setPadding(0, dp(2), 0, dp(8))
         })
         val checks = mutableListOf<Triple<com.google.android.material.checkbox.MaterialCheckBox, EditText, String>>()
-        val use = MaterialButton(ctx)
+        val use = MaterialButton(ctx).apply { backgroundTintList = ColorStateList.valueOf(Color.parseColor("#1565C0")) }
         fun refresh() {
             val n = checks.count { it.first.isChecked }
             use.text = "Usar $n dato${if (n == 1) "" else "s"}"
