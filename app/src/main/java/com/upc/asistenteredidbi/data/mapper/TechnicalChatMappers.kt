@@ -48,7 +48,13 @@ fun TechnicalChatResponseDto.toDomain(): TechnicalChatProgress {
         followUps = followUps.orEmpty().map { ChatFollowUp(it.key, it.text, it.options.orEmpty()) },
         processedImages = processedImages.orEmpty(),
         notices = notices.orEmpty().map { ChatNotice(it.id.orEmpty(), it.tone ?: "info", it.tag.orEmpty(), it.text) },
-        attachedNodeIds = attachedNodeIds.orEmpty()
+        attachedNodeIds = attachedNodeIds.orEmpty(),
+        pendingMandatory = pendingMandatory.orEmpty().map {
+            com.upc.asistenteredidbi.domain.model.ChatPendingPhoto(
+                it.nodeId, it.name ?: it.nodeId.substringAfter('#'), it.text.orEmpty(),
+                it.lastTry, it.canForce ?: false, it.message, it.enObra ?: false
+            )
+        }
     )
 }
 
@@ -93,7 +99,8 @@ fun ChatNodeDto.toDomain(): ChatNodePrompt = ChatNodePrompt(
         ChatEvidencePrompt(
             read = it.read.orEmpty(), name = it.name.orEmpty(), status = it.status ?: "WAITING", message = it.message,
             fields = it.fields.orEmpty().map { f -> f.toDomain() }, data = it.data.orEmpty(), label = it.label.orEmpty(),
-            unavailable = it.unavailable ?: false, mode = it.mode ?: "subir", lastTry = it.lastTry
+            unavailable = it.unavailable ?: false, mode = it.mode ?: "subir", lastTry = it.lastTry,
+            canForce = it.canForce ?: false, canLater = it.canLater ?: false, enObra = it.enObra ?: false
         )
     },
     fields = fields.orEmpty().map { it.toDomain() },

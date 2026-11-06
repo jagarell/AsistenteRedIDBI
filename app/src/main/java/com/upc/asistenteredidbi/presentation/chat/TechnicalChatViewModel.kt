@@ -73,7 +73,9 @@ data class TechnicalChatUiState(
     val editSnapshot: String? = null,
     val editProposal: TechnicalChatProposal? = null,
     val editMessages: List<ChatMessage> = emptyList(),
-    val editAnswers: Map<String, String> = emptyMap()
+    val editAnswers: Map<String, String> = emptyMap(),
+    /** 0.0.7: fotos obligatorias dejadas con «Subir después»; se suben antes de generar la minuta. */
+    val pendingMandatory: List<com.upc.asistenteredidbi.domain.model.ChatPendingPhoto> = emptyList()
 )
 
 @HiltViewModel
@@ -396,6 +398,17 @@ class TechnicalChatViewModel @Inject constructor(
                     id = messages.size.toLong()
                 )
             )
+            if (response.pendingMandatory.isNotEmpty()) {
+                val n = response.pendingMandatory.size
+                messages.add(
+                    ChatMessage(
+                        "Antes de generar la minuta faltan $n ${if (n == 1) "foto obligatoria" else "fotos obligatorias"} que dejaste para después: " +
+                            response.pendingMandatory.joinToString(", ") { it.name } + ". Toca «Subir fotos pendientes».",
+                        false,
+                        id = messages.size.toLong()
+                    )
+                )
+            }
             response.proposal?.let { proposal ->
                 messages.add(
                     ChatMessage("", false, id = messages.size.toLong(), card = diagnosisCard(proposal))
@@ -420,6 +433,7 @@ class TechnicalChatViewModel @Inject constructor(
                 completed = response.completed,
                 proposal = response.proposal,
                 pending = null,
+                pendingMandatory = response.pendingMandatory,
                 reviewDraft = draft,
                 reviewDeleted = emptySet(),
                 errorMessage = null
@@ -433,8 +447,87 @@ class TechnicalChatViewModel @Inject constructor(
     }
 
     // ---- evidencias ------------------------------------------------------------
-    /** Sube 1..N fotos para el nodo EVIDENCE actual. `mode`: tomar (cámara) o subir (galería). */
-    fun sendPhotos(uris: List<Uri>, mode: String = "subir") {
+    /** Últimas fotos enviadas del nodo actual: «Guardar como correcta» las reenvía sin pedirlas de nuevo. */
+    private var lastEvidenceUris: List<Uri> = emptyList()
+    private val lastPendingUris = mutableMapOf<String, List<Uri>>()
+
+    /** «Guardar como correcta»: la IA observó la foto (no corresponde / no legible) pero el técnico confirma que es la
+     *  correcta. Se reenvía la misma foto con mode="forzar" y la nota opcional. Vale en cualquier estado del local. */
+    fun forceEvidence(nota: String?) {
+        if (lastEvidenceUris.isEmpty()) {
+            _uiState.update { it.copy(errorMessage = "Vuelve a subir la foto y luego toca «Guardar como correcta».") }
+            return
+        }
+        sendPhotos(lastEvidenceUris, "forzar", nota)
+    }
+
+    /** «Subir después»: la foto obligatoria se deja para el final; se pide antes de generar la minuta. */
+    fun laterEvidence() {
+        val node = _uiState.value.node ?: return
+        if (node.evidence?.canLater != true) return
+        sendAnswer("@LATER", "Subir después")
+    }
+
+    /** Sube (o guarda como correcta, mode="forzar") una foto pendiente de «Subir después». */
+    fun sendPendingPhoto(nodeId: String, uris: List<Uri>, mode: String = "subir", nota: String? = null) {
+        val state = _uiState.value
+        val useUris = if (mode == "forzar") lastPendingUris[nodeId].orEmpty() else uris
+        if (useUris.isEmpty() && mode == "forzar") {
+            _uiState.update { it.copy(errorMessage = "Vuelve a subir la foto de ${nodeId.substringAfter('#')} y luego toca «Guardar como correcta».") }
+            return
+        }
+        if (useUris.isEmpty() || state.isLoading || state.isSending || validEvaluationId == null) return
+        val flowState = state.flowState ?: return
+        if (mode != "forzar") lastPendingUris[nodeId] = uris
+        val name = nodeId.substringAfter('#')
+        _uiState.update { it.copy(isSending = true, errorMessage = null) }
+        viewModelScope.launch {
+            val files: List<File> = try {
+                localFiles.savePhotos(evaluationId, useUris.take(3))
+            } catch (e: PhotoProcessingException) {
+                _uiState.update { it.copy(isSending = false, errorMessage = e.message) }
+                return@launch
+            }
+            answerWithPhotosUseCase(evaluationId, flowState, files, mode, nota, nodeId)
+                .onSuccess { response ->
+                    if (response.validationError != null) {
+                        // la IA la observó: sigue pendiente y se puede guardar como correcta
+                        _uiState.update {
+                            it.copy(isSending = false, flowState = response.state ?: it.flowState,
+                                pendingMandatory = response.pendingMandatory, errorMessage = response.validationError)
+                        }
+                        return@onSuccess
+                    }
+                    lastPendingUris.remove(nodeId)
+                    val ev = response.lastEvidence
+                    val item = ev?.let {
+                        ChatEvidenceItem(
+                            code = it.code, scope = it.scope,
+                            title = EvidencePresentation.title(it.code) + it.scope.takeIf { s -> s.isNotBlank() }?.let { s -> " · $s" }.orEmpty(),
+                            section = EvidencePresentation.section(it.code), summary = EvidencePresentation.summary(it),
+                            paths = files.map { f -> f.absolutePath }, status = "ok", messageId = _uiState.value.messages.size.toLong()
+                        )
+                    }
+                    _uiState.update { ui ->
+                        val msgs = ui.messages + ChatMessage(
+                            if (mode == "forzar") "Foto de $name guardada como correcta." else "Foto de $name subida.",
+                            false, id = ui.messages.size.toLong()
+                        )
+                        ui.copy(
+                            isSending = false, flowState = response.state ?: ui.flowState, messages = msgs,
+                            pendingMandatory = response.pendingMandatory,
+                            evidences = ui.evidences.filterNot { e -> item != null && e.code == item.code && e.scope == item.scope } + listOfNotNull(item)
+                        )
+                    }
+                }
+                .onFailure { error ->
+                    _uiState.update { it.copy(isSending = false, errorMessage = error.message ?: "No se pudo enviar la foto") }
+                }
+        }
+    }
+
+    /** Sube 1..N fotos para el nodo EVIDENCE actual. `mode`: tomar (cámara), subir (galería) o forzar («Guardar como correcta»). */
+    fun sendPhotos(uris: List<Uri>, mode: String = "subir", nota: String? = null) {
         val state = _uiState.value
         val node = state.node
         if (
@@ -446,6 +539,7 @@ class TechnicalChatViewModel @Inject constructor(
         }
         val flowState = state.flowState ?: return
         val code = node.evidenceCode.orEmpty()
+        if (mode != "forzar") lastEvidenceUris = uris
 
         _uiState.update { it.copy(isSending = true, errorMessage = null) }
 
@@ -458,7 +552,8 @@ class TechnicalChatViewModel @Inject constructor(
             }
 
             val photoMessage = ChatMessage(
-                text = EvidencePresentation.title(code).lowercase().replace(' ', '_') + ".jpg",
+                text = if (mode == "forzar") "Guardar como correcta" + nota?.takeIf { it.isNotBlank() }?.let { ": «$it»" }.orEmpty()
+                else EvidencePresentation.title(code).lowercase().replace(' ', '_') + ".jpg",
                 isFromUser = true,
                 id = state.messages.size.toLong(),
                 imagePaths = files.map { it.absolutePath }
@@ -466,7 +561,7 @@ class TechnicalChatViewModel @Inject constructor(
             val withPhoto = state.messages + photoMessage
             _uiState.update { it.copy(messages = withPhoto) }
 
-            answerWithPhotosUseCase(evaluationId, flowState, files, mode)
+            answerWithPhotosUseCase(evaluationId, flowState, files, mode, nota)
                 .onSuccess { response ->
                     if (response.validationError != null) {
                         _uiState.update {

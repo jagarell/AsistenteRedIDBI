@@ -63,6 +63,10 @@ interface ChatApiService {
         @Path("evaluationId") evaluationId: Long,
         @Part("state") state: RequestBody,
         @Part("mode") mode: RequestBody,
-        @Part files: List<MultipartBody.Part>
+        @Part files: List<MultipartBody.Part>,
+        /** «Guardar como correcta» (mode = "forzar"): nota opcional del técnico. */
+        @Part("nota") nota: RequestBody? = null,
+        /** «Subir después»: foto pendiente que se sube al final (EV#Calientes). */
+        @Part("nodeId") nodeId: RequestBody? = null
     ): TechnicalChatResponseDto
 }

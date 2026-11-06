@@ -73,13 +73,17 @@ class ChatRepositoryImpl @Inject constructor(
         evaluationId: Long,
         state: String,
         photos: List<File>,
-        mode: String
+        mode: String,
+        nota: String?,
+        nodeId: String?
     ): Result<TechnicalChatProgress> = safeCall {
         api.answerTechnicalChatWithPhotos(
             evaluationId = evaluationId,
             state = MultipartUtils.textPart(state),
             mode = MultipartUtils.textPart(mode),
-            files = photos.map { MultipartUtils.filePart(it, partName = "files") }
+            files = photos.map { MultipartUtils.filePart(it, partName = "files") },
+            nota = nota?.takeIf { it.isNotBlank() }?.let { MultipartUtils.textPart(it) },
+            nodeId = nodeId?.let { MultipartUtils.textPart(it) }
         ).toDomain()
     }
 

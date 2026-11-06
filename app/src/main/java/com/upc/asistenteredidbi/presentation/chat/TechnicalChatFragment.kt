@@ -91,7 +91,12 @@ class TechnicalChatFragment : Fragment() {
         registerForActivityResult(ActivityResultContracts.TakePicture()) { success ->
             if (success && photoUri != null) {
                 if (cameraForAttach) viewModel.leerAdjunto(listOf(photoUri!!), attachTipo)
-                else viewModel.sendPhotos(listOf(photoUri!!), "tomar")
+                else {
+                    val target = pendingTarget
+                    pendingTarget = null
+                    if (target != null) viewModel.sendPendingPhoto(target, listOf(photoUri!!), "tomar")
+                    else viewModel.sendPhotos(listOf(photoUri!!), "tomar")
+                }
             }
         }
 
@@ -107,8 +112,15 @@ class TechnicalChatFragment : Fragment() {
 
     private val pickImages =
         registerForActivityResult(ActivityResultContracts.GetMultipleContents()) { uris ->
-            if (uris.isNotEmpty()) viewModel.sendPhotos(uris, "subir")
+            val target = pendingTarget
+            pendingTarget = null
+            if (uris.isNotEmpty()) {
+                if (target != null) viewModel.sendPendingPhoto(target, uris, "subir") else viewModel.sendPhotos(uris, "subir")
+            }
         }
+
+    /** Foto pendiente de «Subir después» que se está tomando o eligiendo (null = la evidencia actual del chat). */
+    private var pendingTarget: String? = null
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -790,6 +802,21 @@ class TechnicalChatFragment : Fragment() {
             pickImages.launch("image/*")
         }, LinearLayout.LayoutParams(0, dp(46), 1f).apply { if (row.childCount > 0) marginStart = dp(10) })
         bar.addView(row)
+        // «Guardar como correcta»: la IA observó la foto (no corresponde / no legible); en cualquier estado del local.
+        if (ev?.canForce == true) bar.addView(actionButton("Guardar como correcta", filled = true, iconRes = R.drawable.ic_check_circle) {
+            showForceDialog(ev?.message, ev?.enObra == true) { nota -> viewModel.forceEvidence(nota) }
+        }.apply { backgroundTintList = ColorStateList.valueOf(Color.parseColor("#2E7D52")) },
+            LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(46)).apply { topMargin = dp(8) })
+        // «Subir después»: fotos obligatorias del local; se piden antes de generar la minuta.
+        if (ev?.canLater == true) bar.addView(TextView(requireContext()).apply {
+            text = "Subir después"
+            textSize = 14f
+            typeface = android.graphics.Typeface.DEFAULT_BOLD
+            setTextColor(Color.parseColor("#1565C0"))
+            gravity = Gravity.CENTER
+            setPadding(0, dp(12), 0, dp(4))
+            setOnClickListener { viewModel.laterEvidence() }
+        })
         // Las fotos obligatorias (frontis, preparación, caja) no se pueden saltar.
         if (node?.skippable != false) bar.addView(TextView(requireContext()).apply {
             text = if (status == "WRONG") "Continuar sin esta lectura" else "Saltar evidencia"
@@ -1101,6 +1128,10 @@ class TechnicalChatFragment : Fragment() {
     /** Las evidencias ya se capturaron dentro del chat: se pasa directo al diagnóstico. */
     private fun navigateToDiagnosis() {
         val state = viewModel.uiState.value
+        if (state.pendingMandatory.isNotEmpty()) {
+            showPendingDialog()
+            return
+        }
 
         if (!state.completed) {
             Toast.makeText(requireContext(), "Completa primero la evaluación técnica", Toast.LENGTH_SHORT).show()
@@ -1212,6 +1243,8 @@ class TechnicalChatFragment : Fragment() {
                 "Pregunta ${node.questionNumber} de ~${node.questionTotal}$block"
             else -> "Preparando evaluación"
         }
+        val pend = state.pendingMandatory.size
+        if (pend > 0) binding.tvQuestionCounter.append(" · $pend ${if (pend == 1) "obligatoria" else "obligatorias"} por completar")
     }
 
     private fun ChatNodePrompt.questionsTotal(): Int = lastQuestionTotal
@@ -1228,6 +1261,84 @@ class TechnicalChatFragment : Fragment() {
 
     private fun renderCompletion(state: TechnicalChatUiState) {
         binding.btnGoEvidence.isVisible = false
+        val n = state.pendingMandatory.size
+        if (n > 0 && state.completed && state.editSnapshot == null) {
+            binding.actionBar.addView(
+                actionButton("Subir fotos pendientes ($n)", filled = true, iconRes = R.drawable.ic_camera) { showPendingDialog() },
+                LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(48)).apply { bottomMargin = dp(8) }
+            )
+        }
+        pendingDialogRefresh?.invoke(state)
+    }
+
+    // ---- 0.0.7: «Guardar como correcta» y «Subir después» ---------------------------------
+    private var pendingDialog: AlertDialog? = null
+    private var pendingDialogRefresh: ((TechnicalChatUiState) -> Unit)? = null
+
+    /** Hoja de «Guardar como correcta»: muestra lo que vio la IA y pide una nota opcional (no obligatoria).
+     *  En la minuta solo se muestra la nota, si se escribió. */
+    private fun showForceDialog(message: String?, enObra: Boolean, onSave: (String?) -> Unit) {
+        val ctx = requireContext()
+        val box = LinearLayout(ctx).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(20), dp(8), dp(20), 0) }
+        message?.let { box.addView(TextView(ctx).apply { text = it; textSize = 13f; setTextColor(Color.parseColor("#7A4A00")) }) }
+        val nota = EditText(ctx).apply { hint = "Nota (opcional). Ej.: aquí irá la impresora; aún no hay punto de red"; textSize = 14f }
+        box.addView(nota)
+        val chips = LinearLayout(ctx).apply { orientation = LinearLayout.VERTICAL }
+        (listOf("La foto es correcta", "Aún no hay puntos", "El cliente no permite") + if (enObra) listOf("Local en obra") else emptyList())
+            .forEach { t -> chips.addView(TextView(ctx).apply {
+                text = t; textSize = 13f; setTextColor(Color.parseColor("#1565C0")); setPadding(0, dp(8), 0, dp(4))
+                setOnClickListener { nota.setText(t); nota.setSelection(t.length) }
+            }) }
+        box.addView(chips)
+        AlertDialog.Builder(ctx)
+            .setTitle("Guardar como correcta")
+            .setMessage("Se guarda la foto. Si escribes una nota, se mostrará en la minuta junto a la foto.")
+            .setView(box)
+            .setPositiveButton("Guardar y continuar") { _, _ -> onSave(nota.text?.toString()?.trim()?.ifBlank { null }) }
+            .setNegativeButton("Cancelar", null)
+            .show()
+    }
+
+    /** «Evidencias obligatorias por completar»: una fila por foto dejada con «Subir después». La minuta no se genera
+     *  hasta que la lista quede vacía. */
+    private fun showPendingDialog() {
+        val ctx = requireContext()
+        val list = LinearLayout(ctx).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(20), dp(8), dp(20), dp(8)) }
+        fun fill(state: TechnicalChatUiState) {
+            list.removeAllViews()
+            if (state.pendingMandatory.isEmpty()) {
+                list.addView(TextView(ctx).apply { text = "Ya están todas las fotos obligatorias. Puedes generar la minuta."; textSize = 14f })
+                return
+            }
+            state.pendingMandatory.forEach { p ->
+                list.addView(TextView(ctx).apply {
+                    text = p.name + (p.text.takeIf { it.isNotBlank() }?.let { "\n$it" } ?: "")
+                    textSize = 14f; setTextColor(Color.parseColor("#1F2937")); setPadding(0, dp(10), 0, dp(2))
+                })
+                p.message?.let { m -> list.addView(TextView(ctx).apply { text = m; textSize = 12f; setTextColor(Color.parseColor("#9E2B23")) }) }
+                val row = LinearLayout(ctx).apply { orientation = LinearLayout.HORIZONTAL }
+                row.addView(actionButton("Tomar foto", filled = true, iconRes = R.drawable.ic_camera) {
+                    pendingTarget = p.nodeId; requestCameraPermission.launch(Manifest.permission.CAMERA)
+                }, LinearLayout.LayoutParams(0, dp(42), 1f))
+                row.addView(actionButton("Subir foto", filled = false, iconRes = R.drawable.ic_image) {
+                    pendingTarget = p.nodeId; pickImages.launch("image/*")
+                }, LinearLayout.LayoutParams(0, dp(42), 1f).apply { marginStart = dp(8) })
+                list.addView(row)
+                if (p.canForce) list.addView(actionButton("Guardar como correcta", filled = true, iconRes = R.drawable.ic_check_circle) {
+                    showForceDialog(p.message, p.enObra) { nota -> viewModel.sendPendingPhoto(p.nodeId, emptyList(), "forzar", nota) }
+                }.apply { backgroundTintList = ColorStateList.valueOf(Color.parseColor("#2E7D52")) },
+                    LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(42)).apply { topMargin = dp(6) })
+            }
+        }
+        fill(viewModel.uiState.value)
+        pendingDialogRefresh = { st -> if (pendingDialog?.isShowing == true) fill(st) }
+        pendingDialog = AlertDialog.Builder(ctx)
+            .setTitle("Evidencias obligatorias por completar")
+            .setMessage("Súbelas para generar la minuta. Las opcionales que saltaste no la bloquean.")
+            .setView(android.widget.ScrollView(ctx).apply { addView(list) })
+            .setPositiveButton("Cerrar", null)
+            .setOnDismissListener { pendingDialogRefresh = null }
+            .show()
     }
 
     private fun renderError(state: TechnicalChatUiState) {
