@@ -23,7 +23,8 @@ sealed interface SessionDestination {
 data class DrawerProfile(
     val fullName: String,
     val roleLabel: String,
-    val company: String
+    val company: String,
+    val role: com.upc.asistenteredidbi.domain.model.Role = com.upc.asistenteredidbi.domain.model.Role.TECNICO
 )
 
 @HiltViewModel
@@ -83,7 +84,8 @@ class SessionViewModel @Inject constructor(
                 _drawerProfile.value = DrawerProfile(
                     fullName = user.fullName,
                     roleLabel = user.role.toDisplayLabel(),
-                    company = user.company.orEmpty()
+                    company = user.company.orEmpty(),
+                    role = user.role
                 )
             }
         }

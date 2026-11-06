@@ -54,6 +54,18 @@ interface Api007Service {
     @POST("api/asistente/mensaje")
     suspend fun mensaje(@Body body: Map<String, @JvmSuppressWildcards Any?>): Map<String, @JvmSuppressWildcards Any?>
 
+    @GET("api/panel")
+    suspend fun panel(@retrofit2.http.Query("dias") dias: Int): Map<String, @JvmSuppressWildcards Any?>
+
+    @GET("api/equipo")
+    suspend fun equipo(): List<Map<String, @JvmSuppressWildcards Any?>>
+
+    @retrofit2.http.PUT("api/equipo/{id}/rol")
+    suspend fun equipoRol(@retrofit2.http.Path("id") id: Long, @Body body: Map<String, String>): Map<String, @JvmSuppressWildcards Any?>
+
+    @retrofit2.http.PUT("api/equipo/{id}/supervisor")
+    suspend fun equipoSupervisor(@retrofit2.http.Path("id") id: Long, @Body body: Map<String, @JvmSuppressWildcards Any?>): Map<String, @JvmSuppressWildcards Any?>
+
     @GET("api/aprendizaje/hoy")
     suspend fun aprendizajeHoy(): Map<String, @JvmSuppressWildcards Any?>
 

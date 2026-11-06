@@ -108,6 +108,14 @@
             app:destination="@id/historialFragment" />
 
         <action
+            android:id="@+id/action_home_to_panel"
+            app:destination="@id/panelFragment" />
+
+        <action
+            android:id="@+id/action_home_to_equipo"
+            app:destination="@id/equipoFragment" />
+
+        <action
             android:id="@+id/action_home_to_asistente"
             app:destination="@id/asistenteFragment" />
 
@@ -276,6 +284,16 @@
     <!-- ───────────────────────────────────────────────────────
          PROPUESTA TÉCNICA
     ──────────────────────────────────────────────────────── -->
+
+    <fragment
+        android:id="@+id/panelFragment"
+        android:name="com.upc.asistenteredidbi.presentation.gestion.PanelFragment"
+        android:label="Panel" />
+
+    <fragment
+        android:id="@+id/equipoFragment"
+        android:name="com.upc.asistenteredidbi.presentation.gestion.EquipoFragment"
+        android:label="Equipo y accesos" />
 
     <fragment
         android:id="@+id/notificationsFragment"

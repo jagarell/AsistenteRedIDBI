@@ -93,6 +93,8 @@ class MainActivity : AppCompatActivity() {
         drawer.navHistorial.setOnClickListener { navigateFromDrawer(R.id.action_home_to_historial) }
         drawer.navAsistente.setOnClickListener { navigateFromDrawer(R.id.action_home_to_asistente) }
         drawer.navPropuestas.setOnClickListener { navigateFromDrawer(R.id.action_home_to_minutas) }
+        drawer.navPanel.setOnClickListener { navigateFromDrawer(R.id.action_home_to_panel) }
+        drawer.navEquipo.setOnClickListener { navigateFromDrawer(R.id.action_home_to_equipo) }
         drawer.navNotificaciones.setOnClickListener { navigateFromDrawer(R.id.action_home_to_notifications) }
         drawer.navConfiguracion.setOnClickListener { navigateFromDrawer(R.id.action_home_to_config) }
         // Mi perfil sale del menú (doc 0.0.7 §13): se abre tocando el avatar o el nombre de la cabecera.
@@ -107,6 +109,9 @@ class MainActivity : AppCompatActivity() {
                         drawer.tvDrawerName.text = profile.fullName
                         drawer.tvDrawerRole.text = profile.roleLabel
                         drawer.tvDrawerCompany.text = profile.company
+                        // Panel: administrador y supervisor. Equipo y accesos: solo administrador (doc 0.0.7 §13-15).
+                        drawer.navPanel.visibility = if (profile.role != com.upc.asistenteredidbi.domain.model.Role.TECNICO) View.VISIBLE else View.GONE
+                        drawer.navEquipo.visibility = if (profile.role == com.upc.asistenteredidbi.domain.model.Role.ADMINISTRADOR) View.VISIBLE else View.GONE
                         drawer.tvDrawerInitials.text = profile.fullName
                             .split(" ")
                             .filter { it.isNotBlank() }
