@@ -199,6 +199,16 @@
             <TextView style="@style/DrawerSection" android:text="CONFIGURACIÓN" />
 
             <LinearLayout
+                android:id="@+id/navPreguntas"
+                style="@style/DrawerNavRow"
+                android:visibility="gone">
+
+                <ImageView style="@style/DrawerNavIcon" app:srcCompat="@drawable/ic_document" />
+
+                <TextView style="@style/DrawerNavLabel" android:text="Preguntas y reglas" />
+            </LinearLayout>
+
+            <LinearLayout
                 android:id="@+id/navEquipo"
                 style="@style/DrawerNavRow"
                 android:visibility="gone">

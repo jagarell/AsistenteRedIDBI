@@ -94,6 +94,7 @@ class MainActivity : AppCompatActivity() {
         drawer.navAsistente.setOnClickListener { navigateFromDrawer(R.id.action_home_to_asistente) }
         drawer.navPropuestas.setOnClickListener { navigateFromDrawer(R.id.action_home_to_minutas) }
         drawer.navPanel.setOnClickListener { navigateFromDrawer(R.id.action_home_to_panel) }
+        drawer.navPreguntas.setOnClickListener { navigateFromDrawer(R.id.action_home_to_preguntas) }
         drawer.navEquipo.setOnClickListener { navigateFromDrawer(R.id.action_home_to_equipo) }
         drawer.navNotificaciones.setOnClickListener { navigateFromDrawer(R.id.action_home_to_notifications) }
         drawer.navConfiguracion.setOnClickListener { navigateFromDrawer(R.id.action_home_to_config) }
@@ -111,6 +112,7 @@ class MainActivity : AppCompatActivity() {
                         drawer.tvDrawerCompany.text = profile.company
                         // Panel: administrador y supervisor. Equipo y accesos: solo administrador (doc 0.0.7 §13-15).
                         drawer.navPanel.visibility = if (profile.role != com.upc.asistenteredidbi.domain.model.Role.TECNICO) View.VISIBLE else View.GONE
+                        drawer.navPreguntas.visibility = if (profile.role == com.upc.asistenteredidbi.domain.model.Role.ADMINISTRADOR) View.VISIBLE else View.GONE
                         drawer.navEquipo.visibility = if (profile.role == com.upc.asistenteredidbi.domain.model.Role.ADMINISTRADOR) View.VISIBLE else View.GONE
                         drawer.tvDrawerInitials.text = profile.fullName
                             .split(" ")

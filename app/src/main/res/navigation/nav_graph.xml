@@ -112,6 +112,10 @@
             app:destination="@id/panelFragment" />
 
         <action
+            android:id="@+id/action_home_to_preguntas"
+            app:destination="@id/preguntasReglasFragment" />
+
+        <action
             android:id="@+id/action_home_to_equipo"
             app:destination="@id/equipoFragment" />
 
@@ -289,6 +293,11 @@
         android:id="@+id/panelFragment"
         android:name="com.upc.asistenteredidbi.presentation.gestion.PanelFragment"
         android:label="Panel" />
+
+    <fragment
+        android:id="@+id/preguntasReglasFragment"
+        android:name="com.upc.asistenteredidbi.presentation.gestion.PreguntasReglasFragment"
+        android:label="Preguntas y reglas" />
 
     <fragment
         android:id="@+id/equipoFragment"
