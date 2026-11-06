@@ -29,12 +29,15 @@ interface ChatRepository {
         restore: Boolean? = null
     ): Result<TechnicalChatProgress>
 
-    /** `photos` ya vienen comprimidas (ver ChatPhotoStore). `mode`: "tomar" (cámara) o "subir" (galería). */
+    /** `photos` ya vienen comprimidas (ver ChatPhotoStore). `mode`: "tomar" (cámara), "subir" (galería) o "forzar"
+     *  («Guardar como correcta», con `nota` opcional). `nodeId`: foto pendiente de «Subir después». */
     suspend fun answerTechnicalChatWithPhotos(
         evaluationId: Long,
         state: String,
         photos: List<File>,
-        mode: String = "subir"
+        mode: String = "subir",
+        nota: String? = null,
+        nodeId: String? = null
     ): Result<TechnicalChatProgress>
 
     /** Lee un documento del cliente. Devuelve el JSON del servidor (status, tipo, titulo, nota, campos). */

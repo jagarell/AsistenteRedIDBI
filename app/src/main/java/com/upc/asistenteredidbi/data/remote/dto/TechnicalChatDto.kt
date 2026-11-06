@@ -64,7 +64,24 @@ data class ChatEvidenceNodeDto(
     val label: String? = null,
     val unavailable: Boolean? = null,
     val mode: String? = null,
-    val lastTry: String? = null
+    val lastTry: String? = null,
+    /** «Guardar como correcta»: la IA observó la foto (no corresponde / no legible). */
+    val canForce: Boolean? = null,
+    /** «Subir después»: foto obligatoria de la lista (frontis, preparación, caja). */
+    val canLater: Boolean? = null,
+    /** Local en obra o por inaugurar: agrega el atajo «Local en obra» a la nota. */
+    val enObra: Boolean? = null
+)
+
+/** Foto obligatoria dejada con «Subir después»; se pide antes de generar la minuta. */
+data class ChatPendingPhotoDto(
+    val nodeId: String,
+    val name: String? = null,
+    val text: String? = null,
+    val lastTry: String? = null,
+    val canForce: Boolean? = null,
+    val message: String? = null,
+    val enObra: Boolean? = null
 )
 
 data class ChatNoticeDto(
@@ -146,7 +163,9 @@ data class TechnicalChatResponseDto(
     val processedImages: List<String>? = null,
     /** Avisos entre la respuesta y la siguiente pregunta (no piden confirmación). */
     val notices: List<ChatNoticeDto>? = null,
-    val attachedNodeIds: List<String>? = null
+    val attachedNodeIds: List<String>? = null,
+    /** Fotos obligatorias pendientes («Subir después»). */
+    val pendingMandatory: List<ChatPendingPhotoDto>? = null
 )
 
 data class TechnicalChatProposalDto(

@@ -47,7 +47,24 @@ data class ChatEvidencePrompt(
     val label: String = "",
     val unavailable: Boolean = false,
     val mode: String = "subir",
-    val lastTry: String? = null
+    val lastTry: String? = null,
+    /** «Guardar como correcta»: la IA observó la foto (en cualquier estado del local). */
+    val canForce: Boolean = false,
+    /** «Subir después»: foto obligatoria del local que se puede dejar para el final. */
+    val canLater: Boolean = false,
+    /** Local en obra o por inaugurar: agrega el atajo «Local en obra» a la nota. */
+    val enObra: Boolean = false
+)
+
+/** Foto obligatoria dejada con «Subir después». `canForce`: la IA la observó y se puede guardar como correcta. */
+data class ChatPendingPhoto(
+    val nodeId: String,
+    val name: String,
+    val text: String = "",
+    val lastTry: String? = null,
+    val canForce: Boolean = false,
+    val message: String? = null,
+    val enObra: Boolean = false
 )
 
 /** Aviso del asistente entre la respuesta y la siguiente pregunta. `tone`: info, warn o bad. */
@@ -151,7 +168,9 @@ data class TechnicalChatProgress(
     /** Avisos para mostrar entre la respuesta y la siguiente pregunta. */
     val notices: List<ChatNotice> = emptyList(),
     /** Respuestas que vinieron de un adjunto. */
-    val attachedNodeIds: List<String> = emptyList()
+    val attachedNodeIds: List<String> = emptyList(),
+    /** Fotos obligatorias pendientes («Subir después»): mientras haya, no se genera la minuta. */
+    val pendingMandatory: List<ChatPendingPhoto> = emptyList()
 )
 
 /** Dato leído de un documento adjunto, para revisar antes de usarlo. */
