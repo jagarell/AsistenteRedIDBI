@@ -223,6 +223,10 @@ class TechnicalChatFragment : Fragment() {
 
         binding.btnGoEvidence.setOnClickListener { navigateToDiagnosis() }
         binding.btnMore.setOnClickListener { showProposal() }
+        binding.btnHelp.setOnClickListener {
+            ChatHelpSheet.newInstance(viewModel.uiState.value.node?.text.orEmpty())
+                .show(childFragmentManager, ChatHelpSheet.TAG)
+        }
     }
 
     private fun submitAnswer() {
@@ -974,11 +978,9 @@ class TechnicalChatFragment : Fragment() {
 
     /** Ayuda: las dudas con «?» no van al chat ni a la minuta. */
     private fun showHelpDialog(question: String) {
-        AlertDialog.Builder(requireContext())
-            .setTitle("Ayuda")
-            .setMessage("Tu duda no se envía al chat ni va a la minuta:\n\n«$question»\n\nConsúltala con tu supervisor; cuando sepas la respuesta, elige o escribe la opción.")
-            .setPositiveButton("Entendido", null)
-            .show()
+        ChatHelpSheet.newInstance(viewModel.uiState.value.node?.text.orEmpty())
+            .show(childFragmentManager, ChatHelpSheet.TAG)
+        if (question.isNotBlank()) Toast.makeText(requireContext(), "Escribe tu duda en la Ayuda; no se envía al chat.", Toast.LENGTH_SHORT).show()
     }
 
     private fun openCamera() {

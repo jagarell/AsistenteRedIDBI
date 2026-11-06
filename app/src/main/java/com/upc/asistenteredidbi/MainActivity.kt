@@ -1,6 +1,7 @@
 package com.upc.asistenteredidbi
 
 import android.os.Bundle
+import android.view.View
 import androidx.activity.addCallback
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
@@ -94,7 +95,10 @@ class MainActivity : AppCompatActivity() {
         drawer.navPropuestas.setOnClickListener { navigateFromDrawer(R.id.action_home_to_minutas) }
         drawer.navNotificaciones.setOnClickListener { navigateFromDrawer(R.id.action_home_to_notifications) }
         drawer.navConfiguracion.setOnClickListener { navigateFromDrawer(R.id.action_home_to_config) }
-        drawer.navMiPerfil.setOnClickListener { navigateFromDrawer(R.id.action_home_to_perfil) }
+        // Mi perfil sale del menú (doc 0.0.7 §13): se abre tocando el avatar o el nombre de la cabecera.
+        val openPerfil = View.OnClickListener { navigateFromDrawer(R.id.action_home_to_perfil) }
+        drawer.tvDrawerInitials.setOnClickListener(openPerfil)
+        drawer.tvDrawerName.setOnClickListener(openPerfil)
 
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {

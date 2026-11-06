@@ -125,6 +125,8 @@
             android:paddingTop="8dp"
             android:paddingBottom="8dp">
 
+            <TextView style="@style/DrawerSection" android:text="PRINCIPAL" />
+
             <LinearLayout
                 android:id="@+id/navInicio"
                 style="@style/DrawerNavRow"
@@ -133,6 +135,26 @@
                 <ImageView style="@style/DrawerNavIcon" app:srcCompat="@drawable/ic_home" />
 
                 <TextView style="@style/DrawerNavLabel" android:text="Inicio" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/navNotificaciones"
+                style="@style/DrawerNavRow">
+
+                <ImageView style="@style/DrawerNavIcon" app:srcCompat="@drawable/ic_notification" />
+
+                <TextView style="@style/DrawerNavLabel" android:text="Notificaciones" />
+            </LinearLayout>
+
+            <TextView style="@style/DrawerSection" android:text="SEGUIMIENTO" />
+
+            <LinearLayout
+                android:id="@+id/navHistorial"
+                style="@style/DrawerNavRow">
+
+                <ImageView style="@style/DrawerNavIcon" app:srcCompat="@drawable/ic_history" />
+
+                <TextView style="@style/DrawerNavLabel" android:text="Reportes" />
             </LinearLayout>
 
             <LinearLayout
@@ -145,21 +167,14 @@
             </LinearLayout>
 
             <LinearLayout
-                android:id="@+id/navHistorial"
-                style="@style/DrawerNavRow">
-
-                <ImageView style="@style/DrawerNavIcon" app:srcCompat="@drawable/ic_history" />
-
-                <TextView style="@style/DrawerNavLabel" android:text="Reportes" />
-            </LinearLayout>
-
-            <LinearLayout
                 android:id="@+id/navAsistente"
                 style="@style/DrawerNavRow">
 
                 <ImageView style="@style/DrawerNavIcon" app:srcCompat="@drawable/ic_bolt" />
 
                 <TextView style="@style/DrawerNavLabel" android:text="Asistente IA" />
+
+                <TextView style="@style/DrawerBadge" android:text="Nuevo" />
             </LinearLayout>
 
             <LinearLayout
@@ -171,14 +186,7 @@
                 <TextView style="@style/DrawerNavLabel" android:text="Propuestas" />
             </LinearLayout>
 
-            <LinearLayout
-                android:id="@+id/navNotificaciones"
-                style="@style/DrawerNavRow">
-
-                <ImageView style="@style/DrawerNavIcon" app:srcCompat="@drawable/ic_notification" />
-
-                <TextView style="@style/DrawerNavLabel" android:text="Notificaciones" />
-            </LinearLayout>
+            <TextView style="@style/DrawerSection" android:text="CONFIGURACIÓN" />
 
             <LinearLayout
                 android:id="@+id/navConfiguracion"
@@ -186,16 +194,7 @@
 
                 <ImageView style="@style/DrawerNavIcon" app:srcCompat="@drawable/ic_settings" />
 
-                <TextView style="@style/DrawerNavLabel" android:text="Configuración" />
-            </LinearLayout>
-
-            <LinearLayout
-                android:id="@+id/navMiPerfil"
-                style="@style/DrawerNavRow">
-
-                <ImageView style="@style/DrawerNavIcon" app:srcCompat="@drawable/ic_account_circle" />
-
-                <TextView style="@style/DrawerNavLabel" android:text="Mi Perfil" />
+                <TextView style="@style/DrawerNavLabel" android:text="Perfil y configuración" />
             </LinearLayout>
         </LinearLayout>
     </ScrollView>
