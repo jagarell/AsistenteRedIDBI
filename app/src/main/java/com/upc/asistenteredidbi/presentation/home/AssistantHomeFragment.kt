@@ -44,6 +44,19 @@ class AssistantHomeFragment : Fragment() {
         setupClicks()
         observeViewModel()
         viewModel.loadHome()
+        observeAsistente()
+    }
+
+    /** 0.0.7: si en el Asistente IA eligieron «Nueva minuta › Implementación», se abre la evaluación nueva desde aquí. */
+    private fun observeAsistente() {
+        val handle = findNavController().currentBackStackEntry?.savedStateHandle ?: return
+        handle.getLiveData<Boolean>(com.upc.asistenteredidbi.presentation.asistente.AsistenteFragment.KEY_NUEVA_IMPLEMENTACION)
+            .observe(viewLifecycleOwner) { nueva ->
+                if (nueva == true) {
+                    handle[com.upc.asistenteredidbi.presentation.asistente.AsistenteFragment.KEY_NUEVA_IMPLEMENTACION] = false
+                    requestNewEvaluation()
+                }
+            }
     }
 
     private fun observeViewModel() {

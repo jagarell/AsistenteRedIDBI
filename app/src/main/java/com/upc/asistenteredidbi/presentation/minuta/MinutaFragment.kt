@@ -173,7 +173,7 @@ class MinutaFragment : Fragment() {
             text = "Ver criterios ▾"
             textSize = 14f
             typeface = Typeface.DEFAULT_BOLD
-            setTextColor(Color.parseColor("#1565C0"))
+            setTextColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#1565C0"))
             setPadding(0, (10 * dp).toInt(), 0, (4 * dp).toInt())
             setOnClickListener {
                 val open = list.visibility == View.GONE
@@ -184,14 +184,14 @@ class MinutaFragment : Fragment() {
         list.addView(TextView(requireContext()).apply {
             text = "Puntaje = Σ peso × cumplimiento ÷ Σ pesos que aplican. Pesos por criticidad; se validan con AHP."
             textSize = 12f
-            setTextColor(Color.parseColor("#6B7280"))
+            setTextColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#6B7280"))
             setPadding(0, 0, 0, (6 * dp).toInt())
         })
         item.criteria.forEach { c ->
             val row = LinearLayout(requireContext()).apply { orientation = LinearLayout.VERTICAL; setPadding(0, (6 * dp).toInt(), 0, 0) }
             val head = LinearLayout(requireContext()).apply { orientation = LinearLayout.HORIZONTAL }
             head.addView(TextView(requireContext()).apply {
-                text = c.name; textSize = 13f; setTextColor(Color.parseColor("#1F2937"))
+                text = c.name; textSize = 13f; setTextColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#1F2937"))
                 layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
             })
             head.addView(TextView(requireContext()).apply {
@@ -205,7 +205,7 @@ class MinutaFragment : Fragment() {
                 progressTintList = ColorStateList.valueOf(color)
                 layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, (6 * dp).toInt())
             })
-            row.addView(TextView(requireContext()).apply { text = c.detail; textSize = 12f; setTextColor(Color.parseColor("#6B7280")) })
+            row.addView(TextView(requireContext()).apply { text = c.detail; textSize = 12f; setTextColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#6B7280")) })
             list.addView(row)
         }
         box.addView(toggle)
@@ -223,17 +223,17 @@ class MinutaFragment : Fragment() {
             val row = LinearLayout(requireContext()).apply {
                 orientation = LinearLayout.HORIZONTAL
                 gravity = Gravity.CENTER_VERTICAL
-                setBackgroundColor(Color.parseColor("#FFF7E6"))
+                setBackgroundColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#FFF7E6"))
                 setPadding((16 * dp).toInt(), (12 * dp).toInt(), (16 * dp).toInt(), (12 * dp).toInt())
                 layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply { topMargin = (18 * dp).toInt() }
             }
             row.addView(TextView(requireContext()).apply {
                 text = "✎  Antes de cerrar, agrega tus observaciones."
-                textSize = 14f; setTextColor(Color.parseColor("#B45309"))
+                textSize = 14f; setTextColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#B45309"))
                 layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
             })
             row.addView(TextView(requireContext()).apply {
-                text = "Agregar"; textSize = 14f; typeface = Typeface.DEFAULT_BOLD; setTextColor(Color.parseColor("#1565C0"))
+                text = "Agregar"; textSize = 14f; typeface = Typeface.DEFAULT_BOLD; setTextColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#1565C0"))
                 setOnClickListener { showObservationsDialog() }
             })
             container.addView(row)
@@ -249,7 +249,7 @@ class MinutaFragment : Fragment() {
             }
             val body = LinearLayout(requireContext()).apply { orientation = LinearLayout.VERTICAL; visibility = View.GONE }
             val toggle = TextView(requireContext()).apply {
-                text = "Referencias ▾"; textSize = 17f; typeface = Typeface.DEFAULT_BOLD; setTextColor(Color.parseColor("#1F2937"))
+                text = "Referencias ▾"; textSize = 17f; typeface = Typeface.DEFAULT_BOLD; setTextColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#1F2937"))
                 setOnClickListener {
                     val open = body.visibility == View.GONE
                     body.visibility = if (open) View.VISIBLE else View.GONE
@@ -257,11 +257,11 @@ class MinutaFragment : Fragment() {
                 }
             }
             fun head(t: String) = TextView(requireContext()).apply {
-                text = t; textSize = 13f; typeface = Typeface.DEFAULT_BOLD; setTextColor(Color.parseColor("#1565C0"))
+                text = t; textSize = 13f; typeface = Typeface.DEFAULT_BOLD; setTextColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#1565C0"))
                 setPadding(0, (12 * dp).toInt(), 0, (4 * dp).toInt())
             }
             fun line(t: String, sub: String? = null) = TextView(requireContext()).apply {
-                text = if (sub.isNullOrBlank()) t else "$t\n$sub"; textSize = 13f; setTextColor(Color.parseColor("#374151"))
+                text = if (sub.isNullOrBlank()) t else "$t\n$sub"; textSize = 13f; setTextColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#374151"))
                 setPadding(0, (3 * dp).toInt(), 0, (3 * dp).toInt())
             }
             body.addView(line("Solo para el técnico: no aparece en la minuta ni en el PDF."))
@@ -276,7 +276,7 @@ class MinutaFragment : Fragment() {
                 refs.suggested.forEach { sg ->
                     body.addView(line(sg.t, "${sg.d}\nEn ${sg.n} de 5 casos parecidos. Agrégala solo si lo viste en la visita."))
                     body.addView(TextView(requireContext()).apply {
-                        text = "Agregar a la propuesta"; textSize = 13f; typeface = Typeface.DEFAULT_BOLD; setTextColor(Color.parseColor("#1565C0"))
+                        text = "Agregar a la propuesta"; textSize = 13f; typeface = Typeface.DEFAULT_BOLD; setTextColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#1565C0"))
                         setOnClickListener { addSuggestionToProposal(sg.t, sg.d, this) }
                     })
                 }
@@ -301,7 +301,7 @@ class MinutaFragment : Fragment() {
             editions["ed"] = ed
             editionsUseCase.save(id, editions).onSuccess {
                 button.text = "Agregada"
-                button.setTextColor(Color.parseColor("#2E7D32"))
+                button.setTextColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#2E7D32"))
                 button.isClickable = false
             }.onFailure { Toast.makeText(requireContext(), it.message ?: "No se pudo agregar", Toast.LENGTH_SHORT).show() }
         }
@@ -326,11 +326,11 @@ class MinutaFragment : Fragment() {
     }
 
     private fun colorFor(colorName: String): Int = when (colorName.lowercase()) {
-        "green" -> Color.parseColor("#2E7D32")
-        "orange" -> Color.parseColor("#F57C00")
-        "red" -> Color.parseColor("#D32F2F")
-        "gray" -> Color.parseColor("#90A4AE")
-        else -> Color.parseColor("#1565C0")
+        "green" -> com.upc.asistenteredidbi.presentation.common.NightColors.parse("#2E7D32")
+        "orange" -> com.upc.asistenteredidbi.presentation.common.NightColors.parse("#F57C00")
+        "red" -> com.upc.asistenteredidbi.presentation.common.NightColors.parse("#D32F2F")
+        "gray" -> com.upc.asistenteredidbi.presentation.common.NightColors.parse("#90A4AE")
+        else -> com.upc.asistenteredidbi.presentation.common.NightColors.parse("#1565C0")
     }
 
     override fun onDestroyView() {

@@ -1,6 +1,7 @@
 package com.upc.asistenteredidbi
 
 import android.os.Bundle
+import android.view.View
 import androidx.activity.addCallback
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
@@ -31,8 +32,12 @@ class MainActivity : AppCompatActivity() {
     @Inject
     lateinit var notificationTokenSync: NotificationTokenSync
 
+    @Inject
+    lateinit var appPreferences: com.upc.asistenteredidbi.data.session.AppPreferences
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        com.upc.asistenteredidbi.presentation.common.NightColors.sync(resources.configuration)
 
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
@@ -76,6 +81,17 @@ class MainActivity : AppCompatActivity() {
         drawer.tvDrawerVersion.text = "v$versionName · Asistente de Red"
 
         drawer.btnCloseDrawer.setOnClickListener { closeDrawer() }
+        // Modo noche: mismo valor que el interruptor de Perfil y configuración.
+        val isNight = (resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK) ==
+            android.content.res.Configuration.UI_MODE_NIGHT_YES
+        drawer.switchNightDrawer.isChecked = isNight
+        drawer.switchNightDrawer.setOnCheckedChangeListener { _, checked ->
+            kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch { appPreferences.setDarkMode(checked) } // fuera del ciclo: la actividad se recrea
+            androidx.appcompat.app.AppCompatDelegate.setDefaultNightMode(
+                if (checked) androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_YES
+                else androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_NO
+            )
+        }
         drawer.navLogout.setOnClickListener {
             closeDrawer()
             sessionViewModel.logout()
@@ -90,10 +106,17 @@ class MainActivity : AppCompatActivity() {
                 ?.requestNewEvaluation()
         }
         drawer.navHistorial.setOnClickListener { navigateFromDrawer(R.id.action_home_to_historial) }
+        drawer.navAsistente.setOnClickListener { navigateFromDrawer(R.id.action_home_to_asistente) }
         drawer.navPropuestas.setOnClickListener { navigateFromDrawer(R.id.action_home_to_minutas) }
+        drawer.navPanel.setOnClickListener { navigateFromDrawer(R.id.action_home_to_panel) }
+        drawer.navPreguntas.setOnClickListener { navigateFromDrawer(R.id.action_home_to_preguntas) }
+        drawer.navEquipo.setOnClickListener { navigateFromDrawer(R.id.action_home_to_equipo) }
         drawer.navNotificaciones.setOnClickListener { navigateFromDrawer(R.id.action_home_to_notifications) }
         drawer.navConfiguracion.setOnClickListener { navigateFromDrawer(R.id.action_home_to_config) }
-        drawer.navMiPerfil.setOnClickListener { navigateFromDrawer(R.id.action_home_to_perfil) }
+        // Mi perfil sale del menú (doc 0.0.7 §13): se abre tocando el avatar o el nombre de la cabecera.
+        val openPerfil = View.OnClickListener { navigateFromDrawer(R.id.action_home_to_perfil) }
+        drawer.tvDrawerInitials.setOnClickListener(openPerfil)
+        drawer.tvDrawerName.setOnClickListener(openPerfil)
 
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -102,6 +125,10 @@ class MainActivity : AppCompatActivity() {
                         drawer.tvDrawerName.text = profile.fullName
                         drawer.tvDrawerRole.text = profile.roleLabel
                         drawer.tvDrawerCompany.text = profile.company
+                        // Panel: administrador y supervisor. Equipo y accesos: solo administrador (doc 0.0.7 §13-15).
+                        drawer.navPanel.visibility = if (profile.role != com.upc.asistenteredidbi.domain.model.Role.TECNICO) View.VISIBLE else View.GONE
+                        drawer.navPreguntas.visibility = if (profile.role == com.upc.asistenteredidbi.domain.model.Role.ADMINISTRADOR) View.VISIBLE else View.GONE
+                        drawer.navEquipo.visibility = if (profile.role == com.upc.asistenteredidbi.domain.model.Role.ADMINISTRADOR) View.VISIBLE else View.GONE
                         drawer.tvDrawerInitials.text = profile.fullName
                             .split(" ")
                             .filter { it.isNotBlank() }

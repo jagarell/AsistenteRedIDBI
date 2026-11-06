@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="primary_blue">#4C8DDB</color>
+    <color name="primary_blue_dark">#2F6DB8</color>
+    <color name="primary_blue_light">#1E3350</color>
+    <color name="header_blue">#16457A</color>
+    <color name="background">#0F141A</color>
+    <color name="surface">#1A2029</color>
+    <color name="surface_variant">#222B38</color>
+    <color name="text_primary">#E8EAED</color>
+    <color name="text_secondary">#A0A8B5</color>
+    <color name="text_disabled">#5F6773</color>
+    <color name="divider">#2D3642</color>
+    <color name="text_strong">#E8EAED</color>
+    <color name="text_body">#CBD2DC</color>
+    <color name="text_muted">#8B93A1</color>
+    <color name="stroke_soft">#33506F</color>
+    <color name="tint_orange">#3A2D1A</color>
+    <color name="tint_red">#3D2124</color>
+    <color name="tint_green">#1D3325</color>
+    <color name="status_generada">#1D3325</color>
+    <color name="status_borrador">#3A2D1A</color>
+    <color name="status_enviada">#1E3350</color>
+    <color name="status_enviada_text">#7FB2EE</color>
+    <color name="status_sent_text">#7FB2EE</color>
+    <color name="topology_blue">#4C8DDB</color>
+    <color name="tint_purple">#2D2240</color>
+</resources>

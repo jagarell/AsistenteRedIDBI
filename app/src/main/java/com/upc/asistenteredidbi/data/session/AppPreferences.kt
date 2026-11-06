@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.preferencesDataStore
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -15,6 +16,7 @@ private val Context.settingsDataStore by preferencesDataStore(name = "network_as
 private val KEY_PUSH_NOTIFICATIONS = booleanPreferencesKey("push_notifications")
 private val KEY_EMAIL_NOTIFICATIONS = booleanPreferencesKey("email_notifications")
 private val KEY_SYSTEM_ALERTS = booleanPreferencesKey("system_alerts")
+private val KEY_DARK_MODE = booleanPreferencesKey("dark_mode")
 private val KEY_TWO_FACTOR_AUTH = booleanPreferencesKey("two_factor_auth")
 
 /**
@@ -38,6 +40,16 @@ class AppPreferences @Inject constructor(
 
     val twoFactorAuthFlow: Flow<Boolean> =
         context.settingsDataStore.data.map { it[KEY_TWO_FACTOR_AUTH] ?: false }
+
+    /** null = sigue el modo del sistema hasta que el usuario elija. */
+    val darkModeFlow: Flow<Boolean?> =
+        context.settingsDataStore.data.map { it[KEY_DARK_MODE] }
+
+    suspend fun darkMode(): Boolean? = darkModeFlow.first()
+
+    suspend fun setDarkMode(enabled: Boolean) {
+        context.settingsDataStore.edit { it[KEY_DARK_MODE] = enabled }
+    }
 
     suspend fun setPushNotifications(enabled: Boolean) {
         context.settingsDataStore.edit { it[KEY_PUSH_NOTIFICATIONS] = enabled }

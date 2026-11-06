@@ -45,7 +45,7 @@ object MapZoomDialog {
         root.addView(LinearLayout(context).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
-            setBackgroundColor(Color.parseColor("#1976D2"))
+            setBackgroundColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#1976D2"))
             setPadding(dp(8), dp(34), dp(16), dp(12))
             addView(ImageView(context).apply {
                 setImageResource(R.drawable.ic_close)
@@ -65,7 +65,7 @@ object MapZoomDialog {
                 text = "Ver todo"
                 textSize = 13f
                 typeface = Typeface.DEFAULT_BOLD
-                setTextColor(Color.parseColor("#1565C0"))
+                setTextColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#1565C0"))
                 gravity = Gravity.CENTER
                 background = GradientDrawable().apply {
                     setColor(Color.WHITE)
@@ -79,13 +79,13 @@ object MapZoomDialog {
             text = "Pellizca para acercar o alejar · arrastra para mover"
             textSize = 12f
             gravity = Gravity.CENTER
-            setTextColor(Color.parseColor("#6B7280"))
-            setBackgroundColor(Color.parseColor("#F5F7FB"))
+            setTextColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#6B7280"))
+            setBackgroundColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#F5F7FB"))
             setPadding(dp(8), dp(8), dp(8), dp(8))
         })
         root.addView(
             FrameLayout(context).apply {
-                setBackgroundColor(Color.parseColor("#FAFAFA"))
+                setBackgroundColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#FAFAFA"))
                 addView(canvas, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
             },
             LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f)

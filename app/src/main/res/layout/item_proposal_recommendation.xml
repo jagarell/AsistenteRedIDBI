@@ -26,7 +26,7 @@
         android:layout_weight="1"
         android:lineSpacingExtra="4dp"
         android:text="Implementar segmentación VLAN"
-        android:textColor="#4B5563"
+        android:textColor="@color/text_body"
         android:textSize="15sp" />
 
 </LinearLayout>

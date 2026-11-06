@@ -13,14 +13,14 @@
             android:text="Resumen de Evaluación Técnica"
             android:textSize="24sp"
             android:textStyle="bold"
-            android:textColor="#1F2937"
+            android:textColor="@color/text_strong"
             android:layout_width="match_parent"
             android:layout_height="wrap_content" />
 
         <TextView
             android:text="Resultado preliminar generado por el asistente técnico de red"
             android:textSize="14sp"
-            android:textColor="#6B7280"
+            android:textColor="@color/text_secondary"
             android:layout_marginTop="6dp"
             android:layout_width="match_parent"
             android:layout_height="wrap_content" />
@@ -37,7 +37,7 @@
                 android:text="Datos del local"
                 android:textStyle="bold"
                 android:textSize="18sp"
-                android:textColor="#111827"
+                android:textColor="@color/text_strong"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content" />
 
@@ -45,7 +45,7 @@
                 android:id="@+id/tvLocalInfo"
                 android:text="Local: Restaurante Demo\nÁrea: 120 m²\nPisos: 1\nZona principal: Caja y salón"
                 android:textSize="15sp"
-                android:textColor="#374151"
+                android:textColor="@color/text_body"
                 android:lineSpacingExtra="4dp"
                 android:layout_marginTop="10dp"
                 android:layout_width="match_parent"
@@ -64,7 +64,7 @@
                 android:text="Diagnóstico de red"
                 android:textStyle="bold"
                 android:textSize="18sp"
-                android:textColor="#111827"
+                android:textColor="@color/text_strong"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content" />
 
@@ -72,7 +72,7 @@
                 android:id="@+id/tvNetworkStatus"
                 android:text="Estado: Requiere mejora\nSe identificó posible mala ubicación del router y falta de puntos de red dedicados para caja e impresoras."
                 android:textSize="15sp"
-                android:textColor="#374151"
+                android:textColor="@color/text_body"
                 android:lineSpacingExtra="4dp"
                 android:layout_marginTop="10dp"
                 android:layout_width="match_parent"

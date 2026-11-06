@@ -83,6 +83,28 @@ class ChatRepositoryImpl @Inject constructor(
         ).toDomain()
     }
 
+    override suspend fun readChatAttachment(
+        evaluationId: Long,
+        state: String,
+        tipo: String?,
+        photos: List<File>
+    ): Result<Map<String, Any?>> = safeCall {
+        api.leerAdjunto(
+            evaluationId = evaluationId,
+            state = MultipartUtils.textPart(state),
+            tipo = tipo?.let { MultipartUtils.textPart(it) },
+            files = photos.map { MultipartUtils.filePart(it, partName = "files") }
+        )
+    }
+
+    override suspend fun useChatAttachment(
+        evaluationId: Long,
+        state: String,
+        campos: List<Map<String, String>>
+    ): Result<TechnicalChatProgress> = safeCall {
+        api.usarAdjunto(evaluationId, mapOf("state" to state, "campos" to campos)).toDomain()
+    }
+
     override suspend fun editTechnicalChat(
         evaluationId: Long,
         state: String,

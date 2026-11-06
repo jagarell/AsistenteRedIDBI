@@ -1,13 +1,13 @@
 package com.upc.asistenteredidbi.domain.model
 
 /**
- * Roles del sistema (ver gateway `com.upc.idbi.gateway.auth.Role`). Sólo hay
- * dos roles operativos, sin vista de administración: el control de acceso se
- * aplica por código, tanto en el backend como en el gating de UI de la app.
+ * Roles base (ver gateway `com.upc.idbi.gateway.auth.Role`): técnico, supervisor y administrador.
+ * Lo que ve cada rol en Reportes lo decide el gateway (Equipo y accesos › Roles y permisos).
  */
 enum class Role {
     TECNICO,
-    SUPERVISOR;
+    SUPERVISOR,
+    ADMINISTRADOR;
 
     companion object {
         /** Convierte el texto libre que llega del backend a un rol válido. */
@@ -20,4 +20,5 @@ enum class Role {
 fun Role.toDisplayLabel(): String = when (this) {
     Role.TECNICO -> "Técnico Senior"
     Role.SUPERVISOR -> "Supervisor"
+    Role.ADMINISTRADOR -> "Administrador"
 }

@@ -109,7 +109,7 @@ class TopologyGraphView @JvmOverloads constructor(
         color = Color.WHITE
     }
     private val labelPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = Color.parseColor("#263238")
+        color = com.upc.asistenteredidbi.presentation.common.NightColors.parse("#263238")
         textAlign = Paint.Align.CENTER
         isFakeBoldText = true
     }
@@ -372,9 +372,9 @@ class TopologyGraphView @JvmOverloads constructor(
                 else -> null
             }
             linkPaint.color = if (link.status.equals("CON_FALLA", ignoreCase = true)) {
-                Color.parseColor("#D32F2F")
+                com.upc.asistenteredidbi.presentation.common.NightColors.parse("#D32F2F")
             } else {
-                Color.parseColor("#90A4AE")
+                com.upc.asistenteredidbi.presentation.common.NightColors.parse("#90A4AE")
             }
 
             drawLinkBetweenBadges(canvas, from, to)
@@ -474,14 +474,14 @@ class TopologyGraphView @JvmOverloads constructor(
     }
 
     private fun colorForType(type: String): Int = when (type.lowercase()) {
-        "internet" -> Color.parseColor("#37474F")
-        "router" -> Color.parseColor("#1565C0")
-        "switch" -> Color.parseColor("#2E7D32")
-        "access_point" -> Color.parseColor("#7B1FA2")
-        "pos" -> Color.parseColor("#EF6C00")
-        "printer" -> Color.parseColor("#616161")
-        "camera" -> Color.parseColor("#C62828")
-        "computer" -> Color.parseColor("#00838F")
-        else -> Color.parseColor("#455A64")
+        "internet" -> com.upc.asistenteredidbi.presentation.common.NightColors.parse("#37474F")
+        "router" -> com.upc.asistenteredidbi.presentation.common.NightColors.parse("#1565C0")
+        "switch" -> com.upc.asistenteredidbi.presentation.common.NightColors.parse("#2E7D32")
+        "access_point" -> com.upc.asistenteredidbi.presentation.common.NightColors.parse("#7B1FA2")
+        "pos" -> com.upc.asistenteredidbi.presentation.common.NightColors.parse("#EF6C00")
+        "printer" -> com.upc.asistenteredidbi.presentation.common.NightColors.parse("#616161")
+        "camera" -> com.upc.asistenteredidbi.presentation.common.NightColors.parse("#C62828")
+        "computer" -> com.upc.asistenteredidbi.presentation.common.NightColors.parse("#00838F")
+        else -> com.upc.asistenteredidbi.presentation.common.NightColors.parse("#455A64")
     }
 }

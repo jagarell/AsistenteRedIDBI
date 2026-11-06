@@ -44,7 +44,7 @@
                 android:ellipsize="end"
                 android:maxLines="1"
                 android:text="Restaurante El Rincón"
-                android:textColor="#1F2937"
+                android:textColor="@color/text_strong"
                 android:textSize="16sp"
                 android:textStyle="bold" />
 
@@ -69,7 +69,7 @@
             android:ellipsize="end"
             android:maxLines="1"
             android:text="CDMX · Insurgentes · 20 Jun 2026"
-            android:textColor="#9CA3AF"
+            android:textColor="@color/text_muted"
             android:textSize="13sp"
             android:textStyle="bold" />
 
@@ -87,7 +87,7 @@
                 android:layout_weight="1"
                 android:max="100"
                 android:progress="72"
-                android:progressBackgroundTint="#EEF2F7"
+                android:progressBackgroundTint="@color/divider"
                 android:progressTint="#1565C0" />
 
             <TextView

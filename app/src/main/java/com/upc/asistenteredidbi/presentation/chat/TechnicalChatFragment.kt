@@ -83,12 +83,27 @@ class TechnicalChatFragment : Fragment() {
     private var photoUri: Uri? = null
     private var currentPhotoFile: File? = null
 
+    /** true cuando la cámara se abrió desde «Adjuntar» (documento del cliente) y no desde una evidencia. */
+    private var cameraForAttach = false
+    private var attachTipo: String? = null
+
     private val takePicture =
         registerForActivityResult(ActivityResultContracts.TakePicture()) { success ->
             if (success && photoUri != null) {
-                viewModel.sendPhotos(listOf(photoUri!!), "tomar")
+                if (cameraForAttach) viewModel.leerAdjunto(listOf(photoUri!!), attachTipo)
+                else viewModel.sendPhotos(listOf(photoUri!!), "tomar")
             }
         }
+
+    private val pickAttachment =
+        registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+            if (uri != null) viewModel.leerAdjunto(listOf(uri), attachTipo)
+        }
+
+    /** Pregunta que se escribió a mano en una pregunta con opciones: si no coincide se conserva en la caja. */
+    private var restoreTyped: String? = null
+    private var restoreNodeId: String? = null
+    private var attachDialog: com.google.android.material.bottomsheet.BottomSheetDialog? = null
 
     private val pickImages =
         registerForActivityResult(ActivityResultContracts.GetMultipleContents()) { uris ->
@@ -195,6 +210,7 @@ class TechnicalChatFragment : Fragment() {
         binding.btnBack.setOnClickListener { findNavController().navigateUp() }
 
         binding.btnSubmit.setOnClickListener { submitAnswer() }
+        binding.btnAttach.setOnClickListener { showAttachSheet(viewModel.uiState.value.node?.attachHint) }
 
         binding.etTextInput.setOnEditorActionListener { _, actionId, _ ->
             if (actionId == EditorInfo.IME_ACTION_SEND) {
@@ -207,6 +223,10 @@ class TechnicalChatFragment : Fragment() {
 
         binding.btnGoEvidence.setOnClickListener { navigateToDiagnosis() }
         binding.btnMore.setOnClickListener { showProposal() }
+        binding.btnHelp.setOnClickListener {
+            ChatHelpSheet.newInstance(viewModel.uiState.value.node?.text.orEmpty())
+                .show(childFragmentManager, ChatHelpSheet.TAG)
+        }
     }
 
     private fun submitAnswer() {
@@ -237,6 +257,25 @@ class TechnicalChatFragment : Fragment() {
         val answer = binding.etTextInput.text?.toString().orEmpty().trim()
         if (answer.isBlank() && node.required) {
             Toast.makeText(requireContext(), "Escribe una respuesta", Toast.LENGTH_SHORT).show()
+            return
+        }
+        // «no sé» en razón social, nombre del local o dirección: se ofrece adjuntar el documento.
+        if (node.attachHint != null && node.nodeId in setOf("P01", "P01c", "P03") &&
+            Regex("^no\\s*s[eé]\\b", RegexOption.IGNORE_CASE).containsMatchIn(answer)
+        ) {
+            showAttachSheet(node.attachHint)
+            return
+        }
+        if (node.inputType == TechnicalChatInputType.CHOICE) {
+            // Una duda con «?» va a Ayuda y no se envía al chat ni a la minuta.
+            if (answer.endsWith("?")) {
+                showHelpDialog(answer)
+                return
+            }
+            // Si no coincide con ninguna opción, lo escrito se queda en la caja.
+            restoreTyped = answer
+            restoreNodeId = node.nodeId
+            viewModel.sendAnswer(answer)
             return
         }
         viewModel.sendAnswer(answer)
@@ -314,7 +353,7 @@ class TechnicalChatFragment : Fragment() {
             form.addView(TextView(requireContext()).apply {
                 text = f.label
                 textSize = 12f
-                setTextColor(Color.parseColor("#6B7280"))
+                setTextColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#6B7280"))
                 setPadding(0, dp(10), 0, 0)
             })
             if (f.type == "sel") {
@@ -371,7 +410,7 @@ class TechnicalChatFragment : Fragment() {
             box.addView(url)
             box.addView(TextView(requireContext()).apply {
                 text = "Quitar"
-                setTextColor(Color.parseColor("#D32F2F"))
+                setTextColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#D32F2F"))
                 textSize = 13f
                 setPadding(0, dp(4), 0, 0)
                 setOnClickListener { list.removeView(box); rows.removeAll { it.second === url } }
@@ -384,7 +423,7 @@ class TechnicalChatFragment : Fragment() {
         root.addView(android.widget.ScrollView(requireContext()).apply { addView(list) }, LinearLayout.LayoutParams(-1, 0, 1f))
         root.addView(TextView(requireContext()).apply {
             text = "+ Agregar otro enlace"
-            setTextColor(Color.parseColor("#1565C0"))
+            setTextColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#1565C0"))
             typeface = android.graphics.Typeface.DEFAULT_BOLD
             setPadding(dp(24), dp(10), dp(24), dp(10))
             setOnClickListener { addRow() }
@@ -433,7 +472,7 @@ class TechnicalChatFragment : Fragment() {
                         }
                     }, LinearLayout.LayoutParams(0, -2, 1f))
                     row.addView(TextView(requireContext()).apply {
-                        text = "✕"; textSize = 16f; setTextColor(Color.parseColor("#D32F2F")); setPadding(dp(12), 0, dp(4), 0)
+                        text = "✕"; textSize = 16f; setTextColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#D32F2F")); setPadding(dp(12), 0, dp(4), 0)
                         setOnClickListener { push(); steps.removeAt(i); render() }
                     })
                     box.addView(row)
@@ -447,7 +486,7 @@ class TechnicalChatFragment : Fragment() {
             box.addView(addFor)
             box.addView(addText)
             box.addView(TextView(requireContext()).apply {
-                text = "+ Agregar paso"; setTextColor(Color.parseColor("#1565C0")); typeface = android.graphics.Typeface.DEFAULT_BOLD
+                text = "+ Agregar paso"; setTextColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#1565C0")); typeface = android.graphics.Typeface.DEFAULT_BOLD
                 setPadding(0, dp(8), 0, dp(4))
                 setOnClickListener {
                     val t = addText.text.toString().trim()
@@ -490,7 +529,7 @@ class TechnicalChatFragment : Fragment() {
             box.removeAllViews()
             box.addView(TextView(requireContext()).apply {
                 text = "Toca «Medir aquí» en cada zona. Puedes cambiar los valores. Señal: ≥ −60 excelente · −60 a −67 buena · −67 a −75 regular · menos mala. Latencia: <50 · 50–100 · 100–200 · >200."
-                textSize = 12f; setTextColor(Color.parseColor("#6B7280"))
+                textSize = 12f; setTextColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#6B7280"))
             })
             node.zones.forEach { z ->
                 val row = LinearLayout(requireContext()).apply { orientation = LinearLayout.VERTICAL; setPadding(0, dp(10), 0, 0) }
@@ -498,14 +537,14 @@ class TechnicalChatFragment : Fragment() {
                 val m = values[z]
                 if (m == null) {
                     row.addView(TextView(requireContext()).apply {
-                        text = "Medir aquí"; setTextColor(Color.parseColor("#1565C0")); typeface = android.graphics.Typeface.DEFAULT_BOLD
+                        text = "Medir aquí"; setTextColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#1565C0")); typeface = android.graphics.Typeface.DEFAULT_BOLD
                         setPadding(0, dp(6), 0, dp(6))
                         setOnClickListener { values[z] = measureWifi(); render() }
                     })
                 } else {
                     val dbm = EditText(requireContext()).apply { hint = "Señal (dBm)"; setText(m.first.toString()); inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_SIGNED }
                     val ping = EditText(requireContext()).apply { hint = "Latencia (ms)"; setText(m.second.toString()); inputType = InputType.TYPE_CLASS_NUMBER }
-                    val result = TextView(requireContext()).apply { text = "→ ${rate(m.first, m.second)}"; setTextColor(Color.parseColor("#1565C0")) }
+                    val result = TextView(requireContext()).apply { text = "→ ${rate(m.first, m.second)}"; setTextColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#1565C0")) }
                     val watcher = object : android.text.TextWatcher {
                         override fun afterTextChanged(e: android.text.Editable?) {
                             val a = dbm.text.toString().toIntOrNull() ?: return
@@ -578,7 +617,9 @@ class TechnicalChatFragment : Fragment() {
         // se limpia (o se prellena con el valor por defecto) apenas cambia el nodo.
         val key = node?.let { "${it.nodeId}|${it.scope}|${state.messages.size}" }
         if (key != lastRenderedKey) {
-            binding.etTextInput.setText(if (node?.keyboard == "date") "" else node?.defaultValue.orEmpty())
+            val keep = restoreTyped?.takeIf { node?.nodeId == restoreNodeId }
+            if (keep == null) { restoreTyped = null; restoreNodeId = null }
+            binding.etTextInput.setText(keep ?: if (node?.keyboard == "date") "" else node?.defaultValue.orEmpty())
             binding.etTextInput.setSelection(binding.etTextInput.text?.length ?: 0)
             multiSelectAnswers.clear()
             node?.takeIf { it.inputType == TechnicalChatInputType.MULTI_SELECT }?.selected?.forEach { multiSelectAnswers[it] = it }
@@ -591,15 +632,20 @@ class TechnicalChatFragment : Fragment() {
         val freeChat = state.completed && !editing
         val atSummary = type == TechnicalChatInputType.SUMMARY
         val isText = (type == TechnicalChatInputType.TEXT || type == TechnicalChatInputType.NUMBER) && node?.keyboard != "date"
-        val needsTextInput = freeChat || atSummary || isText
+        val isChoice = type == TechnicalChatInputType.CHOICE
+        val needsTextInput = freeChat || atSummary || isText || isChoice
         if (atSummary) {
             // Como en el prototipo: el campo está, pero hasta el diagnóstico no recibe texto.
             binding.etTextInput.isEnabled = false
             binding.btnSubmit.isEnabled = false
             binding.btnSubmit.alpha = 0.45f
             binding.etTextInput.hint = "Pregúntale algo al asistente…"
+            binding.btnAttach.isEnabled = false
+            binding.btnAttach.alpha = 0.45f
         }
         binding.etTextInput.isVisible = needsTextInput
+        // Con la evaluación terminada ya no se adjunta: el chat solo atiende cambios al mapa.
+        binding.btnAttach.isVisible = !freeChat
         binding.containerTextRow.isVisible = needsTextInput
 
         if (freeChat) {
@@ -637,10 +683,13 @@ class TechnicalChatFragment : Fragment() {
                 addQuickReplyChip("No") { viewModel.sendAnswer("NO", "No") }
             }
 
-            TechnicalChatInputType.CHOICE -> node?.options?.forEach { option ->
-                addQuickReplyChip(option.label.replace(" (lo más común)", "").let { if (option.label.contains("(lo más común)")) option.label else it }) {
-                    if (option.other) askOther(node, option) else viewModel.sendAnswer(option.value, option.label.replace(" (lo más común)", "").replace(" (se ve en la foto)", ""))
+            TechnicalChatInputType.CHOICE -> {
+                node?.options?.forEach { option ->
+                    addQuickReplyChip(option.label.replace(" (lo más común)", "").let { if (option.label.contains("(lo más común)")) option.label else it }) {
+                        if (option.other) askOther(node, option) else viewModel.sendAnswer(option.value, option.label.replace(" (lo más común)", "").replace(" (se ve en la foto)", ""))
+                    }
                 }
+                addAttachShortcut(node)
             }
 
             TechnicalChatInputType.MULTI_SELECT -> {
@@ -661,6 +710,7 @@ class TechnicalChatFragment : Fragment() {
                 } else {
                     node?.suggestions?.forEach { s -> addQuickReplyChip(s) { viewModel.sendAnswer(s, s) } }
                     if (node?.required == false) addQuickReplyChip("Omitir") { viewModel.sendAnswer("", "Omitir") }
+                    addAttachShortcut(node)
                 }
             }
 
@@ -745,7 +795,7 @@ class TechnicalChatFragment : Fragment() {
             text = if (status == "WRONG") "Continuar sin esta lectura" else "Saltar evidencia"
             textSize = 14f
             typeface = android.graphics.Typeface.DEFAULT_BOLD
-            setTextColor(Color.parseColor("#1565C0"))
+            setTextColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#1565C0"))
             gravity = Gravity.CENTER
             setPadding(0, dp(12), 0, dp(4))
             setOnClickListener { viewModel.skipEvidence() }
@@ -765,7 +815,7 @@ class TechnicalChatFragment : Fragment() {
         iconRes: Int? = null,
         onClick: () -> Unit
     ): MaterialButton {
-        val blue = Color.parseColor("#1565C0")
+        val blue = com.upc.asistenteredidbi.presentation.common.NightColors.parse("#1565C0")
         return MaterialButton(
             requireContext(),
             null,
@@ -782,7 +832,7 @@ class TechnicalChatFragment : Fragment() {
                 backgroundTintList = ColorStateList.valueOf(blue)
                 setTextColor(Color.WHITE)
             } else {
-                backgroundTintList = ColorStateList.valueOf(Color.WHITE)
+                backgroundTintList = ColorStateList.valueOf(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#FFFFFF"))
                 setTextColor(blue)
                 strokeColor = ColorStateList.valueOf(blue)
                 strokeWidth = dp(2)
@@ -794,6 +844,143 @@ class TechnicalChatFragment : Fragment() {
             }
             setOnClickListener { onClick() }
         }
+    }
+
+    // ---- adjuntos del cliente --------------------------------------------------------------
+    private val attachTypes = linkedMapOf(
+        "ruc" to "Ficha RUC o consulta RUC (SUNAT)",
+        "comp" to "Boleta o factura del local",
+        "recibo" to "Recibo de internet",
+        "tarjeta" to "Tarjeta o datos del encargado",
+        "frontis" to "Foto del frontis o letrero"
+    )
+    private val attachShortcutText = mapOf(
+        "ruc" to "📎 Adjuntar ficha RUC o comprobante", "frontis" to "📎 Adjuntar foto del letrero",
+        "comp" to "📎 Adjuntar boleta o factura del local", "tarjeta" to "📎 Adjuntar tarjeta del encargado",
+        "recibo" to "📎 Adjuntar recibo de internet"
+    )
+
+    private fun addAttachShortcut(node: ChatNodePrompt?) {
+        val hint = node?.attachHint ?: return
+        addQuickReplyChip(attachShortcutText[hint] ?: "📎 Adjuntar documento", compact = true) { showAttachSheet(hint) }
+    }
+
+    /** Hoja «Adjuntar al Chat IA»: tipo de documento (el sugerido va marcado) y de dónde sale. */
+    private fun showAttachSheet(suggested: String?) {
+        if (viewModel.uiState.value.isSending) return
+        val ctx = requireContext()
+        var chosen: String? = suggested
+        val sheet = com.google.android.material.bottomsheet.BottomSheetDialog(ctx)
+        val col = LinearLayout(ctx).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(20), dp(18), dp(20), dp(22)) }
+        col.addView(TextView(ctx).apply {
+            text = "Adjuntar al Chat IA"; textSize = 20f; setTypeface(null, android.graphics.Typeface.BOLD)
+            setTextColor(Color.parseColor("#1F2937"))
+        })
+        col.addView(TextView(ctx).apply {
+            text = "La IA lee el documento y te muestra los datos para que los revises."
+            textSize = 13f; setTextColor(Color.parseColor("#6B7280")); setPadding(0, dp(4), 0, dp(10))
+        })
+        val group = android.widget.RadioGroup(ctx)
+        val auto = android.widget.RadioButton(ctx).apply { id = View.generateViewId(); text = "Que la IA lo reconozca" }
+        group.addView(auto)
+        val ids = mutableMapOf<Int, String>()
+        attachTypes.forEach { (k, label) ->
+            group.addView(android.widget.RadioButton(ctx).apply {
+                id = View.generateViewId(); text = label; ids[id] = k; isChecked = k == suggested
+            })
+        }
+        if (suggested == null) auto.isChecked = true
+        group.setOnCheckedChangeListener { _, id -> chosen = ids[id] }
+        col.addView(group)
+        fun go(camera: Boolean) {
+            sheet.dismiss()
+            attachTipo = chosen
+            cameraForAttach = camera
+            if (camera) {
+                if (ContextCompat.checkSelfPermission(ctx, Manifest.permission.CAMERA) == android.content.pm.PackageManager.PERMISSION_GRANTED) openCamera()
+                else requestCameraPermission.launch(Manifest.permission.CAMERA)
+            } else {
+                pickAttachment.launch("image/*")
+            }
+        }
+        val row = LinearLayout(ctx).apply { orientation = LinearLayout.HORIZONTAL; setPadding(0, dp(12), 0, 0) }
+        row.addView(MaterialButton(ctx).apply { text = "Tomar foto"; backgroundTintList = ColorStateList.valueOf(Color.parseColor("#1565C0")); setOnClickListener { go(true) } },
+            LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply { marginEnd = dp(8) })
+        row.addView(MaterialButton(ctx, null, com.google.android.material.R.attr.materialButtonOutlinedStyle).apply {
+            text = "Subir archivo"; setOnClickListener { go(false) } },
+            LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+        col.addView(row)
+        sheet.setContentView(col)
+        sheet.show()
+    }
+
+    /** Hoja «Datos leídos del adjunto»: una fila por dato con casilla y valor editable. */
+    private fun renderAttachment(state: TechnicalChatUiState) {
+        val review = state.attachment
+        if (review == null) { attachDialog?.dismiss(); attachDialog = null; return }
+        if (attachDialog?.isShowing == true) return
+        val ctx = requireContext()
+        val sheet = com.google.android.material.bottomsheet.BottomSheetDialog(ctx)
+        val col = LinearLayout(ctx).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(20), dp(18), dp(20), dp(22)) }
+        col.addView(TextView(ctx).apply {
+            text = "Datos leídos del adjunto"; textSize = 20f; setTypeface(null, android.graphics.Typeface.BOLD)
+            setTextColor(Color.parseColor("#1F2937"))
+        })
+        col.addView(TextView(ctx).apply {
+            text = review.titulo; textSize = 13f; setTextColor(Color.parseColor("#6B7280")); setPadding(0, dp(2), 0, dp(8))
+        })
+        val checks = mutableListOf<Triple<com.google.android.material.checkbox.MaterialCheckBox, EditText, String>>()
+        val use = MaterialButton(ctx).apply { backgroundTintList = ColorStateList.valueOf(Color.parseColor("#1565C0")) }
+        fun refresh() {
+            val n = checks.count { it.first.isChecked }
+            use.text = "Usar $n dato${if (n == 1) "" else "s"}"
+            use.isEnabled = n > 0
+        }
+        review.campos.forEach { f ->
+            val box = com.google.android.material.checkbox.MaterialCheckBox(ctx).apply {
+                text = f.label; isChecked = f.usar; isEnabled = !f.respondido && f.error == null
+                setOnCheckedChangeListener { _, _ -> refresh() }
+            }
+            val value = EditText(ctx).apply {
+                setText(f.valor); isEnabled = !f.respondido; textSize = 15f
+                if (f.respondido) setTextColor(Color.parseColor("#9CA3AF"))
+            }
+            col.addView(box); col.addView(value)
+            when {
+                f.respondido -> col.addView(TextView(ctx).apply { text = "Ya respondido"; textSize = 12f; setTextColor(Color.parseColor("#9CA3AF")) })
+                f.error != null -> col.addView(TextView(ctx).apply { text = f.error; textSize = 12f; setTextColor(Color.parseColor("#D32F2F")) })
+            }
+            checks += Triple(box, value, f.nodeId)
+        }
+        review.nota?.let { col.addView(TextView(ctx).apply { text = it; textSize = 12f; setTextColor(Color.parseColor("#6B7280")); setPadding(0, dp(8), 0, 0) }) }
+        val row = LinearLayout(ctx).apply { orientation = LinearLayout.HORIZONTAL; setPadding(0, dp(14), 0, 0) }
+        row.addView(MaterialButton(ctx, null, com.google.android.material.R.attr.materialButtonOutlinedStyle).apply {
+            text = "Descartar"; setOnClickListener { sheet.dismiss() } },
+            LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply { marginEnd = dp(8) })
+        use.setOnClickListener {
+            val picked = checks.filter { it.first.isChecked }.map { it.third to it.second.text.toString().trim() }
+                .filter { it.second.isNotBlank() }
+            sheet.setOnDismissListener(null)
+            sheet.dismiss()
+            viewModel.usarAdjunto(picked)
+        }
+        row.addView(use, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+        col.addView(row)
+        refresh()
+        sheet.setContentView(ScrollViewWrap(ctx, col))
+        sheet.setOnDismissListener { attachDialog = null; viewModel.descartarAdjunto() }
+        attachDialog = sheet
+        sheet.show()
+    }
+
+    private fun ScrollViewWrap(ctx: android.content.Context, child: View): View =
+        android.widget.ScrollView(ctx).apply { addView(child) }
+
+    /** Ayuda: las dudas con «?» no van al chat ni a la minuta. */
+    private fun showHelpDialog(question: String) {
+        ChatHelpSheet.newInstance(viewModel.uiState.value.node?.text.orEmpty())
+            .show(childFragmentManager, ChatHelpSheet.TAG)
+        if (question.isNotBlank()) Toast.makeText(requireContext(), "Escribe tu duda en la Ayuda; no se envía al chat.", Toast.LENGTH_SHORT).show()
     }
 
     private fun openCamera() {
@@ -809,7 +996,7 @@ class TechnicalChatFragment : Fragment() {
 
     // ---- chips de respuesta rápida ---------------------------------------------------
     private fun addQuickReplyChip(label: String, filled: Boolean = false, compact: Boolean = false, onClick: () -> Unit) {
-        val blue = Color.parseColor("#1565C0")
+        val blue = com.upc.asistenteredidbi.presentation.common.NightColors.parse("#1565C0")
         val button = MaterialButton(
             requireContext(),
             null,
@@ -827,7 +1014,7 @@ class TechnicalChatFragment : Fragment() {
             setPadding(dp(if (compact) 12 else 14), 0, dp(if (compact) 12 else 14), 0)
             if (compact) {
                 // Sugerencias del chat libre: píldoras celestes sin borde, como en el prototipo.
-                backgroundTintList = ColorStateList.valueOf(Color.parseColor("#E8F1FD"))
+                backgroundTintList = ColorStateList.valueOf(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#E8F1FD"))
                 strokeWidth = 0
                 setTextColor(blue)
                 typeface = android.graphics.Typeface.DEFAULT
@@ -847,7 +1034,7 @@ class TechnicalChatFragment : Fragment() {
                 for (i in 0 until binding.containerQuickReplies.childCount) {
                     binding.containerQuickReplies.getChildAt(i).isEnabled = false
                 }
-                backgroundTintList = ColorStateList.valueOf(Color.parseColor("#1565C0"))
+                backgroundTintList = ColorStateList.valueOf(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#1565C0"))
                 setTextColor(Color.WHITE)
                 viewLifecycleOwner.lifecycleScope.launch {
                     kotlinx.coroutines.delay(120)
@@ -871,7 +1058,7 @@ class TechnicalChatFragment : Fragment() {
                     if (isChecked) multiSelectAnswers[value] = label else multiSelectAnswers.remove(value)
                 }
                 // Como el prototipo: contorno azul con fondo blanco; marcado = relleno azul.
-                val blue = Color.parseColor("#1565C0")
+                val blue = com.upc.asistenteredidbi.presentation.common.NightColors.parse("#1565C0")
                 val checkedStates = arrayOf(intArrayOf(android.R.attr.state_checked), intArrayOf())
                 chipBackgroundColor = ColorStateList(checkedStates, intArrayOf(blue, Color.WHITE))
                 setTextColor(ColorStateList(checkedStates, intArrayOf(Color.WHITE, blue)))
@@ -970,6 +1157,11 @@ class TechnicalChatFragment : Fragment() {
         binding.etTextInput.isEnabled = inputEnabled
         binding.btnSubmit.isEnabled = inputEnabled
         binding.btnSubmit.alpha = if (inputEnabled) 1f else 0.45f
+        if (state.node?.inputType != TechnicalChatInputType.SUMMARY) {
+            binding.btnAttach.isEnabled = inputEnabled
+            binding.btnAttach.alpha = if (inputEnabled) 1f else 0.45f
+        }
+        renderAttachment(state)
 
         binding.etTextInput.hint = when {
             state.isLoading -> "Iniciando evaluación..."

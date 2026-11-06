@@ -40,10 +40,10 @@ object DateFilterSheet {
             setPadding(dp(24), dp(20), dp(24), dp(24))
         }
         root.addView(TextView(context).apply {
-            text = "Filtrar por fecha"; textSize = 20f; setTypeface(null, Typeface.BOLD); setTextColor(Color.parseColor("#1F2937"))
+            text = "Filtrar por fecha"; textSize = 20f; setTypeface(null, Typeface.BOLD); setTextColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#1F2937"))
         })
         root.addView(TextView(context).apply {
-            text = "Fecha de la evaluación"; textSize = 14f; setTextColor(Color.parseColor("#6B7280"))
+            text = "Fecha de la evaluación"; textSize = 14f; setTextColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#6B7280"))
             setPadding(0, dp(4), 0, dp(12))
         })
 
@@ -55,11 +55,11 @@ object DateFilterSheet {
                 val on = current.dateQuick == q
                 row.addView(Button(context).apply {
                     text = q.label; isAllCaps = false; textSize = 14f
-                    setTextColor(if (on) Color.WHITE else Color.parseColor("#374151"))
+                    setTextColor(if (on) Color.WHITE else com.upc.asistenteredidbi.presentation.common.NightColors.parse("#374151"))
                     background = android.graphics.drawable.GradientDrawable().apply {
                         cornerRadius = dp(21).toFloat()
-                        setColor(if (on) Color.parseColor("#1565C0") else Color.WHITE)
-                        setStroke(dp(1), if (on) Color.parseColor("#1565C0") else Color.parseColor("#D0D7E2"))
+                        setColor(if (on) com.upc.asistenteredidbi.presentation.common.NightColors.parse("#1565C0") else com.upc.asistenteredidbi.presentation.common.NightColors.parse("#FFFFFF"))
+                        setStroke(dp(1), if (on) com.upc.asistenteredidbi.presentation.common.NightColors.parse("#1565C0") else com.upc.asistenteredidbi.presentation.common.NightColors.parse("#D0D7E2"))
                     }
                     setOnClickListener { onQuick(q); dialog.dismiss() }
                 }, LinearLayout.LayoutParams(0, dp(44), 1f).apply { setMargins(dp(4), dp(4), dp(4), dp(4)) })
@@ -69,12 +69,12 @@ object DateFilterSheet {
 
         fun dateField(label: String, value: () -> String?, set: (String) -> Unit): LinearLayout {
             val box = LinearLayout(context).apply { orientation = LinearLayout.VERTICAL }
-            box.addView(TextView(context).apply { text = label; textSize = 13f; setTextColor(Color.parseColor("#6B7280")) })
+            box.addView(TextView(context).apply { text = label; textSize = 13f; setTextColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#6B7280")) })
             val field = TextView(context).apply {
-                textSize = 15f; setTextColor(Color.parseColor("#1F2937")); gravity = Gravity.CENTER_VERTICAL
+                textSize = 15f; setTextColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#1F2937")); gravity = Gravity.CENTER_VERTICAL
                 setPadding(dp(12), 0, dp(12), 0)
                 background = android.graphics.drawable.GradientDrawable().apply {
-                    cornerRadius = dp(10).toFloat(); setColor(Color.WHITE); setStroke(dp(1), Color.parseColor("#D0D7E2"))
+                    cornerRadius = dp(10).toFloat(); setColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#FFFFFF")); setStroke(dp(1), com.upc.asistenteredidbi.presentation.common.NightColors.parse("#D0D7E2"))
                 }
             }
             fun refresh() { field.text = value()?.let { shown.format(iso.parse(it)!!) } ?: "dd/mm/aaaa" }
@@ -99,7 +99,7 @@ object DateFilterSheet {
 
         root.addView(MaterialButton(context).apply {
             text = "Aplicar rango"; isAllCaps = false; textSize = 16f
-            setBackgroundColor(Color.parseColor("#1565C0")); setTextColor(Color.WHITE)
+            setBackgroundColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#1565C0")); setTextColor(Color.WHITE)
             cornerRadius = dp(14)
             setOnClickListener {
                 if (from != null && to != null && from!! > to!!) { val t = from; from = to; to = t }

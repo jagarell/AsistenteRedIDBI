@@ -69,7 +69,7 @@ class TopologyEditorFragment : Fragment() {
     private val multi = linkedSetOf<String>()
     private var sourceId: String? = null
 
-    private val blue = Color.parseColor("#1565C0")
+    private val blue = com.upc.asistenteredidbi.presentation.common.NightColors.parse("#1565C0")
 
     private companion object {
         val LINE_NAMES = linkedMapOf("main" to "Gruesa", "cable" to "Fina", "camera" to "Fina de trazos cortos", "wifi" to "Media de trazos medianos", "usb" to "Flecha USB")
@@ -93,7 +93,7 @@ class TopologyEditorFragment : Fragment() {
             setPadding(dp(8), dp(34), dp(16), dp(10))
             addView(ImageView(context).apply {
                 setImageResource(R.drawable.ic_close)
-                setColorFilter(Color.parseColor("#1F2937"))
+                setColorFilter(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#1F2937"))
                 setPadding(dp(10), dp(10), dp(10), dp(10))
                 layoutParams = LinearLayout.LayoutParams(dp(44), dp(44))
                 setOnClickListener { confirmExit() }
@@ -102,7 +102,7 @@ class TopologyEditorFragment : Fragment() {
                 text = "Editar topología"
                 textSize = 17f
                 typeface = Typeface.DEFAULT_BOLD
-                setTextColor(Color.parseColor("#1F2937"))
+                setTextColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#1F2937"))
                 layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply { marginStart = dp(6) }
             })
             saveButton = TextView(context).apply {
@@ -127,7 +127,7 @@ class TopologyEditorFragment : Fragment() {
         root.addView(banner)
 
         // ---- lienzo + selector de línea -------------------------------------------------------
-        val canvasHost = FrameLayout(context).apply { setBackgroundColor(Color.parseColor("#F7F8FB")) }
+        val canvasHost = FrameLayout(context).apply { setBackgroundColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#F7F8FB")) }
         canvas = MapCanvasView(context).apply {
             mode = MapCanvasView.Mode.EDIT
             imageProvider = { image -> thumbFor(image) }
@@ -161,7 +161,7 @@ class TopologyEditorFragment : Fragment() {
         canvasHost.addView(canvas, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
         linePopup = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
-            background = rounded(Color.WHITE, 12f, Color.parseColor("#D8DEE9"))
+            background = rounded(Color.WHITE, 12f, com.upc.asistenteredidbi.presentation.common.NightColors.parse("#D8DEE9"))
             elevation = 6f * resources.displayMetrics.density
             setPadding(dp(6), dp(6), dp(6), dp(6))
             visibility = View.GONE
@@ -175,7 +175,7 @@ class TopologyEditorFragment : Fragment() {
         panelHost = FrameLayout(context).apply { visibility = View.GONE }
         root.addView(panelHost, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
 
-        root.addView(View(context).apply { setBackgroundColor(Color.parseColor("#E5E9F0")) },
+        root.addView(View(context).apply { setBackgroundColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#E5E9F0")) },
             LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 1))
         root.addView(LinearLayout(context).apply {
             setPadding(dp(8), dp(6), dp(8), dp(20))
@@ -336,10 +336,10 @@ class TopologyEditorFragment : Fragment() {
             val selected = id == active
             // "Conectar" se pone rojo y pasa a desvincular cuando el equipo elegido ya está conectado al seleccionado.
             val unlink = id == "connect" && connectWouldUnlink()
-            item.background = if (selected) rounded(Color.parseColor(if (unlink) "#FDECEA" else "#E3EEFC"), 12f) else null
+            item.background = if (selected) rounded(com.upc.asistenteredidbi.presentation.common.NightColors.parse(if (unlink) "#FDECEA" else "#E3EEFC"), 12f) else null
             for (i in 0 until item.childCount) {
                 val child = item.getChildAt(i)
-                val color = if (unlink) Color.parseColor("#D32F2F") else if (selected) blue else Color.parseColor("#4B5563")
+                val color = if (unlink) com.upc.asistenteredidbi.presentation.common.NightColors.parse("#D32F2F") else if (selected) blue else com.upc.asistenteredidbi.presentation.common.NightColors.parse("#4B5563")
                 if (child is ImageView) {
                     if (id == "connect") child.setImageResource(if (unlink) R.drawable.ic_link_off else R.drawable.ic_link)
                     child.setColorFilter(color)
@@ -376,8 +376,8 @@ class TopologyEditorFragment : Fragment() {
             Tool.NONE -> Triple("Arrastra los equipos · mantén presionado para más opciones", "#F3F5F9", "#6B7280")
         }
         banner.text = text
-        banner.setBackgroundColor(Color.parseColor(bg))
-        banner.setTextColor(Color.parseColor(fg))
+        banner.setBackgroundColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse(bg))
+        banner.setTextColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse(fg))
     }
 
     private fun buildLinePopup() {
@@ -388,7 +388,7 @@ class TopologyEditorFragment : Fragment() {
                 textSize = 12f
                 typeface = Typeface.DEFAULT_BOLD
                 val selected = lineStyle == style
-                setTextColor(if (selected) Color.WHITE else Color.parseColor("#374151"))
+                setTextColor(if (selected) Color.WHITE else com.upc.asistenteredidbi.presentation.common.NightColors.parse("#374151"))
                 background = if (selected) rounded(blue, 14f) else null
                 setPadding(dp(12), dp(6), dp(12), dp(6))
                 setOnClickListener {
@@ -415,14 +415,14 @@ class TopologyEditorFragment : Fragment() {
             }
         }
         box.addView(View(context).apply {
-            background = rounded(Color.parseColor("#E0E3EA"), 3f)
+            background = rounded(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#E0E3EA"), 3f)
             layoutParams = LinearLayout.LayoutParams(dp(36), dp(5)).apply { gravity = Gravity.CENTER_HORIZONTAL; bottomMargin = dp(6) }
         })
         box.addView(TextView(context).apply {
             text = "Agregar al mapa"
             textSize = 18f
             typeface = Typeface.DEFAULT_BOLD
-            setTextColor(Color.parseColor("#1F2937"))
+            setTextColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#1F2937"))
             setPadding(0, dp(12), 0, dp(12))
         })
         data class Row(val title: String, val subtitle: String, val icon: Int, val tint: String, val bg: String, val action: () -> Unit)
@@ -438,15 +438,15 @@ class TopologyEditorFragment : Fragment() {
                 setPadding(0, dp(10), 0, dp(10))
                 addView(ImageView(context).apply {
                     setImageResource(row.icon)
-                    setColorFilter(Color.parseColor(row.tint))
-                    background = rounded(Color.parseColor(row.bg), 14f)
+                    setColorFilter(com.upc.asistenteredidbi.presentation.common.NightColors.parse(row.tint))
+                    background = rounded(com.upc.asistenteredidbi.presentation.common.NightColors.parse(row.bg), 14f)
                     setPadding(dp(10), dp(10), dp(10), dp(10))
                     layoutParams = LinearLayout.LayoutParams(dp(42), dp(42)).apply { marginEnd = dp(16) }
                 })
                 addView(LinearLayout(context).apply {
                     orientation = LinearLayout.VERTICAL
-                    addView(TextView(context).apply { text = row.title; textSize = 16f; typeface = Typeface.DEFAULT_BOLD; setTextColor(Color.parseColor("#1F2937")) })
-                    addView(TextView(context).apply { text = row.subtitle; textSize = 13f; setTextColor(Color.parseColor("#6B7280")) })
+                    addView(TextView(context).apply { text = row.title; textSize = 16f; typeface = Typeface.DEFAULT_BOLD; setTextColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#1F2937")) })
+                    addView(TextView(context).apply { text = row.subtitle; textSize = 13f; setTextColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#6B7280")) })
                 })
                 setOnClickListener {
                     dialog.dismiss()
@@ -486,12 +486,12 @@ class TopologyEditorFragment : Fragment() {
             text = "Elemento de red"
             textSize = 16f
             typeface = Typeface.DEFAULT_BOLD
-            setTextColor(Color.parseColor("#1F2937"))
+            setTextColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#1F2937"))
             setPadding(0, dp(12), 0, dp(10))
         })
         val grid = GridLayout(context).apply { columnCount = 3 }
         fun refreshTiles() = tiles.forEach { (type, tile) ->
-            tile.background = if (type == chosen) rounded(Color.parseColor("#E3EEFC"), 12f, blue) else rounded(Color.WHITE, 12f, Color.parseColor("#E1E6EE"))
+            tile.background = if (type == chosen) rounded(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#E3EEFC"), 12f, blue) else rounded(Color.WHITE, 12f, com.upc.asistenteredidbi.presentation.common.NightColors.parse("#E1E6EE"))
         }
         MapNodeTypes.all.forEach { (type, name) ->
             val tile = LinearLayout(context).apply {
@@ -501,12 +501,12 @@ class TopologyEditorFragment : Fragment() {
                 addView(ImageView(context).apply {
                     setImageResource(iconFor(type))
                     setColorFilter(Color.WHITE)
-                    background = GradientDrawable().apply { shape = GradientDrawable.OVAL; setColor(Color.parseColor(MapNodeTypes.colorHex(type))) }
+                    background = GradientDrawable().apply { shape = GradientDrawable.OVAL; setColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse(MapNodeTypes.colorHex(type))) }
                     setPadding(dp(8), dp(8), dp(8), dp(8))
                     layoutParams = LinearLayout.LayoutParams(dp(38), dp(38))
                 })
                 addView(TextView(context).apply {
-                    text = name; textSize = 11f; setTextColor(Color.parseColor("#374151")); setPadding(0, dp(4), 0, 0)
+                    text = name; textSize = 11f; setTextColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#374151")); setPadding(0, dp(4), 0, 0)
                     gravity = Gravity.CENTER
                 })
                 setOnClickListener { chosen = type; refreshTiles() }
@@ -534,7 +534,7 @@ class TopologyEditorFragment : Fragment() {
             adapter = ArrayAdapter(context, android.R.layout.simple_spinner_dropdown_item, targets)
             setSelection(map.nodes.indexOfFirst { it.type == "router" }.let { if (it >= 0) it + 1 else 0 })
         }
-        box.addView(TextView(context).apply { text = "Conectar a"; textSize = 11f; setTextColor(Color.parseColor("#6B7280")); setPadding(dp(4), dp(10), 0, 0) })
+        box.addView(TextView(context).apply { text = "Conectar a"; textSize = 11f; setTextColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#6B7280")); setPadding(dp(4), dp(10), 0, 0) })
         box.addView(spinner)
         box.addView(TextView(context).apply {
             text = "Agregar al mapa"
@@ -663,14 +663,14 @@ class TopologyEditorFragment : Fragment() {
         val a = map.nodes.firstOrNull { it.id == link.source }?.label.orEmpty()
         val b = map.nodes.firstOrNull { it.id == link.target }?.label.orEmpty()
         val box = LinearLayout(context).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(22), dp(18), dp(22), dp(8)) }
-        box.addView(TextView(context).apply { text = "$a ↔ $b"; textSize = 18f; typeface = Typeface.DEFAULT_BOLD; setTextColor(Color.parseColor("#1F2937")) })
-        box.addView(TextView(context).apply { text = "Línea ${LINE_NAMES[link.kind]?.lowercase() ?: link.kind}"; textSize = 12f; setTextColor(Color.parseColor("#6B7280")); setPadding(0, 0, 0, dp(8)) })
+        box.addView(TextView(context).apply { text = "$a ↔ $b"; textSize = 18f; typeface = Typeface.DEFAULT_BOLD; setTextColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#1F2937")) })
+        box.addView(TextView(context).apply { text = "Línea ${LINE_NAMES[link.kind]?.lowercase() ?: link.kind}"; textSize = 12f; setTextColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#6B7280")); setPadding(0, 0, 0, dp(8)) })
         lateinit var dialog: AlertDialog
         fun row(text: String, icon: Int, color: String, action: () -> Unit) = box.addView(LinearLayout(context).apply {
             gravity = Gravity.CENTER_VERTICAL
             setPadding(0, dp(12), 0, dp(12))
-            addView(ImageView(context).apply { setImageResource(icon); setColorFilter(Color.parseColor(color)); layoutParams = LinearLayout.LayoutParams(dp(22), dp(22)).apply { marginEnd = dp(18) } })
-            addView(TextView(context).apply { this.text = text; textSize = 15f; setTextColor(Color.parseColor(color)) })
+            addView(ImageView(context).apply { setImageResource(icon); setColorFilter(com.upc.asistenteredidbi.presentation.common.NightColors.parse(color)); layoutParams = LinearLayout.LayoutParams(dp(22), dp(22)).apply { marginEnd = dp(18) } })
+            addView(TextView(context).apply { this.text = text; textSize = 15f; setTextColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse(color)) })
             setOnClickListener { dialog.dismiss(); action() }
         })
         row("Cambiar tipo de línea", R.drawable.ic_remove, "#1F2937") { chooseLineType(link) }
@@ -694,13 +694,13 @@ class TopologyEditorFragment : Fragment() {
         val context = requireContext()
         lateinit var dialog: AlertDialog
         val box = LinearLayout(context).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(22), dp(18), dp(22), dp(18)) }
-        box.addView(TextView(context).apply { text = "Color de la línea"; textSize = 18f; typeface = Typeface.DEFAULT_BOLD; setTextColor(Color.parseColor("#1F2937")); setPadding(0, 0, 0, dp(14)) })
+        box.addView(TextView(context).apply { text = "Color de la línea"; textSize = 18f; typeface = Typeface.DEFAULT_BOLD; setTextColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#1F2937")); setPadding(0, 0, 0, dp(14)) })
         colors.chunked(4).forEach { rowColors ->
             box.addView(LinearLayout(context).apply {
                 gravity = Gravity.CENTER
                 rowColors.forEach { hex ->
                     addView(View(context).apply {
-                        background = GradientDrawable().apply { shape = GradientDrawable.OVAL; setColor(Color.parseColor(hex)) }
+                        background = GradientDrawable().apply { shape = GradientDrawable.OVAL; setColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse(hex)) }
                         layoutParams = LinearLayout.LayoutParams(dp(48), dp(48)).apply { setMargins(dp(8), dp(6), dp(8), dp(6)) }
                         setOnClickListener { dialog.dismiss(); mutate { m -> m.copy(links = m.links.map { if (it.id == link.id) it.copy(color = hex) else it }) } }
                     })
@@ -725,17 +725,17 @@ class TopologyEditorFragment : Fragment() {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(22), dp(18), dp(22), dp(8))
         }
-        box.addView(TextView(context).apply { text = node.label; textSize = 18f; typeface = Typeface.DEFAULT_BOLD; setTextColor(Color.parseColor("#1F2937")) })
-        box.addView(TextView(context).apply { text = subtitle; textSize = 12f; setTextColor(Color.parseColor("#6B7280")); setPadding(0, 0, 0, dp(8)) })
+        box.addView(TextView(context).apply { text = node.label; textSize = 18f; typeface = Typeface.DEFAULT_BOLD; setTextColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#1F2937")) })
+        box.addView(TextView(context).apply { text = subtitle; textSize = 12f; setTextColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#6B7280")); setPadding(0, 0, 0, dp(8)) })
         lateinit var dialog: AlertDialog
         fun row(text: String, icon: Int, color: String, action: () -> Unit) = box.addView(LinearLayout(context).apply {
             gravity = Gravity.CENTER_VERTICAL
             setPadding(0, dp(12), 0, dp(12))
             addView(ImageView(context).apply {
-                setImageResource(icon); setColorFilter(Color.parseColor(color))
+                setImageResource(icon); setColorFilter(com.upc.asistenteredidbi.presentation.common.NightColors.parse(color))
                 layoutParams = LinearLayout.LayoutParams(dp(22), dp(22)).apply { marginEnd = dp(18) }
             })
-            addView(TextView(context).apply { this.text = text; textSize = 15f; setTextColor(Color.parseColor(color)) })
+            addView(TextView(context).apply { this.text = text; textSize = 15f; setTextColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse(color)) })
             setOnClickListener { dialog.dismiss(); action() }
         })
         row("Renombrar", R.drawable.ic_edit, "#1F2937") { promptRename(node) }
@@ -808,7 +808,7 @@ class TopologyEditorFragment : Fragment() {
         }
         box.addView(TextView(context).apply {
             text = "Cambiar color"; textSize = 18f; typeface = Typeface.DEFAULT_BOLD
-            setTextColor(Color.parseColor("#1F2937")); setPadding(0, 0, 0, dp(14))
+            setTextColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#1F2937")); setPadding(0, 0, 0, dp(14))
         })
         colors.chunked(4).forEach { rowColors ->
             box.addView(LinearLayout(context).apply {
@@ -817,8 +817,8 @@ class TopologyEditorFragment : Fragment() {
                     addView(View(context).apply {
                         background = GradientDrawable().apply {
                             shape = GradientDrawable.OVAL
-                            setColor(Color.parseColor(hex))
-                            if (node.color.equals(hex, ignoreCase = true)) setStroke(dp(3), Color.parseColor("#1F2937"))
+                            setColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse(hex))
+                            if (node.color.equals(hex, ignoreCase = true)) setStroke(dp(3), com.upc.asistenteredidbi.presentation.common.NightColors.parse("#1F2937"))
                         }
                         layoutParams = LinearLayout.LayoutParams(dp(48), dp(48)).apply { setMargins(dp(8), dp(6), dp(8), dp(6)) }
                         setOnClickListener {
@@ -875,7 +875,7 @@ class TopologyEditorFragment : Fragment() {
         row.addView(pill("A+") { updateText(id) { it.copy(size = MapCanvasView.clampSize(it.size, 1)) } })
         listOf("#FFF4CC", "#E3F2FD", "#FDE7E7").forEach { hex ->
             row.addView(View(context).apply {
-                background = GradientDrawable().apply { shape = GradientDrawable.OVAL; setColor(Color.parseColor(hex)); setStroke(dp(1), Color.parseColor("#C9CFDA")) }
+                background = GradientDrawable().apply { shape = GradientDrawable.OVAL; setColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse(hex)); setStroke(dp(1), com.upc.asistenteredidbi.presentation.common.NightColors.parse("#C9CFDA")) }
                 layoutParams = LinearLayout.LayoutParams(dp(26), dp(26)).apply { marginEnd = dp(8) }
                 setOnClickListener { updateText(id) { it.copy(color = hex) } }
             })
@@ -925,7 +925,7 @@ class TopologyEditorFragment : Fragment() {
         val info = TextView(context).apply {
             text = "Origen: Evidencias de la visita · toca aquí para reemplazar la foto"
             textSize = 12f
-            setTextColor(Color.parseColor("#4B5563"))
+            setTextColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#4B5563"))
             setOnClickListener { pickImage(replacing = id) }
         }
         val row = LinearLayout(context).apply { gravity = Gravity.CENTER_VERTICAL; setPadding(0, dp(10), 0, 0) }
@@ -933,8 +933,8 @@ class TopologyEditorFragment : Fragment() {
         fun refreshSizes() {
             val now = current().images.firstOrNull { it.id == id }?.size ?: "M"
             sizes.forEach { (s, v) ->
-                v.background = if (s == now) rounded(Color.parseColor("#E3EEFC"), 16f, blue) else rounded(Color.WHITE, 16f, Color.parseColor("#C9CFDA"))
-                v.setTextColor(if (s == now) blue else Color.parseColor("#4B5563"))
+                v.background = if (s == now) rounded(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#E3EEFC"), 16f, blue) else rounded(Color.WHITE, 16f, com.upc.asistenteredidbi.presentation.common.NightColors.parse("#C9CFDA"))
+                v.setTextColor(if (s == now) blue else com.upc.asistenteredidbi.presentation.common.NightColors.parse("#4B5563"))
             }
         }
         listOf("S", "M", "L").forEach { s ->
@@ -950,8 +950,8 @@ class TopologyEditorFragment : Fragment() {
             row.addView(v)
         }
         row.addView(TextView(context).apply {
-            text = "Eliminar"; textSize = 12f; typeface = Typeface.DEFAULT_BOLD; setTextColor(Color.parseColor("#C62828")); gravity = Gravity.CENTER
-            background = rounded(Color.WHITE, 16f, Color.parseColor("#E0A8A8")); setPadding(dp(14), dp(7), dp(14), dp(7))
+            text = "Eliminar"; textSize = 12f; typeface = Typeface.DEFAULT_BOLD; setTextColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#C62828")); gravity = Gravity.CENTER
+            background = rounded(Color.WHITE, 16f, com.upc.asistenteredidbi.presentation.common.NightColors.parse("#E0A8A8")); setPadding(dp(14), dp(7), dp(14), dp(7))
             setOnClickListener { canvas.select(MapCanvasView.Selection("image", id)); deleteSelected() }
         })
         row.addView(View(context), LinearLayout.LayoutParams(0, 1, 1f))

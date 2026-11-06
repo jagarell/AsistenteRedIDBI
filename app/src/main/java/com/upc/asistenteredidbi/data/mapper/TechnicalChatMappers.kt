@@ -47,7 +47,8 @@ fun TechnicalChatResponseDto.toDomain(): TechnicalChatProgress {
         crossChecks = crossChecks.orEmpty(),
         followUps = followUps.orEmpty().map { ChatFollowUp(it.key, it.text, it.options.orEmpty()) },
         processedImages = processedImages.orEmpty(),
-        notices = notices.orEmpty().map { ChatNotice(it.id.orEmpty(), it.tone ?: "info", it.tag.orEmpty(), it.text) }
+        notices = notices.orEmpty().map { ChatNotice(it.id.orEmpty(), it.tone ?: "info", it.tag.orEmpty(), it.text) },
+        attachedNodeIds = attachedNodeIds.orEmpty()
     )
 }
 
@@ -99,7 +100,8 @@ fun ChatNodeDto.toDomain(): ChatNodePrompt = ChatNodePrompt(
     valueJson = value?.let { com.upc.asistenteredidbi.data.mapper.AnyJson.toJson(it) },
     zones = zones.orEmpty(),
     videoTypes = videoTypes.orEmpty(),
-    evidencesTotal = evidencesTotal ?: 0
+    evidencesTotal = evidencesTotal ?: 0,
+    attachHint = attachHint
 )
 
 /** Convierte lo que Moshi decodificó como `Any` (mapas, listas, números) a un JSON de texto. */

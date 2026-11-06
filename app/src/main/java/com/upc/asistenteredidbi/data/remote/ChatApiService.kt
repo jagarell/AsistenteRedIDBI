@@ -38,6 +38,23 @@ interface ChatApiService {
         @Body request: ChatEditRequestDto
     ): TechnicalChatResponseDto
 
+    /** Adjunto del cliente (ficha RUC, comprobante, recibo, tarjeta, letrero): devuelve lo leído para revisar. */
+    @Multipart
+    @POST("api/evaluations/{evaluationId}/chat/adjunto")
+    suspend fun leerAdjunto(
+        @Path("evaluationId") evaluationId: Long,
+        @Part("state") state: RequestBody,
+        @Part("tipo") tipo: RequestBody?,
+        @Part files: List<MultipartBody.Part>
+    ): Map<String, @JvmSuppressWildcards Any?>
+
+    /** Usa los datos revisados del adjunto: responde la pregunta actual y deja las siguientes. */
+    @POST("api/evaluations/{evaluationId}/chat/adjunto/usar")
+    suspend fun usarAdjunto(
+        @Path("evaluationId") evaluationId: Long,
+        @Body body: Map<String, @JvmSuppressWildcards Any?>
+    ): TechnicalChatResponseDto
+
     /** Responder un nodo EVIDENCE con 1 a 3 fotos — ver
      * ChatController.answerWithPhotos en el gateway. */
     @Multipart

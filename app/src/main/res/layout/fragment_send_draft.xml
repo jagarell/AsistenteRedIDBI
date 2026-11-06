@@ -3,7 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#F5F7FB">
+    android:background="@color/background">
 
     <LinearLayout
         android:id="@+id/header"
@@ -72,7 +72,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="18dp"
                     android:text="Para"
-                    android:textColor="#4B5563"
+                    android:textColor="@color/text_body"
                     android:textSize="14sp"
                     android:textStyle="bold" />
 
@@ -86,7 +86,7 @@
                     android:inputType="textEmailAddress"
                     android:paddingStart="16dp"
                     android:paddingEnd="16dp"
-                    android:textColor="#1F2937"
+                    android:textColor="@color/text_strong"
                     android:textSize="16sp" />
 
                 <TextView
@@ -94,7 +94,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="14dp"
                     android:text="CC"
-                    android:textColor="#4B5563"
+                    android:textColor="@color/text_body"
                     android:textSize="14sp"
                     android:textStyle="bold" />
 
@@ -108,7 +108,7 @@
                     android:inputType="textEmailAddress"
                     android:paddingStart="16dp"
                     android:paddingEnd="16dp"
-                    android:textColor="#1F2937"
+                    android:textColor="@color/text_strong"
                     android:textSize="16sp" />
 
                 <TextView
@@ -116,7 +116,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="14dp"
                     android:text="Asunto"
-                    android:textColor="#4B5563"
+                    android:textColor="@color/text_body"
                     android:textSize="14sp"
                     android:textStyle="bold" />
 
@@ -132,7 +132,7 @@
                     android:paddingStart="16dp"
                     android:paddingEnd="16dp"
                     android:singleLine="true"
-                    android:textColor="#1F2937"
+                    android:textColor="@color/text_strong"
                     android:textSize="16sp" />
 
                 <TextView
@@ -140,7 +140,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="14dp"
                     android:text="Mensaje"
-                    android:textColor="#4B5563"
+                    android:textColor="@color/text_body"
                     android:textSize="14sp"
                     android:textStyle="bold" />
 
@@ -154,7 +154,7 @@
                     android:inputType="textMultiLine"
                     android:minLines="4"
                     android:padding="16dp"
-                    android:textColor="#1F2937"
+                    android:textColor="@color/text_strong"
                     android:textSize="16sp" />
 
                 <LinearLayout
@@ -186,7 +186,7 @@
                         android:ellipsize="end"
                         android:maxLines="1"
                         android:text="Propuesta_ElRincon_v1.0.pdf"
-                        android:textColor="#4B5563"
+                        android:textColor="@color/text_body"
                         android:textSize="14sp" />
 
                     <TextView
@@ -194,7 +194,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="2.4 MB"
-                        android:textColor="#9CA3AF"
+                        android:textColor="@color/text_muted"
                         android:textSize="14sp" />
 
                     <ImageButton
@@ -258,7 +258,7 @@
             android:layout_marginTop="32dp"
             android:gravity="center"
             android:text="¡Enviado con Éxito!"
-            android:textColor="#1F2937"
+            android:textColor="@color/text_strong"
             android:textSize="25sp"
             android:textStyle="bold" />
 
@@ -269,7 +269,7 @@
             android:gravity="center"
             android:lineSpacingExtra="4dp"
             android:text="El borrador de propuesta fue enviado correctamente al correo del cliente."
-            android:textColor="#6B7280"
+            android:textColor="@color/text_secondary"
             android:textSize="18sp" />
 
         <com.google.android.material.button.MaterialButton
@@ -277,7 +277,7 @@
             android:layout_width="220dp"
             android:layout_height="58dp"
             android:layout_marginTop="36dp"
-            android:text="Ver Historial"
+            android:text="Ver Reportes"
             android:textAllCaps="false"
             android:textSize="19sp"
             android:textStyle="bold"

@@ -3,7 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#F5F7FB">
+    android:background="@color/background">
 
     <LinearLayout
         android:id="@+id/header"
@@ -63,7 +63,7 @@
                     android:layout_height="wrap_content"
                     android:gravity="center"
                     android:text="Puntuación Global de Infraestructura"
-                    android:textColor="#6B7280"
+                    android:textColor="@color/text_secondary"
                     android:textSize="18sp" />
 
                 <FrameLayout
@@ -99,7 +99,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="Infraestructura"
-                            android:textColor="#6B7280"
+                            android:textColor="@color/text_secondary"
                             android:textSize="15sp" />
                     </LinearLayout>
                 </FrameLayout>
@@ -117,13 +117,13 @@
                         android:layout_weight="1"
                         android:gravity="center"
                         android:text="4\nÁreas\nevaluadas"
-                        android:textColor="#6B7280"
+                        android:textColor="@color/text_secondary"
                         android:textSize="15sp" />
 
                     <View
                         android:layout_width="1dp"
                         android:layout_height="70dp"
-                        android:background="#E5E7EB" />
+                        android:background="@color/divider" />
 
                     <TextView
                         android:id="@+id/tvAttentionRequired"
@@ -132,13 +132,13 @@
                         android:layout_weight="1"
                         android:gravity="center"
                         android:text="2\nRequieren\natención"
-                        android:textColor="#6B7280"
+                        android:textColor="@color/text_secondary"
                         android:textSize="15sp" />
 
                     <View
                         android:layout_width="1dp"
                         android:layout_height="70dp"
-                        android:background="#E5E7EB" />
+                        android:background="@color/divider" />
 
                     <TextView
                         android:id="@+id/tvRecommendationsCount"
@@ -147,7 +147,7 @@
                         android:layout_weight="1"
                         android:gravity="center"
                         android:text="6\nRecomendaciones"
-                        android:textColor="#6B7280"
+                        android:textColor="@color/text_secondary"
                         android:textSize="15sp" />
                 </LinearLayout>
             </LinearLayout>
@@ -199,7 +199,7 @@
                     android:layout_marginTop="18dp"
                     android:lineSpacingExtra="5dp"
                     android:text="El análisis indica que la infraestructura tiene oportunidades de mejora significativas en cobertura WiFi y cableado estructurado. Se recomienda implementar una solución WiFi 6 con al menos 3 puntos de acceso y un switch administrable para segmentación VLAN."
-                    android:textColor="#4B5563"
+                    android:textColor="@color/text_body"
                     android:textSize="16sp" />
             </LinearLayout>
 

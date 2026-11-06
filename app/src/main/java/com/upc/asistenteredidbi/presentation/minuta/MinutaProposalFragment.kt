@@ -203,9 +203,9 @@ class MinutaProposalFragment : Fragment() {
             else -> Triple("Borrador", "#FFF3E0", "#EF6C00")
         }
         binding.tvStatusPill.text = label
-        binding.tvStatusPill.setTextColor(Color.parseColor(fg))
+        binding.tvStatusPill.setTextColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse(fg))
         binding.tvStatusPill.background = android.graphics.drawable.GradientDrawable().apply {
-            setColor(Color.parseColor(bg)); cornerRadius = 16 * resources.displayMetrics.density
+            setColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse(bg)); cornerRadius = 16 * resources.displayMetrics.density
         }
         binding.tvValidatedBy.text = validatedBy ?: "—"
         val generated = generatedPdfFile != null
@@ -241,12 +241,12 @@ class MinutaProposalFragment : Fragment() {
             text = "✎ Editar mapa"
             textSize = 14f
             typeface = android.graphics.Typeface.DEFAULT_BOLD
-            setTextColor(android.graphics.Color.parseColor("#1565C0"))
+            setTextColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#1565C0"))
             gravity = android.view.Gravity.CENTER
             background = android.graphics.drawable.GradientDrawable().apply {
-                setColor(android.graphics.Color.WHITE)
+                setColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#FFFFFF"))
                 cornerRadius = 22 * density
-                setStroke((1.5f * density).toInt(), android.graphics.Color.parseColor("#1565C0"))
+                setStroke((1.5f * density).toInt(), com.upc.asistenteredidbi.presentation.common.NightColors.parse("#1565C0"))
             }
             layoutParams = android.widget.LinearLayout.LayoutParams(
                 android.view.ViewGroup.LayoutParams.MATCH_PARENT, (44 * density).toInt()
@@ -541,7 +541,7 @@ class MinutaProposalFragment : Fragment() {
         val dp = resources.displayMetrics.density
         val form = android.widget.LinearLayout(ctx).apply { orientation = android.widget.LinearLayout.VERTICAL; setPadding((24 * dp).toInt(), (8 * dp).toInt(), (24 * dp).toInt(), 0) }
         val inputs = fields.map { (k, label) ->
-            form.addView(android.widget.TextView(ctx).apply { text = label; textSize = 12f; setTextColor(Color.parseColor("#6B7280")); setPadding(0, (10 * dp).toInt(), 0, 0) })
+            form.addView(android.widget.TextView(ctx).apply { text = label; textSize = 12f; setTextColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#6B7280")); setPadding(0, (10 * dp).toInt(), 0, 0) })
             android.widget.EditText(ctx).apply {
                 setText(cur[k]?.toString().orEmpty())
                 hint = when (k) { "nombre" -> binding.tvEstablishmentName.text.toString(); "dir" -> "Se toma del chat si lo dejas vacío"; else -> "Se toma del chat si lo dejas vacío" }
@@ -581,7 +581,7 @@ class MinutaProposalFragment : Fragment() {
                 titleInputs += ti
                 top.addView(ti, android.widget.LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
                 top.addView(android.widget.TextView(ctx).apply {
-                    text = "✕"; textSize = 16f; setTextColor(Color.parseColor("#D32F2F")); setPadding((12 * dp).toInt(), 0, (4 * dp).toInt(), 0)
+                    text = "✕"; textSize = 16f; setTextColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#D32F2F")); setPadding((12 * dp).toInt(), 0, (4 * dp).toInt(), 0)
                     setOnClickListener {
                         rows.clear(); rows.addAll(titleInputs.indices.map { j -> titleInputs[j].text.toString() to (detailInputs.getOrNull(j)?.text?.toString() ?: "") })
                         rows.removeAt(i); render()
@@ -595,7 +595,7 @@ class MinutaProposalFragment : Fragment() {
                 box.addView(row)
             }
             box.addView(android.widget.TextView(ctx).apply {
-                text = "+ Agregar"; setTextColor(Color.parseColor("#1565C0")); textSize = 15f; typeface = android.graphics.Typeface.DEFAULT_BOLD
+                text = "+ Agregar"; setTextColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#1565C0")); textSize = 15f; typeface = android.graphics.Typeface.DEFAULT_BOLD
                 setPadding(0, (14 * dp).toInt(), 0, (6 * dp).toInt())
                 setOnClickListener {
                     rows.clear(); rows.addAll(titleInputs.indices.map { j -> titleInputs[j].text.toString() to (detailInputs.getOrNull(j)?.text?.toString() ?: "") })

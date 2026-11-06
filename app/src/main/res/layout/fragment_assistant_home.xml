@@ -3,7 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#F5F7FB">
+    android:background="@color/background">
 
     <LinearLayout
         android:id="@+id/header"
@@ -178,7 +178,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Evaluaciones"
-                        android:textColor="#6B7280"
+                        android:textColor="@color/text_secondary"
                         android:textSize="12sp" />
                 </LinearLayout>
 
@@ -215,7 +215,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Propuestas"
-                        android:textColor="#6B7280"
+                        android:textColor="@color/text_secondary"
                         android:textSize="12sp" />
                 </LinearLayout>
 
@@ -252,7 +252,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Enviadas"
-                        android:textColor="#6B7280"
+                        android:textColor="@color/text_secondary"
                         android:textSize="12sp" />
                 </LinearLayout>
             </LinearLayout>
@@ -339,7 +339,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="12dp"
                         android:text="Continuar"
-                        android:textColor="#374151"
+                        android:textColor="@color/text_body"
                         android:textSize="16sp"
                         android:textStyle="bold" />
 
@@ -348,7 +348,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="4dp"
                         android:text="Evaluación previa"
-                        android:textColor="#9CA3AF"
+                        android:textColor="@color/text_muted"
                         android:textSize="13sp"
                         android:textStyle="bold" />
                 </LinearLayout>
@@ -377,8 +377,8 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="12dp"
-                        android:text="Historial"
-                        android:textColor="#374151"
+                        android:text="Reportes"
+                        android:textColor="@color/text_body"
                         android:textSize="16sp"
                         android:textStyle="bold" />
 
@@ -387,7 +387,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="4dp"
                         android:text="Ver todo"
-                        android:textColor="#9CA3AF"
+                        android:textColor="@color/text_muted"
                         android:textSize="13sp"
                         android:textStyle="bold" />
                 </LinearLayout>
@@ -413,7 +413,7 @@
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:text="Recientes"
-                        android:textColor="#1F2937"
+                        android:textColor="@color/text_strong"
                         android:textSize="20sp"
                         android:textStyle="bold" />
 

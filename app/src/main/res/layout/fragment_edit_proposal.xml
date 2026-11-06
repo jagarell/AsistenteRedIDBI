@@ -5,7 +5,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#F5F7FB">
+    android:background="@color/background">
 
     <!-- Toolbar -->
     <LinearLayout
@@ -91,7 +91,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="18dp"
                         android:text="Nombre del Restaurante"
-                        android:textColor="#4B5563"
+                        android:textColor="@color/text_body"
                         android:textStyle="bold"
                         android:textSize="14sp"/>
 
@@ -103,7 +103,7 @@
                         android:background="@drawable/bg_edittext"
                         android:paddingHorizontal="18dp"
                         android:hint="Nombre del establecimiento"
-                        android:textColor="#1F2937"
+                        android:textColor="@color/text_strong"
                         android:textSize="16sp"/>
 
                     <TextView
@@ -111,7 +111,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="16dp"
                         android:text="Dirección"
-                        android:textColor="#4B5563"
+                        android:textColor="@color/text_body"
                         android:textStyle="bold"
                         android:textSize="14sp"/>
 
@@ -123,7 +123,7 @@
                         android:background="@drawable/bg_edittext"
                         android:paddingHorizontal="18dp"
                         android:hint="Dirección"
-                        android:textColor="#1F2937"
+                        android:textColor="@color/text_strong"
                         android:textSize="16sp"/>
 
                     <TextView
@@ -131,7 +131,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="16dp"
                         android:text="Contacto"
-                        android:textColor="#4B5563"
+                        android:textColor="@color/text_body"
                         android:textStyle="bold"
                         android:textSize="14sp"/>
 
@@ -143,7 +143,7 @@
                         android:background="@drawable/bg_edittext"
                         android:paddingHorizontal="18dp"
                         android:hint="Nombre del contacto"
-                        android:textColor="#1F2937"
+                        android:textColor="@color/text_strong"
                         android:textSize="16sp"/>
 
                     <TextView
@@ -151,7 +151,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="16dp"
                         android:text="Teléfono"
-                        android:textColor="#4B5563"
+                        android:textColor="@color/text_body"
                         android:textStyle="bold"
                         android:textSize="14sp"/>
 
@@ -163,7 +163,7 @@
                         android:background="@drawable/bg_edittext"
                         android:paddingHorizontal="18dp"
                         android:hint="Teléfono de contacto"
-                        android:textColor="#1F2937"
+                        android:textColor="@color/text_strong"
                         android:textSize="16sp"/>
 
                 </LinearLayout>

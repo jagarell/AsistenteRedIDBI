@@ -52,7 +52,7 @@ class EvidenceGalleryDialog : DialogFragment() {
         if (arguments?.getBoolean(ARG_UNRESOLVED) == true) filter = Filter.UNRESOLVED
         val root = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
-            setBackgroundColor(Color.parseColor("#F5F7FB"))
+            setBackgroundColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#F5F7FB"))
         }
 
         root.addView(header(context))
@@ -96,7 +96,7 @@ class EvidenceGalleryDialog : DialogFragment() {
     private fun header(context: android.content.Context): View = LinearLayout(context).apply {
         orientation = LinearLayout.HORIZONTAL
         gravity = Gravity.CENTER_VERTICAL
-        setBackgroundColor(Color.parseColor("#1976D2"))
+        setBackgroundColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#1976D2"))
         setPadding(dp(8), dp(34), dp(16), dp(14))
         addView(ImageView(context).apply {
             setImageResource(R.drawable.ic_arrow_back)
@@ -117,7 +117,7 @@ class EvidenceGalleryDialog : DialogFragment() {
                 val client = viewModel.uiState.value.messages.firstOrNull { it.isFromUser }?.text.orEmpty()
                 text = (if (client.isNotBlank()) "$client · " else "") + "se adjuntan a la minuta"
                 textSize = 13f
-                setTextColor(Color.parseColor("#D9EAFE"))
+                setTextColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#D9EAFE"))
             })
         })
     }
@@ -139,9 +139,9 @@ class EvidenceGalleryDialog : DialogFragment() {
                 textSize = 13f
                 typeface = Typeface.DEFAULT_BOLD
                 val selected = filter == f
-                setTextColor(if (selected) Color.WHITE else Color.parseColor(color))
+                setTextColor(if (selected) Color.WHITE else com.upc.asistenteredidbi.presentation.common.NightColors.parse(color))
                 background = if (selected) rounded(color, 18f, context)
-                else rounded("#FFFFFF", 18f, context, Color.parseColor(color))
+                else rounded("#FFFFFF", 18f, context, com.upc.asistenteredidbi.presentation.common.NightColors.parse(color))
                 setPadding(dp(14), dp(7), dp(14), dp(7))
                 layoutParams = LinearLayout.LayoutParams(
                     ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT
@@ -163,7 +163,7 @@ class EvidenceGalleryDialog : DialogFragment() {
         if (shown.isEmpty()) {
             listContainer.addView(TextView(context).apply {
                 text = "Todavía no hay evidencias en esta categoría."
-                setTextColor(Color.parseColor("#6B7280"))
+                setTextColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#6B7280"))
                 setPadding(0, dp(24), 0, 0)
             })
             return
@@ -173,7 +173,7 @@ class EvidenceGalleryDialog : DialogFragment() {
                 text = section.uppercase()
                 textSize = 11f
                 typeface = Typeface.DEFAULT_BOLD
-                setTextColor(Color.parseColor("#6B7280"))
+                setTextColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#6B7280"))
                 setPadding(dp(2), dp(14), 0, dp(6))
             })
             items.forEach { listContainer.addView(item(context, it)) }
@@ -186,7 +186,7 @@ class EvidenceGalleryDialog : DialogFragment() {
         return LinearLayout(context).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
-            background = if (warn) rounded("#FFF8EA", 14f, context, Color.parseColor("#F0C675"))
+            background = if (warn) rounded("#FFF8EA", 14f, context, com.upc.asistenteredidbi.presentation.common.NightColors.parse("#F0C675"))
             else rounded("#FFFFFF", 14f, context)
             setPadding(dp(10), dp(10), dp(12), dp(10))
             layoutParams = LinearLayout.LayoutParams(
@@ -196,9 +196,9 @@ class EvidenceGalleryDialog : DialogFragment() {
             val thumb = FrameLayout(context).apply {
                 background = if (missing) {
                     GradientDrawable().apply {
-                        setColor(Color.parseColor("#FFF7EC"))
+                        setColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#FFF7EC"))
                         cornerRadius = 10f * context.resources.displayMetrics.density
-                        setStroke(dp(1) + 1, Color.parseColor("#F0A63B"), dp(5).toFloat(), dp(3).toFloat())
+                        setStroke(dp(1) + 1, com.upc.asistenteredidbi.presentation.common.NightColors.parse("#F0A63B"), dp(5).toFloat(), dp(3).toFloat())
                     }
                 } else rounded("#263238", 10f, context)
                 layoutParams = LinearLayout.LayoutParams(dp(56), dp(56)).apply { marginEnd = dp(12) }
@@ -208,7 +208,7 @@ class EvidenceGalleryDialog : DialogFragment() {
                 thumb.addView(TextView(context).apply {
                     text = "+"
                     textSize = 22f
-                    setTextColor(Color.parseColor("#B45309"))
+                    setTextColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#B45309"))
                     gravity = Gravity.CENTER
                 }, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
             }
@@ -226,18 +226,18 @@ class EvidenceGalleryDialog : DialogFragment() {
                     text = e.title
                     textSize = 15f
                     typeface = Typeface.DEFAULT_BOLD
-                    setTextColor(Color.parseColor("#1F2937"))
+                    setTextColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#1F2937"))
                 })
                 addView(TextView(context).apply {
                     text = if (missing) "Falta esta evidencia: la minuta la marca como pendiente."
                     else if (e.summary.isNotBlank()) highlighted("✦ ${e.summary}") else "Foto adjunta"
                     textSize = 12f
-                    setTextColor(Color.parseColor(if (missing) "#B45309" else "#4B5563"))
+                    setTextColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse(if (missing) "#B45309" else "#4B5563"))
                 })
                 addView(TextView(context).apply {
                     text = "${e.code} · ${e.section}"
                     textSize = 11f
-                    setTextColor(Color.parseColor("#9CA3AF"))
+                    setTextColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#9CA3AF"))
                 })
             })
 
@@ -246,9 +246,9 @@ class EvidenceGalleryDialog : DialogFragment() {
                     text = "Repetir"
                     textSize = 12f
                     typeface = Typeface.DEFAULT_BOLD
-                    setTextColor(Color.parseColor("#B45309"))
+                    setTextColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#B45309"))
                     gravity = Gravity.CENTER
-                    background = rounded("#FFFFFF", 16f, context, Color.parseColor("#E0A040"))
+                    background = rounded("#FFFFFF", 16f, context, com.upc.asistenteredidbi.presentation.common.NightColors.parse("#E0A040"))
                     setPadding(dp(12), dp(6), dp(12), dp(6))
                     layoutParams = LinearLayout.LayoutParams(
                         ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT
@@ -267,7 +267,7 @@ class EvidenceGalleryDialog : DialogFragment() {
             val start = builder.length
             builder.append(part)
             if (index % 2 == 1) {
-                builder.setSpan(android.text.style.ForegroundColorSpan(Color.parseColor("#1565C0")), start, builder.length, 0)
+                builder.setSpan(android.text.style.ForegroundColorSpan(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#1565C0")), start, builder.length, 0)
                 builder.setSpan(android.text.style.StyleSpan(Typeface.BOLD), start, builder.length, 0)
             }
         }
@@ -293,7 +293,7 @@ class EvidenceGalleryDialog : DialogFragment() {
 
     private fun rounded(color: String, radiusDp: Float, context: android.content.Context, stroke: Int? = null) =
         GradientDrawable().apply {
-            setColor(Color.parseColor(color))
+            setColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse(color))
             cornerRadius = radiusDp * context.resources.displayMetrics.density
             if (stroke != null) setStroke(dp(1), stroke)
         }

@@ -114,7 +114,9 @@ data class ChatNodeDto(
     val zones: List<String>? = null,
     val videoTypes: List<String>? = null,
     val questionsTotal: Int? = null,
-    val evidencesTotal: Int? = null
+    val evidencesTotal: Int? = null,
+    /** Tipo de documento que se puede adjuntar para esta pregunta (ruc, comp, recibo, tarjeta, frontis). */
+    val attachHint: String? = null
 )
 
 data class ChatEvidenceDto(
@@ -143,7 +145,8 @@ data class TechnicalChatResponseDto(
     /** Solo la etiqueta del router: fotos con las credenciales ya desenfocadas (base64). */
     val processedImages: List<String>? = null,
     /** Avisos entre la respuesta y la siguiente pregunta (no piden confirmación). */
-    val notices: List<ChatNoticeDto>? = null
+    val notices: List<ChatNoticeDto>? = null,
+    val attachedNodeIds: List<String>? = null
 )
 
 data class TechnicalChatProposalDto(
