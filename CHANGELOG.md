@@ -1,6 +1,17 @@
 # Changelog
 
-## [0.0.7] - 2026-11-02 (propuesta, sin publicar)
+## [0.0.8] - 2026-11-06
+### Agregado
+- **Fotos obligatorias que ya no traban el Chat IA** (Parte 5): cuando la IA dice «no corresponde» o «no es legible», el técnico puede **Guardar como correcta** con una nota opcional y atajos («La foto es correcta», «Aún no hay puntos», «El cliente no permite», y «Local en obra» si el local está en obra o por inaugurar). En el anexo de la minuta solo se muestra la nota.
+- **Subir después** en las fotos obligatorias de la lista del local: el encabezado cuenta «N obligatorias por completar» y al terminar aparece «Subir fotos pendientes (N)». La minuta no se genera mientras falte alguna.
+- **Administrador**: Panel de gestión, Equipo y accesos (roles y supervisor) y Preguntas y reglas (activar, editar, crear y eliminar reglas; nombre del sistema de impresiones).
+- **Ayuda** del Chat IA con hoja de consulta y **menú lateral por secciones** según el rol.
+- **Modo noche** con interruptor en el menú lateral y en Perfil y configuración.
+### Cambiado
+- La IA rechaza menos fotos buenas: sabe qué lugar es («un lugar de preparación llamado «Calientes»») y el estado del local, y solo rechaza lo que claramente no es un lugar del local.
+- El nombre del sistema de impresiones definido por el administrador llega al motor del chat.
+
+## [0.0.7] - 2026-11-02
 ### Agregado
 - **Asistente IA** (módulo nuevo): conversación libre por texto o audio, sin botones de opciones. Redacta minutas con evidencias y contexto, actualiza minutas generadas, responde consultas sobre la base de minutas y da reportes. Responde y analiza con **ChatGPT (API de OpenAI)** usando como contexto las reglas de la app y las minutas.
 - Conexiones de red contadas por audio o texto que se dibujan en la topología.
