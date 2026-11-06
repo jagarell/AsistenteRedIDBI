@@ -73,7 +73,7 @@ class HistorialFragment : Fragment() {
      */
     private fun attachAnnulSwipe() {
         val density = resources.displayMetrics.density
-        val red = android.graphics.Paint().apply { color = android.graphics.Color.parseColor("#C62828") }
+        val red = android.graphics.Paint().apply { color = com.upc.asistenteredidbi.presentation.common.NightColors.parse("#C62828") }
         val label = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
             color = android.graphics.Color.WHITE
             textSize = 15f * density
@@ -174,7 +174,7 @@ class HistorialFragment : Fragment() {
                         }
                     }
                     binding.btnFilter.setColorFilter(
-                        if (filtering) android.graphics.Color.parseColor("#FFD54F") else android.graphics.Color.WHITE
+                        if (filtering) com.upc.asistenteredidbi.presentation.common.NightColors.parse("#FFD54F") else android.graphics.Color.WHITE
                     )
                     adapter.submitList(state.filteredEvaluations.map { it.toHistoryItem() })
                     selectChip(state.selectedTab)

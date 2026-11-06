@@ -61,6 +61,7 @@ class ConfiguracionViewModel @Inject constructor(
         }
     }
 
+    fun setDarkMode(enabled: Boolean) = viewModelScope.launch { appPreferences.setDarkMode(enabled) }
     fun setPushNotifications(enabled: Boolean) = viewModelScope.launch { appPreferences.setPushNotifications(enabled) }
     fun setEmailNotifications(enabled: Boolean) = viewModelScope.launch { appPreferences.setEmailNotifications(enabled) }
     fun setSystemAlerts(enabled: Boolean) = viewModelScope.launch { appPreferences.setSystemAlerts(enabled) }

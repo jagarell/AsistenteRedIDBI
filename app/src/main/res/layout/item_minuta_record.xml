@@ -22,7 +22,7 @@
             android:ellipsize="end"
             android:maxLines="1"
             android:text="Restaurante El Rincón"
-            android:textColor="#1F2937"
+            android:textColor="@color/text_strong"
             android:textSize="16sp"
             android:textStyle="bold" />
 
@@ -47,7 +47,7 @@
         android:ellipsize="end"
         android:maxLines="1"
         android:text="Av. Siempre Viva 123"
-        android:textColor="#9CA3AF"
+        android:textColor="@color/text_muted"
         android:textSize="13sp" />
 
     <TextView
@@ -56,7 +56,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="4dp"
         android:text="Técnico: Carlos Rodríguez"
-        android:textColor="#6B7280"
+        android:textColor="@color/text_secondary"
         android:textSize="13sp" />
 
     <TextView

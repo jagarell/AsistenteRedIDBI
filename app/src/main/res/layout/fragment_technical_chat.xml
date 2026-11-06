@@ -4,7 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#F5F7FB"
+    android:background="@color/background"
     android:orientation="vertical">
 
     <LinearLayout
@@ -227,8 +227,8 @@
                 android:inputType="text"
                 android:paddingStart="18dp"
                 android:paddingEnd="18dp"
-                android:textColor="#1F2937"
-                android:textColorHint="#9CA3AF"
+                android:textColor="@color/text_strong"
+                android:textColorHint="@color/text_muted"
                 android:textSize="15sp" />
 
             <ImageButton

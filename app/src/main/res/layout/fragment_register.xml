@@ -3,7 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#F5F7FB">
+    android:background="@color/background">
 
     <!-- Header Azul -->
     <LinearLayout
@@ -65,7 +65,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="Complete sus datos para registrarse como técnico."
-                    android:textColor="#6B7280"
+                    android:textColor="@color/text_secondary"
                     android:textSize="16sp" />
 
                 <!-- Nombre -->
@@ -74,7 +74,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="28dp"
                     android:text="Nombre Completo"
-                    android:textColor="#374151"
+                    android:textColor="@color/text_body"
                     android:textSize="16sp"
                     android:textStyle="bold" />
 
@@ -106,7 +106,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="18dp"
                     android:text="Correo Electrónico"
-                    android:textColor="#374151"
+                    android:textColor="@color/text_body"
                     android:textSize="16sp"
                     android:textStyle="bold" />
 
@@ -138,7 +138,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="18dp"
                     android:text="Teléfono"
-                    android:textColor="#374151"
+                    android:textColor="@color/text_body"
                     android:textSize="16sp"
                     android:textStyle="bold" />
 
@@ -170,7 +170,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="18dp"
                     android:text="Empresa"
-                    android:textColor="#374151"
+                    android:textColor="@color/text_body"
                     android:textSize="16sp"
                     android:textStyle="bold" />
 
@@ -201,7 +201,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="18dp"
                     android:text="Contraseña"
-                    android:textColor="#374151"
+                    android:textColor="@color/text_body"
                     android:textSize="16sp"
                     android:textStyle="bold" />
 
@@ -234,7 +234,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="18dp"
                     android:text="Confirmar Contraseña"
-                    android:textColor="#374151"
+                    android:textColor="@color/text_body"
                     android:textSize="16sp"
                     android:textStyle="bold" />
 

@@ -30,7 +30,7 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="12dp"
             android:layout_weight="1"
-            android:text="Configuración"
+            android:text="Perfil y configuración"
             android:textColor="@android:color/white"
             android:textSize="22sp"
             android:textStyle="bold" />
@@ -200,6 +200,34 @@
 
                     <com.google.android.material.materialswitch.MaterialSwitch
                         android:id="@+id/switchSystemAlerts"
+                        app:thumbTint="@color/switch_thumb"
+                        app:trackTint="@color/switch_track"
+                        app:trackDecorationTint="@android:color/transparent"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content" />
+                </LinearLayout>
+
+                <View style="@style/SettingsRowDivider" />
+
+                <LinearLayout style="@style/SettingsSwitchRow">
+
+                    <FrameLayout
+                        android:layout_width="38dp"
+                        android:layout_height="38dp"
+                        android:background="@drawable/bg_stat_blue">
+
+                        <ImageView
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
+                            android:layout_gravity="center"
+                            app:srcCompat="@drawable/ic_moon"
+                            app:tint="@color/primary_blue" />
+                    </FrameLayout>
+
+                    <TextView style="@style/SettingsSwitchLabel" android:text="Modo noche" />
+
+                    <com.google.android.material.materialswitch.MaterialSwitch
+                        android:id="@+id/switchDarkMode"
                         app:thumbTint="@color/switch_thumb"
                         app:trackTint="@color/switch_track"
                         app:trackDecorationTint="@android:color/transparent"

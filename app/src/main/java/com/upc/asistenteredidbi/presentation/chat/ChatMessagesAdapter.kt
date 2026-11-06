@@ -188,7 +188,7 @@ class ChatMessagesAdapter(
         val caption = TextView(context).apply {
             textSize = 11f
             typeface = Typeface.DEFAULT_BOLD
-            setTextColor(Color.parseColor("#1565C0"))
+            setTextColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#1565C0"))
             setPadding(6.dp(context), 0, 0, 3.dp(context))
             visibility = View.GONE
         }
@@ -203,7 +203,7 @@ class ChatMessagesAdapter(
         // Foto subida por el técnico: burbuja azul con la miniatura y el pie "archivo ✓ Subida".
         val photoBubble = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
-            background = rounded(Color.parseColor("#1565C0"), 18f, context)
+            background = rounded(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#1565C0"), 18f, context)
             setPadding(6.dp(context), 6.dp(context), 6.dp(context), 6.dp(context))
             visibility = View.GONE
         }
@@ -266,7 +266,7 @@ class ChatMessagesAdapter(
             holder.row.gravity = Gravity.START
             holder.avatar.visibility = View.VISIBLE
             holder.bubble.setBackgroundResource(R.drawable.bg_chat_bot)
-            holder.bubble.setTextColor(0xFF374151.toInt())
+            holder.bubble.setTextColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#374151"))
         }
 
         bindPhotoBubble(holder.photoBubble, item, context)
@@ -320,27 +320,27 @@ class ChatMessagesAdapter(
                     "warn" -> Triple("#FFF4E5", "#F5C26B", "#7A4A0A")
                     else -> Triple("#EAF2FD", "#BBD3F5", "#1F4E9E")
                 }
-                card.background = rounded(Color.parseColor(bg), 16f, context, Color.parseColor(stroke))
-                if (data.title.isNotBlank()) card.addView(small(context, data.title, Color.parseColor(fg), top = 0).apply { typeface = Typeface.DEFAULT_BOLD })
-                data.text?.let { card.addView(body(context, it, Color.parseColor(fg))) }
+                card.background = rounded(com.upc.asistenteredidbi.presentation.common.NightColors.parse(bg), 16f, context, com.upc.asistenteredidbi.presentation.common.NightColors.parse(stroke))
+                if (data.title.isNotBlank()) card.addView(small(context, data.title, com.upc.asistenteredidbi.presentation.common.NightColors.parse(fg), top = 0).apply { typeface = Typeface.DEFAULT_BOLD })
+                data.text?.let { card.addView(body(context, it, com.upc.asistenteredidbi.presentation.common.NightColors.parse(fg))) }
                 return
             }
             "ERROR" -> {
-                card.background = rounded(Color.parseColor("#FDECEA"), 16f, context, Color.parseColor("#F5B7B1"))
-                data.text?.let { card.addView(body(context, it, Color.parseColor("#B42318"))) }
+                card.background = rounded(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#FDECEA"), 16f, context, com.upc.asistenteredidbi.presentation.common.NightColors.parse("#F5B7B1"))
+                data.text?.let { card.addView(body(context, it, com.upc.asistenteredidbi.presentation.common.NightColors.parse("#B42318"))) }
                 return
             }
             "ALERT" -> {
-                card.background = rounded(Color.parseColor("#FFF4E5"), 16f, context, Color.parseColor("#F5C26B"))
-                card.addView(title(context, "⚠ ${data.title}", Color.parseColor("#B45309")))
-                data.text?.let { card.addView(body(context, it, Color.parseColor("#7A4A0A"))) }
+                card.background = rounded(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#FFF4E5"), 16f, context, com.upc.asistenteredidbi.presentation.common.NightColors.parse("#F5C26B"))
+                card.addView(title(context, "⚠ ${data.title}", com.upc.asistenteredidbi.presentation.common.NightColors.parse("#B45309")))
+                data.text?.let { card.addView(body(context, it, com.upc.asistenteredidbi.presentation.common.NightColors.parse("#7A4A0A"))) }
                 return
             }
             "EVIDENCE_PROMPT" -> {
                 card.setBackgroundResource(R.drawable.bg_chat_bot)
-                card.addView(title(context, data.title, Color.parseColor("#1F2937")))
-                data.text?.let { card.addView(body(context, it, Color.parseColor("#374151"))) }
-                data.note?.let { card.addView(small(context, it, Color.parseColor("#6B7280"), top = 6)) }
+                card.addView(title(context, data.title, com.upc.asistenteredidbi.presentation.common.NightColors.parse("#1F2937")))
+                data.text?.let { card.addView(body(context, it, com.upc.asistenteredidbi.presentation.common.NightColors.parse("#374151"))) }
+                data.note?.let { card.addView(small(context, it, com.upc.asistenteredidbi.presentation.common.NightColors.parse("#6B7280"), top = 6)) }
                 return
             }
         }
@@ -358,7 +358,7 @@ class ChatMessagesAdapter(
                         append(block.lines.first())
                     }
                     textSize = 13.5f
-                    setTextColor(Color.parseColor("#1F2937"))
+                    setTextColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#1F2937"))
                     setLineSpacing(2f, 1f)
                     setPadding(0, 4.dp(context), 0, 0)
                 })
@@ -368,14 +368,14 @@ class ChatMessagesAdapter(
                 text = block.title
                 textSize = 13.5f
                 typeface = Typeface.DEFAULT_BOLD
-                setTextColor(Color.parseColor("#1F2937"))
+                setTextColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#1F2937"))
                 setPadding(0, 6.dp(context), 0, 2.dp(context))
             })
             block.lines.forEach { line ->
                 card.addView(TextView(context).apply {
                     text = "• $line"
                     textSize = 13.5f
-                    setTextColor(Color.parseColor("#1F2937"))
+                    setTextColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#1F2937"))
                     setLineSpacing(2f, 1f)
                 })
             }
@@ -386,8 +386,8 @@ class ChatMessagesAdapter(
                 text = "Vista previa del mapa…"
                 textSize = 12f
                 gravity = Gravity.CENTER
-                setTextColor(Color.parseColor("#9CA3AF"))
-                background = rounded(Color.parseColor("#EEF1F6"), 10f, context)
+                setTextColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#9CA3AF"))
+                background = rounded(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#EEF1F6"), 10f, context)
                 layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 90.dp(context)).apply { topMargin = 8.dp(context) }
             })
         }
@@ -396,12 +396,12 @@ class ChatMessagesAdapter(
                 staticPreview = true
                 this.map = map
                 imageProvider = { null }
-                background = rounded(Color.parseColor("#F7F8FB"), 10f, context)
+                background = rounded(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#F7F8FB"), 10f, context)
                 layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 220.dp(context)).apply { bottomMargin = 6.dp(context) }
                 setOnClickListener { onMapClick(map) }
             })
         }
-        if (data.kind == "MAP") data.text?.let { card.addView(small(context, it, Color.parseColor("#6B7280"))) }
+        if (data.kind == "MAP") data.text?.let { card.addView(small(context, it, com.upc.asistenteredidbi.presentation.common.NightColors.parse("#6B7280"))) }
 
         if (data.tiles.isNotEmpty()) card.addView(tiles(context, data.tiles))
         data.rows.forEach { card.addView(keyValueRow(context, it)) }
@@ -410,7 +410,7 @@ class ChatMessagesAdapter(
 
         data.warnings.forEach { card.addView(box(context, "⚠ $it", "#FFF4E5", "#B45309")) }
         data.note?.let { card.addView(box(context, it, "#E8F1FD", "#1F4E9E")) }
-        data.footer?.let { card.addView(small(context, it, Color.parseColor("#6B7280"), top = 6)) }
+        data.footer?.let { card.addView(small(context, it, com.upc.asistenteredidbi.presentation.common.NightColors.parse("#6B7280"), top = 6)) }
 
         data.actions.groupBy { it.row }.toSortedMap().values.forEach { rowActions ->
             card.addView(LinearLayout(context).apply {
@@ -419,7 +419,7 @@ class ChatMessagesAdapter(
                     ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
                 ).apply { topMargin = 10.dp(context) }
                 rowActions.forEachIndexed { index, action ->
-                    val color = Color.parseColor(if (action.style == "warn") "#B45309" else "#1565C0")
+                    val color = com.upc.asistenteredidbi.presentation.common.NightColors.parse(if (action.style == "warn") "#B45309" else "#1565C0")
                     val filled = action.style == "primary"
                     addView(TextView(context).apply {
                         text = action.label
@@ -436,7 +436,7 @@ class ChatMessagesAdapter(
                         }
                         gravity = Gravity.CENTER
                         background = if (filled) rounded(color, 20f, context)
-                        else rounded(Color.WHITE, 20f, context, color)
+                        else rounded(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#FFFFFF"), 20f, context, color)
                         layoutParams = LinearLayout.LayoutParams(0, 40.dp(context), 1f).apply {
                             if (index > 0) marginStart = 8.dp(context)
                         }
@@ -457,14 +457,14 @@ class ChatMessagesAdapter(
                 textSize = 11f
                 typeface = Typeface.DEFAULT_BOLD
                 gravity = Gravity.CENTER
-                setTextColor(if (step.status == "pending") Color.parseColor("#9CA3AF") else Color.WHITE)
+                setTextColor(if (step.status == "pending") com.upc.asistenteredidbi.presentation.common.NightColors.parse("#9CA3AF") else Color.WHITE)
                 background = when (step.status) {
-                    "done" -> oval(Color.parseColor("#2E9E57"))
-                    "active" -> oval(Color.parseColor("#1565C0"))
+                    "done" -> oval(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#2E9E57"))
+                    "active" -> oval(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#1565C0"))
                     else -> GradientDrawable().apply {
                         shape = GradientDrawable.OVAL
-                        setColor(Color.WHITE)
-                        setStroke(1.5f.dp(context), Color.parseColor("#C9CFDA"))
+                        setColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#FFFFFF"))
+                        setStroke(1.5f.dp(context), com.upc.asistenteredidbi.presentation.common.NightColors.parse("#C9CFDA"))
                     }
                 }
                 layoutParams = LinearLayout.LayoutParams(18.dp(context), 18.dp(context)).apply { marginEnd = 8.dp(context) }
@@ -472,7 +472,7 @@ class ChatMessagesAdapter(
             addView(TextView(context).apply {
                 text = step.label
                 textSize = 13f
-                setTextColor(Color.parseColor(if (step.status == "pending") "#9CA3AF" else "#1F2937"))
+                setTextColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse(if (step.status == "pending") "#9CA3AF" else "#1F2937"))
             })
         }
 
@@ -487,7 +487,7 @@ class ChatMessagesAdapter(
                 text = title
                 textSize = 15f
                 typeface = Typeface.DEFAULT_BOLD
-                setTextColor(Color.parseColor("#1F2937"))
+                setTextColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#1F2937"))
                 layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
             })
             if (badge != null) {
@@ -495,9 +495,9 @@ class ChatMessagesAdapter(
                     text = badge
                     textSize = 11f
                     typeface = Typeface.DEFAULT_BOLD
-                    setTextColor(Color.parseColor(if (warnBadge) "#B45309" else "#1565C0"))
+                    setTextColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse(if (warnBadge) "#B45309" else "#1565C0"))
                     background = rounded(
-                        Color.parseColor(if (warnBadge) "#FFF1DC" else "#E3F0FF"), 12f, context
+                        com.upc.asistenteredidbi.presentation.common.NightColors.parse(if (warnBadge) "#FFF1DC" else "#E3F0FF"), 12f, context
                     )
                     setPadding(8.dp(context), 3.dp(context), 8.dp(context), 3.dp(context))
                 })
@@ -514,7 +514,7 @@ class ChatMessagesAdapter(
                 addView(LinearLayout(context).apply {
                     orientation = LinearLayout.VERTICAL
                     gravity = Gravity.CENTER
-                    background = rounded(Color.parseColor("#E8F1FD"), 10f, context)
+                    background = rounded(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#E8F1FD"), 10f, context)
                     setPadding(4.dp(context), 8.dp(context), 4.dp(context), 8.dp(context))
                     layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply {
                         if (index > 0) marginStart = 6.dp(context)
@@ -524,13 +524,13 @@ class ChatMessagesAdapter(
                         textSize = 17f
                         typeface = Typeface.DEFAULT_BOLD
                         gravity = Gravity.CENTER
-                        setTextColor(Color.parseColor("#1F5FBF"))
+                        setTextColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#1F5FBF"))
                     })
                     addView(TextView(context).apply {
                         text = field.label
                         textSize = 11f
                         gravity = Gravity.CENTER
-                        setTextColor(Color.parseColor("#6B7280"))
+                        setTextColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#6B7280"))
                     })
                 })
             }
@@ -544,14 +544,14 @@ class ChatMessagesAdapter(
             addView(TextView(context).apply {
                 text = field.label
                 textSize = 12f
-                setTextColor(Color.parseColor("#6B7280"))
+                setTextColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#6B7280"))
                 layoutParams = LinearLayout.LayoutParams(78.dp(context), ViewGroup.LayoutParams.WRAP_CONTENT)
             })
             addView(TextView(context).apply {
                 text = field.value
                 textSize = 13f
                 typeface = Typeface.DEFAULT_BOLD
-                setTextColor(Color.parseColor("#1F5FBF"))
+                setTextColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#1F5FBF"))
                 layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
             })
             if (field.key.isNotBlank()) {
@@ -561,7 +561,7 @@ class ChatMessagesAdapter(
                     textSize = 15f
                     typeface = Typeface.DEFAULT_BOLD
                     gravity = Gravity.CENTER
-                    setTextColor(Color.parseColor("#D32F2F"))
+                    setTextColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#D32F2F"))
                     contentDescription = "Eliminar la lectura ${field.label}"
                     layoutParams = LinearLayout.LayoutParams(32.dp(context), 32.dp(context))
                     setOnClickListener { onCardAction("RD_DEL:${field.key}") }
@@ -575,18 +575,18 @@ class ChatMessagesAdapter(
             gravity = Gravity.CENTER_VERTICAL
             setPadding(0, 6.dp(context), 0, 6.dp(context))
             background = android.graphics.drawable.LayerDrawable(arrayOf(
-                android.graphics.drawable.ColorDrawable(Color.parseColor("#E5E7EB"))
+                android.graphics.drawable.ColorDrawable(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#E5E7EB"))
             )).apply { setLayerHeight(0, 1.dp(context)); setLayerGravity(0, Gravity.BOTTOM) }
             addView(TextView(context).apply {
                 text = row.tag
                 textSize = 12f
-                setTextColor(Color.parseColor("#6B7280"))
+                setTextColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#6B7280"))
                 layoutParams = LinearLayout.LayoutParams(40.dp(context), ViewGroup.LayoutParams.WRAP_CONTENT)
             })
             addView(TextView(context).apply {
                 text = row.label
                 textSize = 13f
-                setTextColor(Color.parseColor("#1F2937"))
+                setTextColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#1F2937"))
                 layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
             })
             if (row.status.isNotEmpty()) {
@@ -594,7 +594,7 @@ class ChatMessagesAdapter(
                     text = if (row.status == "ok") "✓" else "¿?"
                     textSize = 13f
                     typeface = Typeface.DEFAULT_BOLD
-                    setTextColor(Color.parseColor(if (row.status == "ok") "#2E7D32" else "#E65100"))
+                    setTextColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse(if (row.status == "ok") "#2E7D32" else "#E65100"))
                 })
             }
         }
@@ -635,9 +635,9 @@ class ChatMessagesAdapter(
         val missing = thumb.status == "missing"
         val cell = FrameLayout(context).apply {
             background = if (missing) {
-                dashed(Color.parseColor("#FFF7EC"), Color.parseColor("#F0A63B"), 12f, context)
+                dashed(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#FFF7EC"), com.upc.asistenteredidbi.presentation.common.NightColors.parse("#F0A63B"), 12f, context)
             } else {
-                rounded(Color.parseColor("#263238"), 12f, context)
+                rounded(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#263238"), 12f, context)
             }
             clipRounded(this, 12f)
         }
@@ -655,7 +655,7 @@ class ChatMessagesAdapter(
             text = if (missing) "+\n${thumb.label}\nFalta" else thumb.label
             textSize = 10f
             typeface = Typeface.DEFAULT_BOLD
-            setTextColor(if (missing) Color.parseColor("#B45309") else Color.WHITE)
+            setTextColor(if (missing) com.upc.asistenteredidbi.presentation.common.NightColors.parse("#B45309") else Color.WHITE)
             gravity = if (missing) Gravity.CENTER else Gravity.START
             if (!missing) setShadowLayer(4f, 0f, 1f, Color.BLACK)
             setPadding(6.dp(context), 0, 6.dp(context), 4.dp(context))
@@ -674,7 +674,7 @@ class ChatMessagesAdapter(
                 gravity = Gravity.CENTER
                 background = GradientDrawable().apply {
                     shape = GradientDrawable.OVAL
-                    setColor(Color.parseColor(if (thumb.status == "ok") "#2E9E57" else "#F0A63B"))
+                    setColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse(if (thumb.status == "ok") "#2E9E57" else "#F0A63B"))
                 }
                 layoutParams = FrameLayout.LayoutParams(16.dp(context), 16.dp(context), Gravity.TOP or Gravity.END).apply {
                     topMargin = 4.dp(context)
@@ -712,9 +712,9 @@ class ChatMessagesAdapter(
     private fun box(context: Context, text: String, bg: String, fg: String) = TextView(context).apply {
         this.text = text
         textSize = 12f
-        setTextColor(Color.parseColor(fg))
+        setTextColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse(fg))
         setLineSpacing(2f, 1f)
-        background = rounded(Color.parseColor(bg), 10f, context)
+        background = rounded(com.upc.asistenteredidbi.presentation.common.NightColors.parse(bg), 10f, context)
         setPadding(10.dp(context), 8.dp(context), 10.dp(context), 8.dp(context))
         layoutParams = LinearLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT

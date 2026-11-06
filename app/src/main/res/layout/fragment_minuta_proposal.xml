@@ -3,7 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#F5F7FB">
+    android:background="@color/background">
 
     <LinearLayout
         android:id="@+id/header"
@@ -85,7 +85,7 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:text="Establecimiento"
-                            android:textColor="#111827"
+                            android:textColor="@color/text_strong"
                             android:textSize="20sp"
                             android:textStyle="bold" />
 
@@ -95,7 +95,7 @@
                             android:layout_height="wrap_content"
                             android:layout_marginTop="4dp"
                             android:text="Propuesta de Infraestructura de Red"
-                            android:textColor="#6B7280"
+                            android:textColor="@color/text_secondary"
                             android:textSize="14sp" />
                     </LinearLayout>
 
@@ -129,7 +129,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="Técnico"
-                            android:textColor="#9CA3AF"
+                            android:textColor="@color/text_muted"
                             android:textSize="12sp"
                             android:textStyle="bold" />
 
@@ -138,7 +138,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="-"
-                            android:textColor="#374151"
+                            android:textColor="@color/text_body"
                             android:textSize="14sp"
                             android:textStyle="bold" />
 
@@ -147,7 +147,7 @@
                             android:layout_height="wrap_content"
                             android:layout_marginTop="18dp"
                             android:text="Validada por"
-                            android:textColor="#9CA3AF"
+                            android:textColor="@color/text_muted"
                             android:textSize="12sp"
                             android:textStyle="bold" />
 
@@ -156,7 +156,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="—"
-                            android:textColor="#374151"
+                            android:textColor="@color/text_body"
                             android:textSize="14sp"
                             android:textStyle="bold" />
                     </LinearLayout>
@@ -171,7 +171,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="Fecha"
-                            android:textColor="#9CA3AF"
+                            android:textColor="@color/text_muted"
                             android:textSize="12sp"
                             android:textStyle="bold" />
 
@@ -180,7 +180,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="-"
-                            android:textColor="#374151"
+                            android:textColor="@color/text_body"
                             android:textSize="14sp"
                             android:textStyle="bold" />
 
@@ -189,7 +189,7 @@
                             android:layout_height="wrap_content"
                             android:layout_marginTop="18dp"
                             android:text="Versión"
-                            android:textColor="#9CA3AF"
+                            android:textColor="@color/text_muted"
                             android:textSize="12sp"
                             android:textStyle="bold" />
 
@@ -197,7 +197,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="v1.0"
-                            android:textColor="#374151"
+                            android:textColor="@color/text_body"
                             android:textSize="14sp"
                             android:textStyle="bold" />
                     </LinearLayout>
@@ -231,7 +231,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginStart="10dp"
                         android:text="Topología de Red Propuesta"
-                        android:textColor="#1F2937"
+                        android:textColor="@color/text_strong"
                         android:textSize="18sp"
                         android:textStyle="bold" />
 
@@ -241,7 +241,7 @@
                         android:layout_weight="1"
                         android:gravity="end"
                         android:text="Toca para ampliar"
-                        android:textColor="#9CA3AF"
+                        android:textColor="@color/text_muted"
                         android:textSize="12sp" />
                 </LinearLayout>
 
@@ -261,7 +261,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="10dp"
                     android:text="Línea sólida = cable de red · discontinua = WiFi · punteada = USB/Bluetooth · rojo = con falla"
-                    android:textColor="#9CA3AF"
+                    android:textColor="@color/text_muted"
                     android:textSize="12sp"
                     android:visibility="gone" />
 
@@ -272,7 +272,7 @@
                     android:layout_marginTop="16dp"
                     android:fontFamily="monospace"
                     android:text="Topología no disponible."
-                    android:textColor="#374151"
+                    android:textColor="@color/text_body"
                     android:textSize="14sp" />
             </LinearLayout>
 
@@ -303,7 +303,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginStart="10dp"
                         android:text="Equipamiento Recomendado"
-                        android:textColor="#1F2937"
+                        android:textColor="@color/text_strong"
                         android:textSize="18sp"
                         android:textStyle="bold" />
                 </LinearLayout>
@@ -333,7 +333,7 @@
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:text="Equipos totales"
-                        android:textColor="#374151"
+                        android:textColor="@color/text_body"
                         android:textSize="18sp"
                         android:textStyle="bold" />
 
@@ -375,7 +375,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginStart="10dp"
                         android:text="Diagnóstico Actual (AS-IS)"
-                        android:textColor="#1F2937"
+                        android:textColor="@color/text_strong"
                         android:textSize="18sp"
                         android:textStyle="bold" />
                 </LinearLayout>
@@ -415,7 +415,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginStart="10dp"
                         android:text="Propuesta Recomendada (TO-BE)"
-                        android:textColor="#1F2937"
+                        android:textColor="@color/text_strong"
                         android:textSize="18sp"
                         android:textStyle="bold" />
                 </LinearLayout>
@@ -481,7 +481,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
             android:gravity="center"
-            android:textColor="#6B7280"
+            android:textColor="@color/text_secondary"
             android:textSize="12sp"
             android:visibility="gone" />
 

@@ -4,7 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#F5F7FB">
+    android:background="@color/background">
 
     <LinearLayout
         android:id="@+id/header"
@@ -99,7 +99,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="Capture fotos de cada área del restaurante para el análisis de infraestructura."
-                android:textColor="#6B7280"
+                android:textColor="@color/text_secondary"
                 android:textSize="17sp"
                 android:lineSpacingExtra="4dp" />
 
@@ -123,7 +123,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="Plano del Local"
-                    android:textColor="#1F2937"
+                    android:textColor="@color/text_strong"
                     android:textSize="20sp"
                     android:textStyle="bold" />
 
@@ -155,7 +155,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="14dp"
                         android:text="Subir plano de planta"
-                        android:textColor="#1F2937"
+                        android:textColor="@color/text_strong"
                         android:textSize="16sp"
                         android:textStyle="bold" />
 
@@ -164,7 +164,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="8dp"
                         android:text="JPG, PNG, PDF · Máx 10MB"
-                        android:textColor="#9CA3AF"
+                        android:textColor="@color/text_muted"
                         android:textSize="14sp" />
 
                     <com.google.android.material.button.MaterialButton
@@ -205,7 +205,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="Topología de Red"
-                    android:textColor="#1F2937"
+                    android:textColor="@color/text_strong"
                     android:textSize="20sp"
                     android:textStyle="bold" />
 
@@ -237,7 +237,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="14dp"
                         android:text="Subir diagrama de topología"
-                        android:textColor="#1F2937"
+                        android:textColor="@color/text_strong"
                         android:textSize="16sp"
                         android:textStyle="bold" />
 
@@ -246,7 +246,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="8dp"
                         android:text="JPG, PNG, PDF · Máx 10MB"
-                        android:textColor="#9CA3AF"
+                        android:textColor="@color/text_muted"
                         android:textSize="14sp" />
 
                     <com.google.android.material.button.MaterialButton

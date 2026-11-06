@@ -115,11 +115,11 @@ class MapCanvasView @JvmOverloads constructor(
     private val fillPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL }
     private val ringPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE; strokeWidth = 3f * d }
     private val labelPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = Color.parseColor("#1F2937"); textSize = 11f * density; typeface = Typeface.DEFAULT_BOLD
+        color = com.upc.asistenteredidbi.presentation.common.NightColors.parse("#1F2937"); textSize = 11f * density; typeface = Typeface.DEFAULT_BOLD
         textAlign = Paint.Align.CENTER
     }
     private val noteTextPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = Color.parseColor("#5A3C0A"); typeface = Typeface.DEFAULT_BOLD
+        color = com.upc.asistenteredidbi.presentation.common.NightColors.parse("#5A3C0A"); typeface = Typeface.DEFAULT_BOLD
     }
     private val handlePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL }
     private val iconCache = HashMap<String, android.graphics.drawable.Drawable?>()
@@ -201,7 +201,7 @@ class MapCanvasView @JvmOverloads constructor(
         val selected = (selection?.kind == "link" && selection?.id == l.id) || l.id in multiSelection
         val child = if (l.kind == "usb") byId[l.source] else byId[l.target]
         val host = if (l.kind == "usb") byId[l.target] else byId[l.source]
-        val color = Color.parseColor(
+        val color = com.upc.asistenteredidbi.presentation.common.NightColors.parse(
             l.color ?: when {
                 l.observed -> "#D32F2F"
                 child?.isPending == true || (l.kind == "usb" && host?.isPending == true) -> "#9E9E9E"
@@ -227,7 +227,7 @@ class MapCanvasView @JvmOverloads constructor(
             for (p in points.drop(1)) lineTo(p.first, p.second)
         }
         if (selected) {
-            linkPaint.color = Color.parseColor("#90CAF9"); linkPaint.strokeWidth = width + 6f * d; linkPaint.pathEffect = null
+            linkPaint.color = com.upc.asistenteredidbi.presentation.common.NightColors.parse("#90CAF9"); linkPaint.strokeWidth = width + 6f * d; linkPaint.pathEffect = null
             canvas.drawPath(path, linkPaint)
         }
         linkPaint.color = color
@@ -256,7 +256,7 @@ class MapCanvasView @JvmOverloads constructor(
                 val s = (16f * d).toInt()
                 val ix = (arrowTip.first - ux * 22f * d - uy * 14f * d).toInt(); val iy = (arrowTip.second - uy * 22f * d + ux * 14f * d).toInt()
                 it.setBounds(ix - s / 2, iy - s / 2, ix + s / 2, iy + s / 2)
-                it.setTint(Color.parseColor("#455A64"))
+                it.setTint(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#455A64"))
                 it.draw(canvas)
             }
         }
@@ -269,11 +269,11 @@ class MapCanvasView @JvmOverloads constructor(
     private fun drawNode(canvas: Canvas, n: MapNodeModel) {
         val (cx, cy) = nodePos(n)
         val pending = n.isPending
-        val color = Color.parseColor(if (n.isBroken) "#D32F2F" else (n.color ?: MapNodeTypes.colorHex(n.type)))
+        val color = com.upc.asistenteredidbi.presentation.common.NightColors.parse(if (n.isBroken) "#D32F2F" else (n.color ?: MapNodeTypes.colorHex(n.type)))
         if (pending) {
             fillPaint.color = Color.WHITE
             canvas.drawCircle(cx, cy, nodeRadius, fillPaint)
-            ringPaint.color = Color.parseColor("#455A64")
+            ringPaint.color = com.upc.asistenteredidbi.presentation.common.NightColors.parse("#455A64")
             ringPaint.strokeWidth = 2f * d
             ringPaint.pathEffect = DashPathEffect(floatArrayOf(5f * d, 4f * d), 0f)
             canvas.drawCircle(cx, cy, nodeRadius, ringPaint)
@@ -286,7 +286,7 @@ class MapCanvasView @JvmOverloads constructor(
         icon(n.type)?.let {
             val s = (nodeRadius * 1.05f).toInt()
             it.setBounds((cx - s / 2).toInt(), (cy - s / 2).toInt(), (cx + s / 2).toInt(), (cy + s / 2).toInt())
-            it.setTint(if (pending) Color.parseColor("#455A64") else Color.WHITE)
+            it.setTint(if (pending) com.upc.asistenteredidbi.presentation.common.NightColors.parse("#455A64") else Color.WHITE)
             it.draw(canvas)
         }
         // Rayo de energía: azul si hay toma cerca, rojo si falta. Mide el 45 % del ícono del equipo.
@@ -297,29 +297,29 @@ class MapCanvasView @JvmOverloads constructor(
                 bolt.setBounds(bx - 1, by - 1, bx + bs + 1, by + bs + 1)
                 bolt.setTint(Color.WHITE); bolt.draw(canvas)
                 bolt.setBounds(bx + 2, by + 2, bx + bs - 2, by + bs - 2)
-                bolt.setTint(Color.parseColor(if (power == "ok") "#1565C0" else "#D32F2F")); bolt.draw(canvas)
+                bolt.setTint(com.upc.asistenteredidbi.presentation.common.NightColors.parse(if (power == "ok") "#1565C0" else "#D32F2F")); bolt.draw(canvas)
             }
         }
         if (selection?.kind == "node" && selection?.id == n.id) {
-            ringPaint.color = Color.parseColor("#1565C0")
+            ringPaint.color = com.upc.asistenteredidbi.presentation.common.NightColors.parse("#1565C0")
             canvas.drawCircle(cx, cy, nodeRadius + 4f * d, ringPaint)
         }
         if (n.id in multiSelection) {
-            ringPaint.color = Color.parseColor("#D32F2F")
+            ringPaint.color = com.upc.asistenteredidbi.presentation.common.NightColors.parse("#D32F2F")
             canvas.drawCircle(cx, cy, nodeRadius + 4f * d, ringPaint)
         }
         if (connectSourceId == n.id) {
-            ringPaint.color = Color.parseColor("#00838F")
+            ringPaint.color = com.upc.asistenteredidbi.presentation.common.NightColors.parse("#00838F")
             ringPaint.pathEffect = DashPathEffect(floatArrayOf(5f * d, 4f * d), 0f)
             canvas.drawCircle(cx, cy, nodeRadius + 5f * d, ringPaint)
             ringPaint.pathEffect = null
         }
         // Nombre, ubicación e IP debajo del ícono.
         var y = cy + nodeRadius + 14f * d
-        labelPaint.color = Color.parseColor(if (n.isBroken) "#B42318" else "#1F2937")
+        labelPaint.color = com.upc.asistenteredidbi.presentation.common.NightColors.parse(if (n.isBroken) "#B42318" else "#1F2937")
         canvas.drawText(n.label.take(if (staticPreview) 16 else 26), cx, y, labelPaint)
         val small = TextPaint(labelPaint).apply { typeface = Typeface.DEFAULT; textSize = labelPaint.textSize * 0.82f }
-        small.color = Color.parseColor("#4B5563")
+        small.color = com.upc.asistenteredidbi.presentation.common.NightColors.parse("#4B5563")
         val lines = buildList {
             n.detail?.takeIf { it.isNotBlank() }?.let { add(it to false) }
             n.location?.takeIf { it.isNotBlank() }?.let { add("Ubic.: $it" to false) }
@@ -327,16 +327,16 @@ class MapCanvasView @JvmOverloads constructor(
         }
         for ((text, bad) in lines) {
             y += small.textSize * 1.15f
-            small.color = Color.parseColor(if (bad) "#B42318" else "#4B5563")
+            small.color = com.upc.asistenteredidbi.presentation.common.NightColors.parse(if (bad) "#B42318" else "#4B5563")
             canvas.drawText(text.take(if (staticPreview) 18 else 30), cx, y, small)
         }
     }
 
     private fun drawText(canvas: Canvas, t: MapTextModel) {
         val r = textRect(t)
-        fillPaint.color = Color.parseColor(t.color.takeIf { it.startsWith("#") } ?: "#FFF4CC")
+        fillPaint.color = com.upc.asistenteredidbi.presentation.common.NightColors.parse(t.color.takeIf { it.startsWith("#") } ?: "#FFF4CC")
         canvas.drawRoundRect(r, 8f * d, 8f * d, fillPaint)
-        ringPaint.color = Color.parseColor("#B0822C")
+        ringPaint.color = com.upc.asistenteredidbi.presentation.common.NightColors.parse("#B0822C")
         ringPaint.strokeWidth = 1.5f * d
         canvas.drawRoundRect(r, 8f * d, 8f * d, ringPaint)
         ringPaint.strokeWidth = 3f * d
@@ -353,10 +353,10 @@ class MapCanvasView @JvmOverloads constructor(
         if (bmp != null) {
             canvas.drawBitmap(bmp, null, r, null)
         } else {
-            fillPaint.color = Color.parseColor("#CFD8DC")
+            fillPaint.color = com.upc.asistenteredidbi.presentation.common.NightColors.parse("#CFD8DC")
             canvas.drawRect(r, fillPaint)
         }
-        ringPaint.color = Color.parseColor("#2E7D32")
+        ringPaint.color = com.upc.asistenteredidbi.presentation.common.NightColors.parse("#2E7D32")
         ringPaint.strokeWidth = 2f * d
         canvas.drawRect(r, ringPaint)
         ringPaint.strokeWidth = 3f * d
@@ -365,7 +365,7 @@ class MapCanvasView @JvmOverloads constructor(
     }
 
     private fun drawHandles(canvas: Canvas, r: RectF, color: String) {
-        handlePaint.color = Color.parseColor(color)
+        handlePaint.color = com.upc.asistenteredidbi.presentation.common.NightColors.parse(color)
         val s = 4f * d
         for ((x, y) in listOf(r.left to r.top, r.right to r.top, r.left to r.bottom, r.right to r.bottom)) {
             canvas.drawRect(x - s, y - s, x + s, y + s, handlePaint)

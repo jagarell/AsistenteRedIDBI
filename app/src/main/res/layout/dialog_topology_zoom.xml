@@ -17,18 +17,18 @@
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="#F5F7FB"
+        android:background="@color/background"
         android:gravity="center"
         android:padding="8dp"
         android:text="Pellizcá para acercar/alejar · arrastrá para mover · doble tap para ver todo"
-        android:textColor="#6B7280"
+        android:textColor="@color/text_secondary"
         android:textSize="12sp" />
 
     <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:background="#FAFAFA"
+        android:background="@color/background"
         android:clipChildren="true">
 
         <com.upc.asistenteredidbi.presentation.common.TopologyGraphView

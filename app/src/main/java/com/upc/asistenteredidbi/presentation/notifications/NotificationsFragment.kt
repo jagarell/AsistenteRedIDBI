@@ -36,11 +36,11 @@ class NotificationsFragment : Fragment() {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         val ctx = requireContext()
         val dp = resources.displayMetrics.density
-        val root = LinearLayout(ctx).apply { orientation = LinearLayout.VERTICAL; setBackgroundColor(Color.parseColor("#F5F7FB")) }
+        val root = LinearLayout(ctx).apply { orientation = LinearLayout.VERTICAL; setBackgroundColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#F5F7FB")) }
         root.addView(LinearLayout(ctx).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
-            setBackgroundColor(Color.parseColor("#1976D2"))
+            setBackgroundColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#1976D2"))
             setPadding((16 * dp).toInt(), (40 * dp).toInt(), (16 * dp).toInt(), (16 * dp).toInt())
             addView(TextView(ctx).apply {
                 text = "←"; textSize = 26f; setTextColor(Color.WHITE); setPadding(0, 0, (16 * dp).toInt(), 0)
@@ -50,7 +50,7 @@ class NotificationsFragment : Fragment() {
         })
         list = LinearLayout(ctx).apply { orientation = LinearLayout.VERTICAL; setPadding((16 * dp).toInt(), (12 * dp).toInt(), (16 * dp).toInt(), (24 * dp).toInt()) }
         empty = TextView(ctx).apply {
-            text = "No tienes notificaciones."; textSize = 15f; setTextColor(Color.parseColor("#6B7280")); gravity = Gravity.CENTER
+            text = "No tienes notificaciones."; textSize = 15f; setTextColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#6B7280")); gravity = Gravity.CENTER
             setPadding(0, (48 * dp).toInt(), 0, 0)
         }
         list.addView(empty)
@@ -78,15 +78,15 @@ class NotificationsFragment : Fragment() {
             list.addView(LinearLayout(ctx).apply {
                 orientation = LinearLayout.VERTICAL
                 background = GradientDrawable().apply {
-                    setColor(if (n.read) Color.WHITE else Color.parseColor("#EAF2FD")); cornerRadius = 16 * dp
-                    setStroke((1 * dp).toInt(), Color.parseColor("#D6E4FA"))
+                    setColor(if (n.read) Color.WHITE else com.upc.asistenteredidbi.presentation.common.NightColors.parse("#EAF2FD")); cornerRadius = 16 * dp
+                    setStroke((1 * dp).toInt(), com.upc.asistenteredidbi.presentation.common.NightColors.parse("#D6E4FA"))
                 }
                 setPadding((16 * dp).toInt(), (12 * dp).toInt(), (16 * dp).toInt(), (12 * dp).toInt())
                 layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply { bottomMargin = (10 * dp).toInt() }
-                addView(TextView(ctx).apply { text = n.title; textSize = 15f; typeface = Typeface.DEFAULT_BOLD; setTextColor(Color.parseColor("#1F2937")) })
-                addView(TextView(ctx).apply { text = n.body; textSize = 14f; setTextColor(Color.parseColor("#374151")); setPadding(0, (4 * dp).toInt(), 0, 0) })
+                addView(TextView(ctx).apply { text = n.title; textSize = 15f; typeface = Typeface.DEFAULT_BOLD; setTextColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#1F2937")) })
+                addView(TextView(ctx).apply { text = n.body; textSize = 14f; setTextColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#374151")); setPadding(0, (4 * dp).toInt(), 0, 0) })
                 n.createdAt?.take(16)?.replace('T', ' ')?.let {
-                    addView(TextView(ctx).apply { text = it; textSize = 12f; setTextColor(Color.parseColor("#9CA3AF")); setPadding(0, (6 * dp).toInt(), 0, 0) })
+                    addView(TextView(ctx).apply { text = it; textSize = 12f; setTextColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#9CA3AF")); setPadding(0, (6 * dp).toInt(), 0, 0) })
                 }
                 n.evaluationId?.let { evaluationId ->
                     setOnClickListener {

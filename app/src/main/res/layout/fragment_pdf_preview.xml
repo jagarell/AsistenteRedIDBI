@@ -64,7 +64,7 @@
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
                 android:text="No se pudo cargar la vista previa del PDF."
-                android:textColor="#6B7280"
+                android:textColor="@color/text_secondary"
                 android:textSize="15sp"
                 android:visibility="gone" />
         </FrameLayout>
@@ -95,7 +95,7 @@
                 android:layout_weight="1"
                 android:gravity="center"
                 android:text="Página 1 de 1"
-                android:textColor="#4B5563"
+                android:textColor="@color/text_body"
                 android:textSize="14sp"
                 android:textStyle="bold" />
 
@@ -126,7 +126,7 @@
                 android:minWidth="48dp"
                 android:gravity="center"
                 android:text="100 %"
-                android:textColor="#4B5563"
+                android:textColor="@color/text_body"
                 android:textSize="13sp" />
 
             <TextView
@@ -154,7 +154,7 @@
                 android:gravity="center"
                 android:padding="8dp"
                 android:text="Así quedará el PDF. Vuelve a la propuesta y toca «Generar PDF» para emitirlo."
-                android:textColor="#6B7280"
+                android:textColor="@color/text_secondary"
                 android:textSize="13sp"
                 android:visibility="gone" />
 

@@ -32,8 +32,12 @@ class MainActivity : AppCompatActivity() {
     @Inject
     lateinit var notificationTokenSync: NotificationTokenSync
 
+    @Inject
+    lateinit var appPreferences: com.upc.asistenteredidbi.data.session.AppPreferences
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        com.upc.asistenteredidbi.presentation.common.NightColors.sync(resources.configuration)
 
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
@@ -77,6 +81,17 @@ class MainActivity : AppCompatActivity() {
         drawer.tvDrawerVersion.text = "v$versionName · Asistente de Red"
 
         drawer.btnCloseDrawer.setOnClickListener { closeDrawer() }
+        // Modo noche: mismo valor que el interruptor de Perfil y configuración.
+        val isNight = (resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK) ==
+            android.content.res.Configuration.UI_MODE_NIGHT_YES
+        drawer.switchNightDrawer.isChecked = isNight
+        drawer.switchNightDrawer.setOnCheckedChangeListener { _, checked ->
+            kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch { appPreferences.setDarkMode(checked) } // fuera del ciclo: la actividad se recrea
+            androidx.appcompat.app.AppCompatDelegate.setDefaultNightMode(
+                if (checked) androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_YES
+                else androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_NO
+            )
+        }
         drawer.navLogout.setOnClickListener {
             closeDrawer()
             sessionViewModel.logout()

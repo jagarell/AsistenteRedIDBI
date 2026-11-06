@@ -14,7 +14,7 @@ object ObservationsDialog {
     fun show(ctx: Context, current: Map<String, Any?>, onSave: (Map<String, Any?>) -> Unit) {
         val dp = ctx.resources.displayMetrics.density
         val form = LinearLayout(ctx).apply { orientation = LinearLayout.VERTICAL; setPadding((24 * dp).toInt(), (8 * dp).toInt(), (24 * dp).toInt(), 0) }
-        fun label(t: String) = TextView(ctx).apply { text = t; textSize = 12f; setTextColor(Color.parseColor("#6B7280")); setPadding(0, (12 * dp).toInt(), 0, 0) }
+        fun label(t: String) = TextView(ctx).apply { text = t; textSize = 12f; setTextColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#6B7280")); setPadding(0, (12 * dp).toInt(), 0, 0) }
         fun input(hint: String, value: Any?, multi: Boolean = false) = EditText(ctx).apply {
             this.hint = hint; setText(value?.toString().orEmpty())
             inputType = InputType.TYPE_CLASS_TEXT or (if (multi) InputType.TYPE_TEXT_FLAG_MULTI_LINE else 0) or InputType.TYPE_TEXT_FLAG_CAP_SENTENCES

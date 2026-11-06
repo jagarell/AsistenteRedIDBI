@@ -265,6 +265,36 @@
                 android:textStyle="bold" />
         </LinearLayout>
 
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:minHeight="48dp"
+            android:orientation="horizontal"
+            android:paddingStart="20dp"
+            android:paddingEnd="20dp">
+
+            <ImageView
+                android:layout_width="22dp"
+                android:layout_height="22dp"
+                app:srcCompat="@drawable/ic_moon"
+                app:tint="@android:color/white" />
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="18dp"
+                android:layout_weight="1"
+                android:text="Modo noche"
+                android:textColor="@android:color/white"
+                android:textSize="15sp" />
+
+            <androidx.appcompat.widget.SwitchCompat
+                android:id="@+id/switchNightDrawer"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+        </LinearLayout>
+
         <TextView
             android:id="@+id/tvDrawerVersion"
             android:layout_width="match_parent"

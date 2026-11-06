@@ -18,9 +18,9 @@ object StagePill {
     fun apply(view: TextView, stage: EvaluationStage, rejected: Boolean = false) {
         val (bg, fg) = if (rejected) "#FDECEA" to "#C62828" else colors(stage)
         view.text = if (rejected) "Rechazada" else stage.label
-        view.setTextColor(Color.parseColor(fg))
+        view.setTextColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse(fg))
         view.background = GradientDrawable().apply {
-            setColor(Color.parseColor(bg))
+            setColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse(bg))
             cornerRadius = 16f * view.resources.displayMetrics.density
         }
     }

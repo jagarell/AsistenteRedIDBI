@@ -56,5 +56,13 @@
     <color name="orange_status">#EF6C00</color>
     <color name="purple_status">#6A1B9A</color>
 
-
+    <!-- Neutros y tintes (con variante en values-night) -->
+    <color name="text_strong">#1F2937</color>
+    <color name="text_body">#374151</color>
+    <color name="text_muted">#9CA3AF</color>
+    <color name="stroke_soft">#C9D8F2</color>
+    <color name="tint_orange">#FFF3E0</color>
+    <color name="tint_red">#FDEAEA</color>
+    <color name="tint_green">#E8F5E9</color>
+    <color name="tint_purple">#F3E5F5</color>
 </resources>

@@ -353,7 +353,7 @@ class TechnicalChatFragment : Fragment() {
             form.addView(TextView(requireContext()).apply {
                 text = f.label
                 textSize = 12f
-                setTextColor(Color.parseColor("#6B7280"))
+                setTextColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#6B7280"))
                 setPadding(0, dp(10), 0, 0)
             })
             if (f.type == "sel") {
@@ -410,7 +410,7 @@ class TechnicalChatFragment : Fragment() {
             box.addView(url)
             box.addView(TextView(requireContext()).apply {
                 text = "Quitar"
-                setTextColor(Color.parseColor("#D32F2F"))
+                setTextColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#D32F2F"))
                 textSize = 13f
                 setPadding(0, dp(4), 0, 0)
                 setOnClickListener { list.removeView(box); rows.removeAll { it.second === url } }
@@ -423,7 +423,7 @@ class TechnicalChatFragment : Fragment() {
         root.addView(android.widget.ScrollView(requireContext()).apply { addView(list) }, LinearLayout.LayoutParams(-1, 0, 1f))
         root.addView(TextView(requireContext()).apply {
             text = "+ Agregar otro enlace"
-            setTextColor(Color.parseColor("#1565C0"))
+            setTextColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#1565C0"))
             typeface = android.graphics.Typeface.DEFAULT_BOLD
             setPadding(dp(24), dp(10), dp(24), dp(10))
             setOnClickListener { addRow() }
@@ -472,7 +472,7 @@ class TechnicalChatFragment : Fragment() {
                         }
                     }, LinearLayout.LayoutParams(0, -2, 1f))
                     row.addView(TextView(requireContext()).apply {
-                        text = "✕"; textSize = 16f; setTextColor(Color.parseColor("#D32F2F")); setPadding(dp(12), 0, dp(4), 0)
+                        text = "✕"; textSize = 16f; setTextColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#D32F2F")); setPadding(dp(12), 0, dp(4), 0)
                         setOnClickListener { push(); steps.removeAt(i); render() }
                     })
                     box.addView(row)
@@ -486,7 +486,7 @@ class TechnicalChatFragment : Fragment() {
             box.addView(addFor)
             box.addView(addText)
             box.addView(TextView(requireContext()).apply {
-                text = "+ Agregar paso"; setTextColor(Color.parseColor("#1565C0")); typeface = android.graphics.Typeface.DEFAULT_BOLD
+                text = "+ Agregar paso"; setTextColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#1565C0")); typeface = android.graphics.Typeface.DEFAULT_BOLD
                 setPadding(0, dp(8), 0, dp(4))
                 setOnClickListener {
                     val t = addText.text.toString().trim()
@@ -529,7 +529,7 @@ class TechnicalChatFragment : Fragment() {
             box.removeAllViews()
             box.addView(TextView(requireContext()).apply {
                 text = "Toca «Medir aquí» en cada zona. Puedes cambiar los valores. Señal: ≥ −60 excelente · −60 a −67 buena · −67 a −75 regular · menos mala. Latencia: <50 · 50–100 · 100–200 · >200."
-                textSize = 12f; setTextColor(Color.parseColor("#6B7280"))
+                textSize = 12f; setTextColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#6B7280"))
             })
             node.zones.forEach { z ->
                 val row = LinearLayout(requireContext()).apply { orientation = LinearLayout.VERTICAL; setPadding(0, dp(10), 0, 0) }
@@ -537,14 +537,14 @@ class TechnicalChatFragment : Fragment() {
                 val m = values[z]
                 if (m == null) {
                     row.addView(TextView(requireContext()).apply {
-                        text = "Medir aquí"; setTextColor(Color.parseColor("#1565C0")); typeface = android.graphics.Typeface.DEFAULT_BOLD
+                        text = "Medir aquí"; setTextColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#1565C0")); typeface = android.graphics.Typeface.DEFAULT_BOLD
                         setPadding(0, dp(6), 0, dp(6))
                         setOnClickListener { values[z] = measureWifi(); render() }
                     })
                 } else {
                     val dbm = EditText(requireContext()).apply { hint = "Señal (dBm)"; setText(m.first.toString()); inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_SIGNED }
                     val ping = EditText(requireContext()).apply { hint = "Latencia (ms)"; setText(m.second.toString()); inputType = InputType.TYPE_CLASS_NUMBER }
-                    val result = TextView(requireContext()).apply { text = "→ ${rate(m.first, m.second)}"; setTextColor(Color.parseColor("#1565C0")) }
+                    val result = TextView(requireContext()).apply { text = "→ ${rate(m.first, m.second)}"; setTextColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#1565C0")) }
                     val watcher = object : android.text.TextWatcher {
                         override fun afterTextChanged(e: android.text.Editable?) {
                             val a = dbm.text.toString().toIntOrNull() ?: return
@@ -795,7 +795,7 @@ class TechnicalChatFragment : Fragment() {
             text = if (status == "WRONG") "Continuar sin esta lectura" else "Saltar evidencia"
             textSize = 14f
             typeface = android.graphics.Typeface.DEFAULT_BOLD
-            setTextColor(Color.parseColor("#1565C0"))
+            setTextColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#1565C0"))
             gravity = Gravity.CENTER
             setPadding(0, dp(12), 0, dp(4))
             setOnClickListener { viewModel.skipEvidence() }
@@ -815,7 +815,7 @@ class TechnicalChatFragment : Fragment() {
         iconRes: Int? = null,
         onClick: () -> Unit
     ): MaterialButton {
-        val blue = Color.parseColor("#1565C0")
+        val blue = com.upc.asistenteredidbi.presentation.common.NightColors.parse("#1565C0")
         return MaterialButton(
             requireContext(),
             null,
@@ -832,7 +832,7 @@ class TechnicalChatFragment : Fragment() {
                 backgroundTintList = ColorStateList.valueOf(blue)
                 setTextColor(Color.WHITE)
             } else {
-                backgroundTintList = ColorStateList.valueOf(Color.WHITE)
+                backgroundTintList = ColorStateList.valueOf(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#FFFFFF"))
                 setTextColor(blue)
                 strokeColor = ColorStateList.valueOf(blue)
                 strokeWidth = dp(2)
@@ -996,7 +996,7 @@ class TechnicalChatFragment : Fragment() {
 
     // ---- chips de respuesta rápida ---------------------------------------------------
     private fun addQuickReplyChip(label: String, filled: Boolean = false, compact: Boolean = false, onClick: () -> Unit) {
-        val blue = Color.parseColor("#1565C0")
+        val blue = com.upc.asistenteredidbi.presentation.common.NightColors.parse("#1565C0")
         val button = MaterialButton(
             requireContext(),
             null,
@@ -1014,7 +1014,7 @@ class TechnicalChatFragment : Fragment() {
             setPadding(dp(if (compact) 12 else 14), 0, dp(if (compact) 12 else 14), 0)
             if (compact) {
                 // Sugerencias del chat libre: píldoras celestes sin borde, como en el prototipo.
-                backgroundTintList = ColorStateList.valueOf(Color.parseColor("#E8F1FD"))
+                backgroundTintList = ColorStateList.valueOf(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#E8F1FD"))
                 strokeWidth = 0
                 setTextColor(blue)
                 typeface = android.graphics.Typeface.DEFAULT
@@ -1034,7 +1034,7 @@ class TechnicalChatFragment : Fragment() {
                 for (i in 0 until binding.containerQuickReplies.childCount) {
                     binding.containerQuickReplies.getChildAt(i).isEnabled = false
                 }
-                backgroundTintList = ColorStateList.valueOf(Color.parseColor("#1565C0"))
+                backgroundTintList = ColorStateList.valueOf(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#1565C0"))
                 setTextColor(Color.WHITE)
                 viewLifecycleOwner.lifecycleScope.launch {
                     kotlinx.coroutines.delay(120)
@@ -1058,7 +1058,7 @@ class TechnicalChatFragment : Fragment() {
                     if (isChecked) multiSelectAnswers[value] = label else multiSelectAnswers.remove(value)
                 }
                 // Como el prototipo: contorno azul con fondo blanco; marcado = relleno azul.
-                val blue = Color.parseColor("#1565C0")
+                val blue = com.upc.asistenteredidbi.presentation.common.NightColors.parse("#1565C0")
                 val checkedStates = arrayOf(intArrayOf(android.R.attr.state_checked), intArrayOf())
                 chipBackgroundColor = ColorStateList(checkedStates, intArrayOf(blue, Color.WHITE))
                 setTextColor(ColorStateList(checkedStates, intArrayOf(Color.WHITE, blue)))

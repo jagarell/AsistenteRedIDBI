@@ -113,6 +113,15 @@ class ConfiguracionFragment : Fragment() {
 
     private fun setupSwitches() {
         binding.switchTwoFactor.setOnCheckedChangeListener { _, checked -> viewModel.setTwoFactorAuth(checked) }
+        binding.switchDarkMode.isChecked = (resources.configuration.uiMode and
+            android.content.res.Configuration.UI_MODE_NIGHT_MASK) == android.content.res.Configuration.UI_MODE_NIGHT_YES
+        binding.switchDarkMode.setOnCheckedChangeListener { _, checked ->
+            viewModel.setDarkMode(checked)
+            androidx.appcompat.app.AppCompatDelegate.setDefaultNightMode(
+                if (checked) androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_YES
+                else androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_NO
+            )
+        }
         binding.switchPush.setOnCheckedChangeListener { _, checked -> viewModel.setPushNotifications(checked) }
         binding.switchEmail.setOnCheckedChangeListener { _, checked -> viewModel.setEmailNotifications(checked) }
         binding.switchSystemAlerts.setOnCheckedChangeListener { _, checked -> viewModel.setSystemAlerts(checked) }
