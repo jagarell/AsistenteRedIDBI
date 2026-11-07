@@ -39,7 +39,12 @@ class HomeRecentAdapter(
         fun bind(item: HomeRecentItem) {
             binding.tvTitle.text = item.title
             binding.tvDate.text = item.date
-            com.upc.asistenteredidbi.presentation.common.StagePill.apply(binding.tvStatus, item.stage, item.rejected)
+            if (item.estadoTexto != null) {
+                val (bg, fg) = com.upc.asistenteredidbi.presentation.reportes.Ui007.estadoColors(item.estadoTexto)
+                binding.tvStatus.text = item.estadoTexto
+                binding.tvStatus.setTextColor(fg)
+                binding.tvStatus.background = android.graphics.drawable.GradientDrawable().apply { setColor(bg); cornerRadius = 40f }
+            } else com.upc.asistenteredidbi.presentation.common.StagePill.apply(binding.tvStatus, item.stage, item.rejected)
 
             binding.root.setOnClickListener {
                 onItemClick(item)

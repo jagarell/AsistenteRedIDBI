@@ -119,6 +119,9 @@ interface Api007Service {
     @GET("api/minutas/{id}/fotos/{archivo}")
     suspend fun foto(@Path("id") id: Long, @Path("archivo") archivo: String): okhttp3.ResponseBody
 
+    @POST("api/asistente/programados/{id}/cancelar")
+    suspend fun cancelarProgramado(@Path("id") id: Long): Map<String, @JvmSuppressWildcards Any?>
+
     @GET("api/panel")
     suspend fun panel(@retrofit2.http.Query("dias") dias: Int): Map<String, @JvmSuppressWildcards Any?>
 

@@ -7,5 +7,8 @@ data class HomeRecentItem(
     val title: String,
     val date: String,
     val stage: EvaluationStage,
-    val rejected: Boolean = false
+    val rejected: Boolean = false,
+    /** Minutas del equipo o de la empresa (supervisor y administrador): estado en texto y minuta de origen. */
+    val estadoTexto: String? = null,
+    val minutaId: Long? = null
 )

@@ -33,6 +33,12 @@ class MainActivity : AppCompatActivity() {
     lateinit var notificationTokenSync: NotificationTokenSync
 
     @Inject
+    lateinit var notificationApi: com.upc.asistenteredidbi.data.remote.NotificationApiService
+
+    @Inject
+    lateinit var api007: com.upc.asistenteredidbi.data.remote.Api007Service
+
+    @Inject
     lateinit var appPreferences: com.upc.asistenteredidbi.data.session.AppPreferences
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -68,8 +74,27 @@ class MainActivity : AppCompatActivity() {
         navController = navHostFragment.navController
     }
 
+    /** Punto rojo y «Nuevo» en Notificaciones si hay avisos sin leer; el administrador ve su plan («Empresa · N de 10 usuarios»). */
+    private fun refrescarMenu() {
+        lifecycleScope.launch {
+            val sinLeer = runCatching { notificationApi.listNotifications().unread }.getOrDefault(0)
+            val d = binding.navDrawerContent
+            d.navNotifDot.visibility = if (sinLeer > 0) View.VISIBLE else View.GONE
+            d.navNotifBadge.visibility = if (sinLeer > 0) View.VISIBLE else View.GONE
+            if (d.navPreguntas.visibility == View.VISIBLE) {
+                val usuarios = (runCatching { api007.panel(14)["usuarios"] }.getOrNull() as? Number)?.toInt()
+                if (usuarios != null) {
+                    d.navPlan.visibility = View.VISIBLE
+                    d.tvPlanTexto.text = "Empresa · $usuarios de 10 usuarios"
+                    d.pbPlan.progress = usuarios.coerceAtMost(10)
+                }
+            } else d.navPlan.visibility = View.GONE
+        }
+    }
+
     fun openDrawer() {
         sessionViewModel.loadDrawerProfile()
+        refrescarMenu()
         binding.drawerLayoutRoot.openDrawer(GravityCompat.START)
     }
 
@@ -108,6 +133,7 @@ class MainActivity : AppCompatActivity() {
         drawer.navHistorial.setOnClickListener { navigateFromDrawer(R.id.action_home_to_historial) }
         drawer.navAsistente.setOnClickListener { navigateFromDrawer(R.id.action_home_to_asistente) }
         drawer.navPropuestas.setOnClickListener { navigateFromDrawer(R.id.action_home_to_minutas) }
+        drawer.navPlan.setOnClickListener { navigateFromDrawer(R.id.action_home_to_equipo) }
         drawer.navPanel.setOnClickListener { navigateFromDrawer(R.id.action_home_to_panel) }
         drawer.navPreguntas.setOnClickListener { navigateFromDrawer(R.id.action_home_to_preguntas) }
         drawer.navEquipo.setOnClickListener { navigateFromDrawer(R.id.action_home_to_equipo) }
@@ -129,6 +155,7 @@ class MainActivity : AppCompatActivity() {
                         drawer.navPanel.visibility = if (profile.role != com.upc.asistenteredidbi.domain.model.Role.TECNICO) View.VISIBLE else View.GONE
                         drawer.navPreguntas.visibility = if (profile.role == com.upc.asistenteredidbi.domain.model.Role.ADMINISTRADOR) View.VISIBLE else View.GONE
                         drawer.navEquipo.visibility = if (profile.role == com.upc.asistenteredidbi.domain.model.Role.ADMINISTRADOR) View.VISIBLE else View.GONE
+                        refrescarMenu()
                         drawer.tvDrawerInitials.text = profile.fullName
                             .split(" ")
                             .filter { it.isNotBlank() }

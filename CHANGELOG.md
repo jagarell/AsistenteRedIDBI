@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.0.11] - 2026-11-07
+### Agregado
+- **Reportes programados** del Asistente IA: «cada fin de mes» guarda la consulta y el último día de cada mes llega por notificación; se cancela desde la tarjeta.
+- **Inicio de supervisor y administrador**: «Recientes» muestra las últimas minutas del equipo o de la empresa con el técnico, la fecha y el estado.
+- **Menú lateral**: punto rojo y «Nuevo» en Notificaciones cuando hay avisos sin leer, cuadro **Plan · Empresa · N de 10 usuarios** para el administrador y Modo noche debajo de Mi Cuenta.
+### Cambiado
+- **Inicio** como el prototipo: cabecera con el menú, «Hola de nuevo,» con DEMO, el nombre y la campana (sin avatar, robot ni rol); indicadores sin íconos.
+- **Mi Cuenta** reemplaza a «Perfil y configuración»: arriba el usuario con su rol y empresa (abre Mi perfil); se quitó Apariencia (el Modo noche está en el menú) y Soporte queda con Ayuda y Versión.
+- Texto del Asistente IA y de Reportes en el Inicio según el rol (empresa, equipo, mis minutas).
+
 ## [0.0.10] - 2026-11-07
 ### Agregado
 - **Perfil y configuración › Empresa**: nombre y logo (PNG o JPG, hasta 2 MB) que salen en la cabecera de la minuta y del PDF; solo el administrador los cambia; «Restablecer IDBI».

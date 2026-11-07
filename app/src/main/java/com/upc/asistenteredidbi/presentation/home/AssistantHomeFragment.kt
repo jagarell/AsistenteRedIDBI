@@ -75,7 +75,7 @@ class AssistantHomeFragment : Fragment() {
                     }
 
                     // Los indicadores (por rol) los carga cargarIndicadores() desde /api/inicio/indicadores.
-                    recentAdapter.submitList(state.evaluations.take(4).map { it.toHomeRecentItem() })
+                    if (!recientesDeEquipo) recentAdapter.submitList(state.evaluations.take(4).map { it.toHomeRecentItem() })
 
                     binding.cardNewEvaluation.isEnabled = !state.isStartingEvaluation
 
@@ -116,6 +116,12 @@ class AssistantHomeFragment : Fragment() {
 
     private fun setupRecycler() {
         recentAdapter = HomeRecentAdapter { item ->
+            if (item.minutaId != null) {
+                // Minuta del equipo: con evaluación abre su propuesta; si no, va a Reportes.
+                if (item.evaluationId.isNotBlank()) findNavController().navigate(R.id.minutaProposalFragment, Bundle().apply { putString("evaluationId", item.evaluationId); putLong("minutaId", item.minutaId) })
+                else findNavController().navigate(R.id.action_home_to_historial)
+                return@HomeRecentAdapter
+            }
             // Como en el prototipo: con propuesta abre el análisis; si el chat no terminó, lo retoma.
             findNavController().navigate(
                 if (item.stage.isFinished) R.id.action_home_to_minuta else R.id.action_home_to_chat,
@@ -131,6 +137,9 @@ class AssistantHomeFragment : Fragment() {
     lateinit var api007: com.upc.asistenteredidbi.data.remote.Api007Service
 
     /** Indicadores por rol (doc 0.0.7 §20): se actualizan al volver a Inicio; tocar uno abre Reportes ya filtrado. */
+    /** Supervisor y administrador ven las últimas minutas de su equipo o de la empresa, con el técnico y la fecha. */
+    private var recientesDeEquipo = false
+
     private fun cargarIndicadores() {
         viewLifecycleOwner.lifecycleScope.launch {
             // Etiqueta DEMO junto al saludo mientras la empresa esté en modo demo (todos los roles).
@@ -155,9 +164,21 @@ class AssistantHomeFragment : Fragment() {
                     })
                 }
             }
-            b.tvReportesSub.text = when (rol) { "ADMINISTRADOR" -> "General y por técnico"; "SUPERVISOR" -> "Tu equipo y tus minutas"; else -> "Mis minutas" }
+            if (rol != "TECNICO") {
+                val filas = runCatching { api007.reportes("general").minutas }.getOrNull().orEmpty().take(4)
+                recientesDeEquipo = true
+                recentAdapter.submitList(filas.map { f ->
+                    HomeRecentItem(
+                        evaluationId = f.evaluacionId?.toString().orEmpty(), title = f.local ?: "Minuta ${f.id}",
+                        date = "${f.tecnico ?: ""} · ${(f.fecha ?: "").take(10).split("-").reversed().joinToString("/")}",
+                        stage = com.upc.asistenteredidbi.domain.model.EvaluationStage.EN_CURSO, estadoTexto = f.estado, minutaId = f.id
+                    )
+                })
+            }
+            b.tvReportesSub.text = when (rol) { "ADMINISTRADOR" -> "General, por técnico y mis minutas"; "SUPERVISOR" -> "Tu equipo y tus minutas"; else -> "Mis minutas" }
             b.tvAsistenteSub.text = when (rol) {
                 "TECNICO" -> "Redacta una minuta con tus evidencias y contexto, o actualiza una minuta ya generada"
+                "ADMINISTRADOR" -> "Redacta o actualiza minutas y pídele reportes de la empresa, pendientes o minutas por validar"
                 else -> "Redacta o actualiza minutas y pídele reportes de tu equipo, pendientes o minutas por validar"
             }
             b.tvUserRole.text = "${when (rol) { "ADMINISTRADOR" -> "Administrador"; "SUPERVISOR" -> "Supervisor"; else -> "Técnico" }} · ${viewModel.uiState.value.userCompany.ifBlank { "IDBI" }}"

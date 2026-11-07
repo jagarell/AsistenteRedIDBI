@@ -280,6 +280,11 @@ class AsistenteViewModel @Inject constructor(
             "abrir_minuta" -> (datos["minutaId"] as? Number)?.toLong()?.let { _eventos.trySend(AsistenteEvento.AbrirMinuta(it)) }
             "texto" -> datos["texto"]?.toString()?.let { _eventos.trySend(AsistenteEvento.PrefijarTexto(it)) }
             "descargar_reporte" -> @Suppress("UNCHECKED_CAST") descargar((datos["consulta"] as? Map<String, Any?>).orEmpty())
+            "cancelar_programado" -> viewModelScope.launch {
+                (datos["id"] as? Number)?.toLong()?.let { id ->
+                    runCatching { repo.cancelarProgramado(id) }.onSuccess { bot("Listo, ya no te enviaré ese reporte.") }.onFailure { bot("No pude cancelar el envío. Inténtalo de nuevo.") }
+                }
+            }
             "ver_reportes" -> _eventos.trySend(AsistenteEvento.IrReportes)
         }
     }
