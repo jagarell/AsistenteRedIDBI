@@ -204,7 +204,10 @@ class AsistenteViewModel @Inject constructor(
     private fun libre(t: String, conTipo: String? = null, textoOriginal: String? = null) = viewModelScope.launch {
         ocupado(true)
         val enNueva = modo == "new"
-        if (enNueva && conTipo == null) { if (contexto.isNotEmpty()) contexto.append(' '); contexto.append(t) }
+        if (enNueva && conTipo == null) {
+            if (contexto.isNotEmpty()) { if (!contexto.trimEnd().endsWith('.') && !contexto.trimEnd().endsWith(';')) contexto.append('.'); contexto.append(' ') }
+            contexto.append(t)
+        }
         val texto = when {
             textoOriginal != null -> textoOriginal
             enNueva -> contexto.toString()

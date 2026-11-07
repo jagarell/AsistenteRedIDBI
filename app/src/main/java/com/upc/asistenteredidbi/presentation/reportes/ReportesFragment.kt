@@ -60,7 +60,7 @@ class ReportesFragment : Fragment() {
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        if (savedInstanceState == null) vm.load(arguments?.getString("tab"))
+        if (savedInstanceState == null) vm.load(arguments?.getString("tab"), arguments?.getString("estado"), arguments?.getString("criticidad"))
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) { vm.state.collect { render(it) } }
         }

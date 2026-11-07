@@ -101,7 +101,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Bienvenido de vuelta,"
+                    android:text="Hola de nuevo,"
                     android:textColor="#D9EAFE"
                     android:textSize="16sp"
                     android:textStyle="bold" />
@@ -143,13 +143,13 @@
 
             <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="98dp"
+                android:layout_height="116dp"
                 android:baselineAligned="false"
                 android:orientation="horizontal">
 
                 <LinearLayout
                     android:layout_width="0dp"
-                    android:layout_height="98dp"
+                    android:layout_height="116dp"
                     android:layout_weight="1"
                     android:background="@drawable/bg_home_card"
                     android:elevation="6dp"
@@ -175,8 +175,10 @@
                         android:textStyle="bold" />
 
                     <TextView
+                        android:id="@+id/lblStat1"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:gravity="center"
                         android:text="Evaluaciones"
                         android:textColor="@color/text_secondary"
                         android:textSize="12sp" />
@@ -186,7 +188,7 @@
 
                 <LinearLayout
                     android:layout_width="0dp"
-                    android:layout_height="98dp"
+                    android:layout_height="116dp"
                     android:layout_weight="1"
                     android:background="@drawable/bg_home_card"
                     android:elevation="6dp"
@@ -212,8 +214,10 @@
                         android:textStyle="bold" />
 
                     <TextView
+                        android:id="@+id/lblStat2"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:gravity="center"
                         android:text="Propuestas"
                         android:textColor="@color/text_secondary"
                         android:textSize="12sp" />
@@ -223,7 +227,7 @@
 
                 <LinearLayout
                     android:layout_width="0dp"
-                    android:layout_height="98dp"
+                    android:layout_height="116dp"
                     android:layout_weight="1"
                     android:background="@drawable/bg_home_card"
                     android:elevation="6dp"
@@ -249,8 +253,10 @@
                         android:textStyle="bold" />
 
                     <TextView
+                        android:id="@+id/lblStat3"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:gravity="center"
                         android:text="Enviadas"
                         android:textColor="@color/text_secondary"
                         android:textSize="12sp" />
@@ -296,7 +302,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Iniciar con asistente IA"
+                        android:text="Iniciar con el Chat IA"
                         android:textColor="#E3F2FD"
                         android:textSize="13sp"
                         android:textStyle="bold" />
@@ -307,6 +313,58 @@
                     android:layout_height="30dp"
                     app:srcCompat="@drawable/ic_arrow_forward"
                     app:tint="#D9EAFE" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/cardAsistente"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:background="@drawable/bg_home_card"
+                android:elevation="5dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:padding="16dp">
+
+                <TextView
+                    android:layout_width="52dp"
+                    android:layout_height="52dp"
+                    android:background="@drawable/bg_new_icon"
+                    android:gravity="center"
+                    android:text="✦"
+                    android:textColor="@android:color/white"
+                    android:textSize="24sp" />
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="14dp"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Asistente IA"
+                        android:textColor="@color/text_body"
+                        android:textSize="17sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/tvAsistenteSub"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:text="Redacta una minuta con tus evidencias y contexto, o actualiza una minuta ya generada"
+                        android:textColor="@color/text_muted"
+                        android:textSize="13sp" />
+                </LinearLayout>
+
+                <ImageView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    app:srcCompat="@drawable/ic_arrow_forward"
+                    app:tint="#9AA7BC" />
             </LinearLayout>
 
             <LinearLayout
@@ -383,10 +441,11 @@
                         android:textStyle="bold" />
 
                     <TextView
+                        android:id="@+id/tvReportesSub"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="4dp"
-                        android:text="Ver todo"
+                        android:text="Mis minutas"
                         android:textColor="@color/text_muted"
                         android:textSize="13sp"
                         android:textStyle="bold" />

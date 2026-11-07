@@ -83,7 +83,7 @@ class AsistenteFragment : Fragment() {
 
         // Encabezado azul: volver, avatar, título con «En línea» y reiniciar.
         val header = Ui007.row(ctx).apply {
-            setBackgroundColor(Ui007.BLUE); setPadding(dp(ctx, 12), dp(ctx, 38), dp(ctx, 12), dp(ctx, 14))
+            setBackgroundColor(Ui007.BLUE); setPadding(dp(ctx, 12), dp(ctx, 14), dp(ctx, 12), dp(ctx, 14))
         }
         header.addView(Ui007.text(ctx, "←", 24f, Color.WHITE, true).apply {
             setPadding(dp(ctx, 8), 0, dp(ctx, 12), 0); setOnClickListener { findNavController().navigateUp() }

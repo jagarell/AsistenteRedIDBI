@@ -63,6 +63,10 @@ interface Api007Service {
     @GET("api/asistente/reporte.csv")
     suspend fun reporteCsv(@Query("desde") desde: String, @Query("hasta") hasta: String): okhttp3.ResponseBody
 
+    /** Indicadores del Inicio según el rol: técnico (Pendientes, En revisión, Esperando validación) o supervisor/administrador. */
+    @GET("api/inicio/indicadores")
+    suspend fun indicadores(): Map<String, @JvmSuppressWildcards Any?>
+
     @GET("api/panel")
     suspend fun panel(@retrofit2.http.Query("dias") dias: Int): Map<String, @JvmSuppressWildcards Any?>
 

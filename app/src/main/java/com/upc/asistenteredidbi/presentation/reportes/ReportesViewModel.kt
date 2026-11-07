@@ -39,7 +39,7 @@ class ReportesViewModel @Inject constructor(private val repo: Asistente007Reposi
     private val _state = MutableStateFlow(ReportesUiState())
     val state: StateFlow<ReportesUiState> = _state.asStateFlow()
 
-    fun load(initialTab: String? = null) = viewModelScope.launch {
+    fun load(initialTab: String? = null, estado: String? = null, criticidad: String? = null) = viewModelScope.launch {
         try {
             val p = repo.perfil()
             val tabs = buildList {
@@ -48,7 +48,9 @@ class ReportesViewModel @Inject constructor(private val repo: Asistente007Reposi
                 if (p.own) add(ReportesTab("mis", "Mis minutas"))
             }
             val tab = initialTab?.takeIf { t -> tabs.any { it.key == t } } ?: _state.value.tab?.takeIf { t -> tabs.any { it.key == t } } ?: tabs.firstOrNull()?.key
-            _state.update { it.copy(tabs = tabs, tab = tab) }
+            // Desde los indicadores del Inicio: Reportes ya filtrado («Por validar · Estado: Completa»).
+            val inicial = if (estado != null || criticidad != null) Filtros(estado = setOfNotNull(estado), criticidad = setOfNotNull(criticidad)) else null
+            _state.update { it.copy(tabs = tabs, tab = tab, filtros = if (inicial != null && tab != null) it.filtros + (tab to inicial) else it.filtros) }
             refresh(base = true)
         } catch (e: Exception) {
             _state.update { it.copy(loading = false, error = "No se pudo cargar Reportes. Revisa tu conexión.") }
