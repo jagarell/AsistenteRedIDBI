@@ -65,7 +65,8 @@ sealed interface AsistenteEvento {
 class AsistenteViewModel @Inject constructor(
     private val repo: Asistente007Repository,
     private val session: SessionManager,
-    @dagger.hilt.android.qualifiers.ApplicationContext private val appCtx: android.content.Context
+    @dagger.hilt.android.qualifiers.ApplicationContext private val appCtx: android.content.Context,
+    private val cola: com.upc.asistenteredidbi.data.session.OutboxStore
 ) : ViewModel() {
 
     private enum class Paso { LIBRE, S_CLIENTE, S_MOTIVO, S_ALCANCE, S_EVID, S_HECHO, S_REGLAS, S_ESTADO, U_ELEGIR, U_TEXTO, U_CONFIRMAR, L_CASOS }
@@ -348,9 +349,15 @@ class AsistenteViewModel @Inject constructor(
         if (id != null) {
             // Las fotos adjuntas pasan a ser evidencias de la minuta (se reducen a 1600 px para el celular).
             val fotos = fotosPorSubir.toList(); fotosPorSubir.clear()
-            var fallaron = 0
-            fotos.forEach { f -> runCatching { repo.subirFoto(id, f.tipo, reducir(f.uri)) }.onFailure { fallaron++ } }
-            if (fallaron > 0) bot("No pude subir $fallaron foto${if (fallaron > 1) "s" else ""}. Quedan como «Evidencias por subir» en la minuta.")
+            var enCola = 0
+            fotos.forEach { f ->
+                val jpeg = reducir(f.uri)
+                runCatching { repo.subirFoto(id, f.tipo, jpeg) }.onFailure { e ->
+                    // Sin conexión (o el servidor no respondió) la foto queda en el celular y sube sola (doc 0.0.7 §5).
+                    if (e is java.io.IOException || e is retrofit2.HttpException && e.code() >= 500) { cola.encolarFoto(id, f.tipo, jpeg, "minuta #$id"); enCola++ }
+                }
+            }
+            if (enCola > 0) bot("$enCola foto${if (enCola > 1) "s" else ""} queda${if (enCola > 1) "n" else ""} en el celular y se subirán solas al volver la señal.")
             _eventos.trySend(AsistenteEvento.AbrirMinuta(id))
         }
     }

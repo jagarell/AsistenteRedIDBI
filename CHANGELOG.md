@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.0.13] - 2026-11-07
+### Agregado
+- **Bitácora de la minuta** (Ver minuta › ⋮ y Reportes): resumen (creada por y con qué, estado, rechazada por con el motivo y quién la corrigió, validada por), quiénes la editaron en las últimas 48 horas e historial con el detalle en palabras simples.
+- **Bloqueo de edición**: mientras el supervisor o el administrador edita una minuta con el Asistente IA, el técnico ve «En edición por …» y no puede editarla; se libera al aplicar o cancelar (y vence a los 30 minutos).
+- **Editar plazos** (administrador, Panel › Tiempos): minutos por tipo de local de «antes de la app» y costo por hora; alimentan la comparación **mes anterior vs mes actual**, la mejora promedio y el ahorro estimado.
+- **Foto de perfil**: Mi perfil permite subir (JPG/PNG, hasta 3 MB) o quitar la foto; se ve en la cabecera del menú, y en las listas siguen las iniciales.
+- **Preguntas y reglas**: pestañas Preguntas › Reglas › Mapa de nodos. Preguntas muestra todas las del Chat IA por sección, completas y numeradas; las agregadas se suben o bajan con ↑ ↓ y Deshacer. El Mapa de nodos muestra Inicio → secciones → Fin con fichas que llevan a cada sección y el detalle de cada pregunta.
+- **Modo sin conexión (primera parte)**: barra «Sin conexión · se guarda en el celular · N por subir», cola en el celular para solicitar la validación y para las fotos del Asistente IA, subida automática al volver la señal y apartado «Modo sin conexión y sincronización» en Mi Cuenta.
+### Pendiente
+- Las preguntas base del Chat IA se arman por código en el motor: se ven, pero su orden y el borrado por deslizamiento en el mapa no se cambian desde la app.
+- Sin conexión todavía no se puede responder el Chat IA ni redactar con el Asistente IA (necesitan el servidor).
+
 ## [0.0.12] - 2026-11-07
 ### Agregado
 - **Cambio de contraseña con aprobación del administrador** (estilo Google): el técnico pide el cambio, al administrador le llega la notificación con un código de 2 dígitos y el técnico elige ese número entre 3. Vence a los 10 minutos; un número equivocado rechaza la solicitud.
