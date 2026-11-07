@@ -57,6 +57,7 @@ class MainActivity : AppCompatActivity() {
 
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        aplicarBarrasDelSistema()
 
         setupNavigation()
         setupDrawer()
@@ -265,6 +266,36 @@ class MainActivity : AppCompatActivity() {
             .setMessage(texto)
             .setPositiveButton("Sincronizar ahora") { _, _ -> if (conexion.online.value) sincronizar { } else android.widget.Toast.makeText(this, "Sigues sin conexión.", android.widget.Toast.LENGTH_SHORT).show() }
             .setNegativeButton("Cerrar", null).show()
+    }
+
+    /**
+     * Barras del sistema (Android 15 dibuja las apps detrás de ellas, y en las demás versiones se hace igual para que todas se vean
+     * igual): la barra de estado se pinta con el azul de la cabecera, los botones del sistema y el teclado empujan la pantalla hacia
+     * arriba, y cada bloque toma su alto de los insets del sistema.
+     */
+    private fun aplicarBarrasDelSistema() {
+        val noche = (resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK) == android.content.res.Configuration.UI_MODE_NIGHT_YES
+        androidx.core.view.WindowCompat.setDecorFitsSystemWindows(window, false)
+        @Suppress("DEPRECATION")
+        run {
+            window.statusBarColor = android.graphics.Color.TRANSPARENT
+            window.navigationBarColor = android.graphics.Color.TRANSPARENT
+            if (android.os.Build.VERSION.SDK_INT >= 29) window.isNavigationBarContrastEnforced = false
+        }
+        androidx.core.view.WindowCompat.getInsetsController(window, window.decorView).apply {
+            isAppearanceLightStatusBars = false
+            isAppearanceLightNavigationBars = !noche
+        }
+        val estado = binding.root.findViewById<View>(R.id.statusScrim)
+        val botones = binding.root.findViewById<View>(R.id.navScrim)
+        androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(binding.root.findViewById(R.id.contentRoot)) { _, insets ->
+            val barras = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.systemBars() or androidx.core.view.WindowInsetsCompat.Type.displayCutout())
+            val teclado = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.ime()).bottom
+            estado.layoutParams = estado.layoutParams.apply { height = barras.top }
+            botones.layoutParams = botones.layoutParams.apply { height = maxOf(barras.bottom, teclado) }
+            androidx.core.view.WindowInsetsCompat.CONSUMED
+        }
+        androidx.core.view.ViewCompat.requestApplyInsets(binding.root)
     }
 
     private fun closeDrawer() {

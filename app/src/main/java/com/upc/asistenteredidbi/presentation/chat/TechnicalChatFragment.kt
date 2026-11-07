@@ -191,21 +191,14 @@ class TechnicalChatFragment : Fragment() {
         }
     }
 
-    /** Sube la barra de escritura sobre el teclado (Android 15 borde a borde) y muestra el último mensaje. */
+    /** El teclado ya empuja toda la pantalla (MainActivity); aquí solo se muestra el último mensaje al abrirlo. */
     private fun setupKeyboardInsets() {
-        val basePadding = binding.inputArea.paddingBottom
-        val gap = dp(8)
-        ViewCompat.setOnApplyWindowInsetsListener(binding.root) { _, insets ->
-            val imeVisible = insets.isVisible(WindowInsetsCompat.Type.ime())
-            val ime = insets.getInsets(WindowInsetsCompat.Type.ime()).bottom
-            binding.inputArea.updatePadding(bottom = if (imeVisible && ime > 0) ime + gap else basePadding)
-            if (imeVisible) {
+        binding.rvMessages.addOnLayoutChangeListener { _, _, top, _, bottom, _, oldTop, _, oldBottom ->
+            if (bottom - top < oldBottom - oldTop) {
                 val last = (binding.rvMessages.adapter?.itemCount ?: 0) - 1
                 if (last >= 0) binding.rvMessages.post { binding.rvMessages.scrollToPosition(last) }
             }
-            insets
         }
-        ViewCompat.requestApplyInsets(binding.root)
     }
 
     private fun setupInitialState() {
