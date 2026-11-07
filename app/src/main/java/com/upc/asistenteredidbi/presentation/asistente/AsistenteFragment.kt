@@ -266,6 +266,7 @@ class AsistenteFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         // Desde «Indicadores que alertan» del Panel: la consulta llega escrita, sin enviarse.
+        arguments?.getLong("minutaId", -1L)?.takeIf { it > 0 && savedInstanceState == null }?.let { vm.prepararActualizacion(it, arguments?.getString("local").orEmpty().ifBlank { "la minuta" }) }
         arguments?.getString("consulta")?.takeIf { savedInstanceState == null }?.let { input.setText(it); input.setSelection(input.text.length) }
         // Los prompts frecuentes viven en la cuenta: se traen del servidor y se repinta.
         viewLifecycleOwner.lifecycleScope.launch {

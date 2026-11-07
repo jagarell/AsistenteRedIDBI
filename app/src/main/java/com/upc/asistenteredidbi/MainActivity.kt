@@ -92,6 +92,35 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    /** Plan de la empresa (solo administrador): plan actual, usuarios usados y la lista de personas del plan. */
+    private fun mostrarPlan() {
+        lifecycleScope.launch {
+            val personas = runCatching { api007.equipo() }.getOrDefault(emptyList())
+            val dp = resources.displayMetrics.density
+            val sheet = com.google.android.material.bottomsheet.BottomSheetDialog(this@MainActivity)
+            val col = android.widget.LinearLayout(this@MainActivity).apply { orientation = android.widget.LinearLayout.VERTICAL; setPadding((20 * dp).toInt(), (20 * dp).toInt(), (20 * dp).toInt(), (24 * dp).toInt()) }
+            fun t(texto: String, size: Float, bold: Boolean = false, color: Int = 0xFF1F2937.toInt()) = android.widget.TextView(this@MainActivity).apply {
+                text = texto; textSize = size; setTextColor(color); if (bold) typeface = android.graphics.Typeface.DEFAULT_BOLD
+            }
+            col.addView(t("Plan", 20f, true))
+            col.addView(t("Empresa · plan actual", 15f, true, 0xFF1565C0.toInt()).apply { setPadding(0, (6 * dp).toInt(), 0, 0) })
+            col.addView(t("${personas.size} de 10 usuarios (cuenta al administrador)", 14f, false, 0xFF6B7280.toInt()))
+            col.addView(android.widget.ProgressBar(this@MainActivity, null, android.R.attr.progressBarStyleHorizontal).apply { max = 10; progress = personas.size.coerceAtMost(10); setPadding(0, (8 * dp).toInt(), 0, (8 * dp).toInt()) })
+            col.addView(t("Usuarios del plan", 14f, true).apply { setPadding(0, (8 * dp).toInt(), 0, (4 * dp).toInt()) })
+            personas.take(15).forEach { p -> col.addView(t("• ${p["nombre"]} · ${p["rol"].toString().lowercase().replaceFirstChar { c -> c.uppercase() }}", 13.5f).apply { setPadding(0, (3 * dp).toInt(), 0, 0) }) }
+            fun boton(texto: String, relleno: Boolean) = com.google.android.material.button.MaterialButton(this@MainActivity).apply {
+                text = texto; isAllCaps = false
+                setOnClickListener { android.widget.Toast.makeText(this@MainActivity, "Próximamente", android.widget.Toast.LENGTH_SHORT).show() }
+                if (!relleno) { backgroundTintList = android.content.res.ColorStateList.valueOf(android.graphics.Color.WHITE); setTextColor(0xFF1565C0.toInt()); strokeColor = android.content.res.ColorStateList.valueOf(0xFF1565C0.toInt()); strokeWidth = (2 * dp).toInt() }
+            }
+            col.addView(boton("Pedir más usuarios", true).apply { layoutParams = android.widget.LinearLayout.LayoutParams(-1, -2).apply { topMargin = (16 * dp).toInt() } })
+            col.addView(boton("Cambiar a un plan superior", false))
+            col.addView(t("Planes: Free y Empresarial, próximamente. Las personas nuevas se agregan desde la web.", 12f, false, 0xFF6B7280.toInt()).apply { setPadding(0, (10 * dp).toInt(), 0, 0) })
+            sheet.setContentView(android.widget.ScrollView(this@MainActivity).apply { addView(col) })
+            sheet.show()
+        }
+    }
+
     fun openDrawer() {
         sessionViewModel.loadDrawerProfile()
         refrescarMenu()
@@ -133,7 +162,7 @@ class MainActivity : AppCompatActivity() {
         drawer.navHistorial.setOnClickListener { navigateFromDrawer(R.id.action_home_to_historial) }
         drawer.navAsistente.setOnClickListener { navigateFromDrawer(R.id.action_home_to_asistente) }
         drawer.navPropuestas.setOnClickListener { navigateFromDrawer(R.id.action_home_to_minutas) }
-        drawer.navPlan.setOnClickListener { navigateFromDrawer(R.id.action_home_to_equipo) }
+        drawer.navPlan.setOnClickListener { closeDrawer(); mostrarPlan() }
         drawer.navPanel.setOnClickListener { navigateFromDrawer(R.id.action_home_to_panel) }
         drawer.navPreguntas.setOnClickListener { navigateFromDrawer(R.id.action_home_to_preguntas) }
         drawer.navEquipo.setOnClickListener { navigateFromDrawer(R.id.action_home_to_equipo) }

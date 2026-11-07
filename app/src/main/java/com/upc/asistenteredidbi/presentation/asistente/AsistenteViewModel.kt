@@ -126,6 +126,13 @@ class AsistenteViewModel @Inject constructor(
     suspend fun cargarPrompts(): List<String>? = runCatching { repo.prompts() }.getOrNull()
     fun guardarPrompts(l: List<String>) { viewModelScope.launch { runCatching { repo.guardarPrompts(l) } } }
 
+    /** «Pedir un cambio al Asistente IA» desde una minuta: se abre con la minuta cargada («Actualizando: local · vN»). */
+    fun prepararActualizacion(id: Long, local: String) {
+        paso = Paso.LIBRE; modo = "upd"; minutaId = id
+        _state.update { it.copy(subtitulo = "Actualizando: $local", pista = "¿Qué cambió? Cuéntalo por texto o audio") }
+        bot("Vas a actualizar la minuta de $local. Cuéntame qué cambió (datos, observaciones, recomendaciones, pasos o conexiones) y te muestro «Cambios que haré» antes de aplicar.")
+    }
+
     fun reiniciar() {
         paso = Paso.LIBRE; modo = ""; tipo = ""; contexto.setLength(0); adjuntosAcumulados.clear(); fotosPorSubir.clear(); minutaId = null; sop = Soporte(); consultaReporte = null
         _state.update { it.copy(adjuntos = emptyList(), pista = "Escribe o dicta…", subtitulo = "En línea") }

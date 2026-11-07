@@ -4,6 +4,8 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.TextView
+import android.graphics.Color
 import android.widget.FrameLayout
 import android.widget.HorizontalScrollView
 import android.widget.LinearLayout
@@ -81,6 +83,8 @@ class ReportesFragment : Fragment() {
             return
         }
 
+        accesoTemporal()
+
         // Pestañas
         val tabs = Ui007.row(ctx).apply { setPadding(0, dp(ctx, 12), 0, 0) }
         s.tabs.forEach { t -> tabs.addView(Ui007.chip(ctx, t.label, t.key == s.tab) { s.tab?.let { scrollPorPestana[it] = scroll.scrollY }; vm.selectTab(t.key) }) }
@@ -98,6 +102,118 @@ class ReportesFragment : Fragment() {
 
         val restore = s.tab?.let { scrollPorPestana.remove(it) } ?: y
         scroll.post { scroll.scrollTo(0, restore) }
+    }
+
+    // ---------- Acceso temporal a minutas de otros (doc 0.0.7 §46) ----------
+
+    @javax.inject.Inject lateinit var apiAcceso: com.upc.asistenteredidbi.data.remote.Api007Service
+    private var accesosVigentes: List<Map<String, Any?>> = emptyList()
+    private var accesosCargados = false
+
+    private fun accesoTemporal() {
+        val ctx = requireContext()
+        val gestiona = vm.state.value.tabs.any { it.label == "Por técnico" }
+        if (gestiona) return // el administrador ya ve todas las minutas
+        val c = Ui007.card(ctx).apply { layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { topMargin = dp(ctx, 12) } }
+        c.addView(Ui007.text(ctx, "Ver la minuta de otro", 14f, Ui007.INK, true))
+        c.addView(Ui007.text(ctx, "Pide acceso a tu supervisor (o al administrador) con un motivo. Con el código ves la minuta 24 horas, solo lectura.", 12f, Ui007.GREY))
+        val fila = Ui007.row(ctx).apply { setPadding(0, dp(ctx, 8), 0, 0) }
+        fila.addView(Ui007.chip(ctx, "Pedir acceso", true) { pedirAcceso() })
+        fila.addView(Ui007.chip(ctx, "Ingresar código", false) { ingresarCodigo() }.apply { (layoutParams as LinearLayout.LayoutParams).marginStart = dp(ctx, 8) })
+        c.addView(fila)
+        accesosVigentes.forEach { a ->
+            val f = Ui007.row(ctx).apply { setPadding(0, dp(ctx, 8), 0, 0) }
+            f.addView(Ui007.text(ctx, "${a["local"]} · hasta ${a["vence"]}", 12.5f, Ui007.INK), LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+            f.addView(Ui007.chip(ctx, "Ver", true) { verAcceso((a["accesoId"] as Number).toLong()) })
+            c.addView(f)
+        }
+        body.addView(c)
+        if (!accesosCargados) {
+            accesosCargados = true
+            viewLifecycleOwner.lifecycleScope.launch { accesosVigentes = runCatching { apiAcceso.accesosMios() }.getOrDefault(emptyList()); render(vm.state.value) }
+        }
+    }
+
+    private fun pedirAcceso() {
+        val ctx = requireContext()
+        viewLifecycleOwner.lifecycleScope.launch {
+            val lista = runCatching { apiAcceso.accesosCandidatas() }.getOrDefault(emptyList())
+            val sheet = com.google.android.material.bottomsheet.BottomSheetDialog(ctx)
+            val col = LinearLayout(ctx).apply { orientation = LinearLayout.VERTICAL; val p = dp(ctx, 18); setPadding(p, p, p, p) }
+            col.addView(Ui007.text(ctx, "Pedir acceso a una minuta", 18f, Ui007.INK, true))
+            var elegida: Long? = null
+            var motivo: String? = null
+            val motivos = listOf("Visita de seguimiento al mismo local", "Reemplazo a otro técnico", "Mismo cliente en otro local")
+            val enviar = Ui007.button(ctx, "Enviar solicitud", true) {}.apply { alpha = 0.4f }
+            fun habilitar() { enviar.alpha = if (elegida != null && motivo != null) 1f else 0.4f }
+            col.addView(Ui007.text(ctx, "1. Elige la minuta", 13f, Ui007.GREY, true).apply { setPadding(0, dp(ctx, 10), 0, dp(ctx, 4)) })
+            if (lista.isEmpty()) col.addView(Ui007.text(ctx, "No hay minutas de otros para pedir.", 13f, Ui007.GREY))
+            val filas = mutableListOf<Pair<Long, View>>()
+            lista.take(12).forEach { m ->
+                val id = (m["id"] as Number).toLong()
+                val v = Ui007.text(ctx, "${m["local"]} · ${m["tecnico"]} · ${m["fecha"]}", 13.5f, Ui007.INK).apply {
+                    background = Ui007.round(Color.WHITE, 12, ctx, Ui007.LINE); setPadding(dp(ctx, 12), dp(ctx, 10), dp(ctx, 12), dp(ctx, 10))
+                    layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { topMargin = dp(ctx, 6) }
+                    setOnClickListener { elegida = id; filas.forEach { (i, w) -> w.background = Ui007.round(if (i == id) 0xFFE8F1FD.toInt() else Color.WHITE, 12, ctx, if (i == id) Ui007.BLUE else Ui007.LINE) }; habilitar() }
+                }
+                filas.add(id to v); col.addView(v)
+            }
+            col.addView(Ui007.text(ctx, "2. Motivo", 13f, Ui007.GREY, true).apply { setPadding(0, dp(ctx, 12), 0, dp(ctx, 4)) })
+            val chips = Ui007.row(ctx)
+            val cs = mutableListOf<Pair<String, TextView>>()
+            motivos.forEach { mo ->
+                val ch = Ui007.chip(ctx, mo, false) { motivo = mo; cs.forEach { (k, t) -> t.background = Ui007.round(if (k == mo) 0xFFE8F1FD.toInt() else Color.WHITE, 20, ctx, if (k == mo) Ui007.BLUE else Ui007.LINE) }; habilitar() }
+                ch.layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { marginEnd = dp(ctx, 6) }
+                cs.add(mo to ch); chips.addView(ch)
+            }
+            col.addView(HorizontalScrollView(ctx).apply { isHorizontalScrollBarEnabled = false; addView(chips) })
+            enviar.setOnClickListener {
+                val id = elegida; val mo = motivo
+                if (id == null || mo == null) { Toast.makeText(ctx, "Elige la minuta y el motivo.", Toast.LENGTH_SHORT).show(); return@setOnClickListener }
+                viewLifecycleOwner.lifecycleScope.launch {
+                    runCatching { apiAcceso.accesoPedir(mapOf("minutaId" to id, "motivo" to mo)) }
+                        .onSuccess { sheet.dismiss(); Toast.makeText(ctx, "Solicitud enviada. Te avisarán cuando la aprueben.", Toast.LENGTH_LONG).show() }
+                        .onFailure { Toast.makeText(ctx, "No se pudo enviar la solicitud.", Toast.LENGTH_LONG).show() }
+                }
+            }
+            col.addView(enviar)
+            sheet.setContentView(ScrollView(ctx).apply { addView(col) })
+            sheet.show()
+        }
+    }
+
+    private fun ingresarCodigo() {
+        val ctx = requireContext()
+        val campo = android.widget.EditText(ctx).apply { hint = "Código de 6 dígitos"; inputType = android.text.InputType.TYPE_CLASS_NUMBER; filters = arrayOf(android.text.InputFilter.LengthFilter(6)); textSize = 20f; gravity = android.view.Gravity.CENTER }
+        androidx.appcompat.app.AlertDialog.Builder(ctx).setTitle("Ingresar código").setMessage("Escribe el código que te dio quien aprobó tu solicitud.").setView(campo)
+            .setPositiveButton("Abrir") { _, _ ->
+                viewLifecycleOwner.lifecycleScope.launch {
+                    runCatching { apiAcceso.accesoCanjear(mapOf("codigo" to campo.text.toString())) }
+                        .onSuccess { r -> accesosVigentes = runCatching { apiAcceso.accesosMios() }.getOrDefault(emptyList()); verAcceso((r["accesoId"] as Number).toLong()) }
+                        .onFailure { Toast.makeText(ctx, "El código no es válido o ya venció.", Toast.LENGTH_LONG).show() }
+                }
+            }.setNegativeButton("Cancelar", null).show()
+    }
+
+    /** Minuta en solo lectura: no se edita, descarga ni comparte; el acceso termina a las 24 horas. */
+    private fun verAcceso(id: Long) {
+        val ctx = requireContext()
+        viewLifecycleOwner.lifecycleScope.launch {
+            val m = runCatching { apiAcceso.accesoMinuta(id) }.getOrNull()
+            if (m == null) { Toast.makeText(ctx, "El acceso ya no está vigente.", Toast.LENGTH_SHORT).show(); return@launch }
+            val sheet = com.google.android.material.bottomsheet.BottomSheetDialog(ctx)
+            val col = LinearLayout(ctx).apply { orientation = LinearLayout.VERTICAL; val p = dp(ctx, 18); setPadding(p, p, p, p) }
+            col.addView(Ui007.text(ctx, m["clientName"]?.toString().orEmpty(), 18f, Ui007.INK, true))
+            col.addView(Ui007.text(ctx, "Solo lectura · v${m["version"]} · ${m["estado"]} · acceso hasta ${m["vence"]}", 12f, Ui007.GREY).apply { setPadding(0, 0, 0, dp(ctx, 8)) })
+            fun fila(k: String, v: Any?) { val t = v?.toString().orEmpty(); if (t.isNotBlank()) col.addView(Ui007.text(ctx, "$k: $t", 14f, Ui007.INK).apply { setPadding(0, dp(ctx, 5), 0, 0) }) }
+            fila("Técnico", m["technicianName"]); fila("Dirección", m["address"])
+            val c = runCatching { org.json.JSONObject(m["contentJson"]?.toString() ?: "{}") }.getOrDefault(org.json.JSONObject())
+            fila("Observaciones", c.optString("obsTec"))
+            c.optJSONArray("recs")?.let { a -> for (i in 0 until a.length()) fila("Recomendación", a.optJSONObject(i)?.optString("t") ?: a.optString(i)) }
+            col.addView(Ui007.button(ctx, "Cerrar", false) { sheet.dismiss() })
+            sheet.setContentView(ScrollView(ctx).apply { addView(col) })
+            sheet.show()
+        }
     }
 
     // ---------- Filtros ----------
@@ -205,6 +321,11 @@ class ReportesFragment : Fragment() {
             into.addView(Ui007.text(ctx, "v${ver ?: "?"} · ${v["authorName"] ?: ""} · ${fecha(v["createdAt"])}\n${v["resumen"] ?: ""}", 12f).apply { setPadding(0, dp(ctx, 4), 0, 0) })
         }
         into.addView(Ui007.button(ctx, "Ver minuta", true) { verMinuta(m) })
+        // Editar: siempre abre el Asistente IA con la minuta cargada (doc 0.0.7 §12).
+        into.addView(Ui007.button(ctx, "Pedir un cambio al Asistente IA", false) {
+            androidx.navigation.fragment.NavHostFragment.findNavController(this).navigate(com.upc.asistenteredidbi.R.id.asistenteFragment,
+                androidx.core.os.bundleOf("minutaId" to m.id, "local" to (m.local ?: "la minuta")))
+        })
         recordatorios(m, into)
     }
 

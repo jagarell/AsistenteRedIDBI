@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.0.12] - 2026-11-07
+### Agregado
+- **Cambio de contraseña con aprobación del administrador** (estilo Google): el técnico pide el cambio, al administrador le llega la notificación con un código de 2 dígitos y el técnico elige ese número entre 3. Vence a los 10 minutos; un número equivocado rechaza la solicitud.
+- **Equipo y accesos**: tarjeta «Solicitudes de contraseña» con **Ver código** y **Anular**, botón **ⓘ** con lo que se puede hacer en el módulo (sin texto largo arriba).
+- **Acceso temporal a minutas de otros**: el técnico pide la minuta de otro técnico a su supervisor y el supervisor la de otro equipo al administrador, con un motivo. Quien aprueba genera un código de 6 dígitos (24 horas, solo esa minuta y solo para quien la pidió; se puede anular) y quien pidió la ve en solo lectura desde Reportes › Ingresar código.
+- **Pedir un cambio al Asistente IA** desde la ficha de Reportes: abre el Asistente con la minuta cargada («Actualizando: …»).
+- **Plan** del menú lateral (administrador): plan Empresa, usuarios usados (N de 10) y la lista de personas.
+### Cambiado
+- Quien aplica cambios a una minuta con el Asistente IA decide su estado: si es el técnico, vuelve a Pendiente; si es el supervisor o el administrador, sigue por validar (Completa) y el técnico recibe «El supervisor … actualizó la minuta a v{n}».
+
 ## [0.0.11] - 2026-11-07
 ### Agregado
 - **Reportes programados** del Asistente IA: «cada fin de mes» guarda la consulta y el último día de cada mes llega por notificación; se cancela desde la tarjeta.
