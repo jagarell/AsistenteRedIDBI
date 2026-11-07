@@ -138,15 +138,6 @@
             </LinearLayout>
 
             <LinearLayout
-                android:id="@+id/navNotificaciones"
-                style="@style/DrawerNavRow">
-
-                <ImageView style="@style/DrawerNavIcon" app:srcCompat="@drawable/ic_notification" />
-
-                <TextView style="@style/DrawerNavLabel" android:text="Notificaciones" />
-            </LinearLayout>
-
-            <LinearLayout
                 android:id="@+id/navPanel"
                 style="@style/DrawerNavRow"
                 android:visibility="gone">
@@ -154,6 +145,15 @@
                 <ImageView style="@style/DrawerNavIcon" app:srcCompat="@drawable/ic_chart" />
 
                 <TextView style="@style/DrawerNavLabel" android:text="Panel" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/navNotificaciones"
+                style="@style/DrawerNavRow">
+
+                <ImageView style="@style/DrawerNavIcon" app:srcCompat="@drawable/ic_notification" />
+
+                <TextView style="@style/DrawerNavLabel" android:text="Notificaciones" />
             </LinearLayout>
 
             <TextView style="@style/DrawerSection" android:text="SEGUIMIENTO" />
@@ -189,7 +189,8 @@
 
             <LinearLayout
                 android:id="@+id/navPropuestas"
-                style="@style/DrawerNavRow">
+                style="@style/DrawerNavRow"
+                android:visibility="gone">
 
                 <ImageView style="@style/DrawerNavIcon" app:srcCompat="@drawable/ic_document" />
 

@@ -11,7 +11,12 @@
 - **Inicio por rol**: «Hola de nuevo,», indicadores reales (técnico: Pendientes · En revisión · Esperando validación; supervisor y administrador: Por validar · Pendientes · En riesgo), tarjeta **Asistente IA** y Reportes filtrado al tocar un indicador.
 - **Notificaciones por rol**: quién envió, local, puntaje y hora; ver minuta, ✓ validar y ✕ rechazar; filtros con cantidad, orden por criticidad o fecha y «Otros avisos». El técnico ve el estado de sus minutas.
 - **Recordatorios** del supervisor y del administrador al técnico («Supervisor … te pide: termina la minuta de …»).
+- **Reportes del Asistente IA en tabla** (Local, Técnico, Supervisor, Estado, Puntaje, Fecha) con filtros por estado (incompletas, por validar, en revisión, validadas, en riesgo), mes y persona (técnico o equipo de un supervisor); se ajustan sin repetir todo («solo el mes anterior», «sin octubre», «de María Quispe»). **Descargar Excel (.xlsx)** con título, fecha de generación, encabezados con filtro, columna Dirección y puntaje numérico.
+- **Prompts frecuentes ★**: la estrella junto a cada mensaje lo guarda; la estrella de arriba abre la lista y escribe el prompt en el chat sin enviarlo.
+- **Pedir al técnico** desde la ficha de Reportes: «Pedir que la termine», «Pedir que la corrija» y, solo el administrador, «Recordar al supervisor».
 ### Cambiado
+- Íconos de línea del diseño (clip, micrófono, ojo, topología, ✓, ✕, enviar) en lugar de emojis; sombras de las tarjetas del Inicio como en el prototipo.
+- Menú lateral: Inicio, Panel, Notificaciones; sin «Propuestas» (las minutas por validar se ven en Notificaciones).
 - La orden «Redacta una minuta nueva» ya no se cuela como observación.
 
 ## [0.0.8] - 2026-11-06

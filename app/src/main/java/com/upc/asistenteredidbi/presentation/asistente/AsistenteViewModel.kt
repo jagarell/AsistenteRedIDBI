@@ -50,7 +50,8 @@ sealed interface AsistenteEvento {
     data object NuevaImplementacion : AsistenteEvento
     data class AbrirPdf(val base64: String, val nombre: String) : AsistenteEvento
     data class AbrirMinuta(val id: Long) : AsistenteEvento
-    data class GuardarCsv(val bytes: ByteArray, val nombre: String) : AsistenteEvento
+    data class GuardarXlsx(val bytes: ByteArray, val nombre: String) : AsistenteEvento
+    data object IrReportes : AsistenteEvento
     data class PrefijarTexto(val texto: String) : AsistenteEvento
 }
 
@@ -121,7 +122,7 @@ class AsistenteViewModel @Inject constructor(
     private fun inicio(@Suppress("UNUSED_PARAMETER") admin: Boolean): List<Opcion> = emptyList()
 
     fun reiniciar() {
-        paso = Paso.LIBRE; modo = ""; tipo = ""; contexto.setLength(0); adjuntosAcumulados.clear(); minutaId = null; sop = Soporte()
+        paso = Paso.LIBRE; modo = ""; tipo = ""; contexto.setLength(0); adjuntosAcumulados.clear(); minutaId = null; sop = Soporte(); consultaReporte = null
         _state.update { it.copy(adjuntos = emptyList(), pista = "Escribe o dicta…", subtitulo = "En línea") }
         bienvenida()
     }
@@ -195,6 +196,8 @@ class AsistenteViewModel @Inject constructor(
     private val contexto = StringBuilder()
     private val adjuntosAcumulados = linkedSetOf<String>()
     private var nuevaVisita = false
+    /** Última consulta de reporte: permite ajustarla («solo el mes anterior», «sin octubre», «de María») sin repetir todo. */
+    private var consultaReporte: Map<String, Any?>? = null
     var minutaAbierta: Long? = null
         private set
 
@@ -219,6 +222,7 @@ class AsistenteViewModel @Inject constructor(
             (conTipo ?: tipo).takeIf { it.isNotEmpty() }?.let { put("tipo", it) }
             minutaId?.let { if (modo == "upd") put("minutaId", it) }
             if (adjuntosAcumulados.isNotEmpty()) put("adjuntos", adjuntosAcumulados.toList())
+            consultaReporte?.let { put("reporte", it) }
         }
         val r = runCatching { repo.mensaje(body) }.getOrNull()
         ocupado(false)
@@ -239,6 +243,11 @@ class AsistenteViewModel @Inject constructor(
         bloques.firstOrNull { it["tipo"] == "actualizar_minuta" }?.let { b ->
             minutaId = (b["minutaId"] as? Number)?.toLong(); modo = "upd"; nuevaVisita = b["nuevaVisita"] == true
         }
+        // Un reporte deja su consulta para ajustarla; cualquier otra tarjeta (que no sea texto) la cierra.
+        val rep = bloques.firstOrNull { it["tipo"] == "reporte" }
+        @Suppress("UNCHECKED_CAST")
+        if (rep != null) consultaReporte = rep["consulta"] as? Map<String, Any?>
+        else if (bloques.any { it["tipo"] !in setOf("texto", "texto_ia") }) consultaReporte = null
         _state.update { it.copy(mensajes = it.mensajes + Mensaje(false, "", bloques = bloques)) }
         bloques.firstOrNull { it["tipo"] == "accion" }?.let { b ->
             if (b["accion"] == "abrir_minuta") { (b["minutaId"] as? Number)?.toLong()?.let { id -> _eventos.trySend(AsistenteEvento.AbrirMinuta(id)) } }
@@ -262,7 +271,8 @@ class AsistenteViewModel @Inject constructor(
             "aplicar" -> aplicarCambiosDeTarjeta(bloque)
             "abrir_minuta" -> (datos["minutaId"] as? Number)?.toLong()?.let { _eventos.trySend(AsistenteEvento.AbrirMinuta(it)) }
             "texto" -> datos["texto"]?.toString()?.let { _eventos.trySend(AsistenteEvento.PrefijarTexto(it)) }
-            "descargar_reporte" -> descargar(datos["desde"].toString(), datos["hasta"].toString())
+            "descargar_reporte" -> @Suppress("UNCHECKED_CAST") descargar((datos["consulta"] as? Map<String, Any?>).orEmpty())
+            "ver_reportes" -> _eventos.trySend(AsistenteEvento.IrReportes)
         }
     }
 
@@ -298,12 +308,12 @@ class AsistenteViewModel @Inject constructor(
         }.onFailure { bot("No pude aplicar los cambios. Inténtalo de nuevo.") }
     }
 
-    private fun descargar(desde: String, hasta: String) = viewModelScope.launch {
+    private fun descargar(consulta: Map<String, Any?>) = viewModelScope.launch {
         ocupado(true)
-        val bytes = runCatching { repo.reporteCsv(desde, hasta) }.getOrNull()
+        val bytes = runCatching { repo.reporteXlsx(consulta) }.getOrNull()
         ocupado(false)
-        if (bytes == null) bot("No pude generar el reporte. Inténtalo de nuevo.")
-        else _eventos.trySend(AsistenteEvento.GuardarCsv(bytes, "reporte-minutas-${desde}_$hasta.csv"))
+        if (bytes == null) bot("No pude generar el Excel. Inténtalo de nuevo.")
+        else _eventos.trySend(AsistenteEvento.GuardarXlsx(bytes, "reporte-minutas-${java.time.LocalDate.now()}.xlsx"))
     }
 
     // ---------------- Minuta de soporte ----------------

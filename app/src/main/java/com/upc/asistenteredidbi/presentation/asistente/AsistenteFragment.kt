@@ -77,6 +77,61 @@ class AsistenteFragment : Fragment() {
         }
     }
 
+    // ---------------- Prompts frecuentes ★ (doc 0.0.7 §52) ----------------
+    private val prefs by lazy { requireContext().getSharedPreferences("asistente_prompts", android.content.Context.MODE_PRIVATE) }
+
+    private fun prompts(): MutableList<String> = runCatching {
+        val a = org.json.JSONArray(prefs.getString("lista", "[]")); MutableList(a.length()) { a.getString(it) }
+    }.getOrDefault(mutableListOf())
+
+    private fun guardarPrompts(l: List<String>) { prefs.edit().putString("lista", org.json.JSONArray(l).toString()).apply() }
+
+    private fun alternarPrompt(texto: String) {
+        val l = prompts()
+        if (!l.remove(texto)) l.add(0, texto)
+        guardarPrompts(l)
+        actualizarEstrella()
+        lista.removeAllViews(); pintados = 0; render(vm.state.value)
+    }
+
+    private fun actualizarEstrella() {
+        val n = prompts().size
+        contadorEstrella.text = if (n > 0) n.toString() else ""
+    }
+
+    private fun mostrarPrompts() {
+        val ctx = requireContext()
+        val sheet = BottomSheetDialog(ctx)
+        val col = LinearLayout(ctx).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(ctx, 18), dp(ctx, 18), dp(ctx, 18), dp(ctx, 20)) }
+        col.addView(Ui007.text(ctx, "Prompts frecuentes", 18f, Ui007.INK, true))
+        col.addView(Ui007.text(ctx, "Elige uno y se escribe en el chat sin enviarse: lo revisas, lo ajustas y lo envías cuando quieras.", 13f, Ui007.GREY).apply { setPadding(0, dp(ctx, 4), 0, dp(ctx, 8)) })
+        fun pintarLista() {
+            col.removeViews(2, col.childCount - 2)
+            val l = prompts()
+            if (l.isEmpty()) col.addView(Ui007.text(ctx, "Aún no guardaste ninguno. Toca la estrella ☆ junto a uno de tus mensajes.", 14f, Ui007.GREY).apply { setPadding(0, dp(ctx, 10), 0, dp(ctx, 10)) })
+            l.forEach { t ->
+                val fila = Ui007.row(ctx).apply {
+                    background = Ui007.round(Color.WHITE, 14, ctx, Ui007.LINE); setPadding(dp(ctx, 12), dp(ctx, 10), dp(ctx, 6), dp(ctx, 10))
+                    layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { topMargin = dp(ctx, 8) }
+                }
+                fila.addView(Ui007.text(ctx, t, 14f, Ui007.INK).apply { setOnClickListener { sheet.dismiss(); vm.accion(emptyMap(), mapOf("id" to "texto", "datos" to mapOf("texto" to t))) } },
+                    LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+                fila.addView(Ui007.icon(ctx, com.upc.asistenteredidbi.R.drawable.ic_ln_star_fill, 0xFFF5B301.toInt(), 22).apply {
+                    contentDescription = "Quitar de frecuentes"; setPadding(dp(ctx, 8), dp(ctx, 8), dp(ctx, 8), dp(ctx, 8))
+                    layoutParams = LinearLayout.LayoutParams(dp(ctx, 40), dp(ctx, 40))
+                    setOnClickListener { val x = prompts(); x.remove(t); guardarPrompts(x); actualizarEstrella(); lista.removeAllViews(); pintados = 0; render(vm.state.value); pintarLista() }
+                })
+                col.addView(fila)
+            }
+        }
+        pintarLista()
+        col.addView(Ui007.button(ctx, "Cerrar", false) { sheet.dismiss() })
+        sheet.setContentView(ScrollView(ctx).apply { addView(col) })
+        sheet.show()
+    }
+
+    private lateinit var contadorEstrella: TextView
+
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         val ctx = requireContext()
         val root = LinearLayout(ctx).apply { orientation = LinearLayout.VERTICAL; setBackgroundColor(Ui007.BG) }
@@ -99,11 +154,20 @@ class AsistenteFragment : Fragment() {
         subtitulo = Ui007.text(ctx, "En línea", 12f, 0xCCFFFFFF.toInt())
         titulos.addView(subtitulo)
         header.addView(titulos, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+        val estrella = Ui007.row(ctx).apply {
+            contentDescription = "Prompts frecuentes"; setPadding(dp(ctx, 8), dp(ctx, 6), dp(ctx, 8), dp(ctx, 6))
+            background = Ui007.round(0x33FFFFFF, 20, ctx); setOnClickListener { mostrarPrompts() }
+        }
+        estrella.addView(Ui007.icon(ctx, com.upc.asistenteredidbi.R.drawable.ic_ln_star_fill, 0xFFFFD54F.toInt(), 22))
+        contadorEstrella = Ui007.text(ctx, "", 12f, Color.WHITE, true).apply { setPadding(dp(ctx, 4), 0, 0, 0) }
+        estrella.addView(contadorEstrella)
+        header.addView(estrella, LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { marginEnd = dp(ctx, 6) })
         header.addView(Ui007.icon(ctx, com.upc.asistenteredidbi.R.drawable.ic_ln_refresh, Color.WHITE, 22).apply {
             contentDescription = "Reiniciar la conversación"; setPadding(dp(ctx, 6), dp(ctx, 6), dp(ctx, 6), dp(ctx, 6))
             layoutParams = LinearLayout.LayoutParams(dp(ctx, 38), dp(ctx, 38)); setOnClickListener { reiniciar() }
         })
         root.addView(header)
+        actualizarEstrella()
 
         scroll = ScrollView(ctx).apply { layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f) }
         lista = LinearLayout(ctx).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(ctx, 14), dp(ctx, 8), dp(ctx, 14), dp(ctx, 16)) }
@@ -232,6 +296,13 @@ class AsistenteFragment : Fragment() {
             layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { topMargin = dp(ctx, 8) }
         }
         if (m.progreso) { wrap.addView(progresoRedaccion()); return wrap }
+        if (m.deUsuario && m.texto.isNotBlank()) {
+            val guardado = prompts().contains(m.texto)
+            wrap.addView(Ui007.icon(ctx, if (guardado) com.upc.asistenteredidbi.R.drawable.ic_ln_star_fill else com.upc.asistenteredidbi.R.drawable.ic_ln_star, if (guardado) 0xFFF5B301.toInt() else 0xFFA9B4C6.toInt(), 20).apply {
+                contentDescription = if (guardado) "Quitar de prompts frecuentes" else "Guardar como prompt frecuente"
+                setPadding(dp(ctx, 4), dp(ctx, 4), dp(ctx, 4), dp(ctx, 2)); setOnClickListener { alternarPrompt(m.texto) }
+            })
+        }
         if (m.texto.isNotBlank() || m.adjuntos.isNotEmpty()) {
             val texto = (if (m.adjuntos.isNotEmpty()) m.adjuntos.joinToString("\n") { "Foto: $it" } + (if (m.texto.isNotBlank()) "\n" else "") else "") + m.texto
             wrap.addView(Ui007.text(ctx, texto, 14f, if (m.deUsuario) Color.WHITE else Ui007.INK).apply {
@@ -292,6 +363,21 @@ class AsistenteFragment : Fragment() {
         card.addView(cab)
         (b["texto"] as? String)?.takeIf { it.isNotBlank() }?.let { card.addView(Ui007.text(ctx, it, 13f, Ui007.GREY).apply { setPadding(0, dp(ctx, 4), 0, 0) }) }
 
+        (b["tabla"] as? Map<String, Any?>)?.let { t ->
+            val cols = (t["columnas"] as? List<String>).orEmpty()
+            val filas = (t["filas"] as? List<List<Any?>>).orEmpty()
+            val anchos = listOf(120, 100, 100, 84, 62, 84)
+            val grid = LinearLayout(ctx).apply { orientation = LinearLayout.VERTICAL; setPadding(0, dp(ctx, 10), 0, 0) }
+            fun linea(celdas: List<String>, cab: Boolean) {
+                val r = Ui007.row(ctx).apply { setPadding(0, dp(ctx, 5), 0, dp(ctx, 5)); if (cab) setBackgroundColor(0xFFEFF4FB.toInt()) }
+                celdas.forEachIndexed { i, v -> r.addView(Ui007.text(ctx, v, 11.5f, if (cab) Ui007.INK else 0xFF374151.toInt(), cab).apply { setPadding(dp(ctx, 6), 0, dp(ctx, 4), 0) },
+                    LinearLayout.LayoutParams(dp(ctx, anchos.getOrElse(i) { 90 }), LinearLayout.LayoutParams.WRAP_CONTENT)) }
+                grid.addView(r)
+            }
+            linea(cols, true)
+            filas.forEach { f -> linea(f.map { it?.toString().orEmpty() }, false) }
+            card.addView(HorizontalScrollView(ctx).apply { isHorizontalScrollBarEnabled = false; addView(grid) })
+        }
         (b["filas"] as? List<List<String>>)?.forEach { f ->
             val r = Ui007.row(ctx).apply { setPadding(0, dp(ctx, 8), 0, 0); gravity = Gravity.TOP }
             r.addView(Ui007.text(ctx, f[0], 13f, Ui007.GREY), LinearLayout.LayoutParams(dp(ctx, 112), LinearLayout.LayoutParams.WRAP_CONTENT))
@@ -355,22 +441,23 @@ class AsistenteFragment : Fragment() {
                 }.onFailure { Toast.makeText(ctx, "La ficha se guardó, pero no se pudo abrir el PDF.", Toast.LENGTH_LONG).show() }
             }
             is AsistenteEvento.PrefijarTexto -> { input.setText(e.texto); input.setSelection(input.text.length); input.requestFocus() }
-            is AsistenteEvento.GuardarCsv -> guardarCsv(e)
+            is AsistenteEvento.GuardarXlsx -> guardarXlsx(e)
+            is AsistenteEvento.IrReportes -> findNavController().navigate(com.upc.asistenteredidbi.R.id.historialFragment)
             is AsistenteEvento.AbrirMinuta -> verMinuta(e.id)
         }
     }
 
-    private fun guardarCsv(e: AsistenteEvento.GuardarCsv) {
+    private fun guardarXlsx(e: AsistenteEvento.GuardarXlsx) {
         val ctx = requireContext()
         runCatching {
             val values = ContentValues().apply {
-                put(MediaStore.Downloads.DISPLAY_NAME, e.nombre); put(MediaStore.Downloads.MIME_TYPE, "text/csv")
+                put(MediaStore.Downloads.DISPLAY_NAME, e.nombre); put(MediaStore.Downloads.MIME_TYPE, XLSX)
                 if (Build.VERSION.SDK_INT >= 29) put(MediaStore.Downloads.IS_PENDING, 0)
             }
             val uri: Uri = ctx.contentResolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values) ?: error("sin uri")
             ctx.contentResolver.openOutputStream(uri)!!.use { it.write(e.bytes) }
-            Toast.makeText(ctx, "Reporte guardado en Descargas (se abre en Excel).", Toast.LENGTH_LONG).show()
-            startActivity(Intent.createChooser(Intent(Intent.ACTION_VIEW).setDataAndType(uri, "text/csv").addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION), "Abrir reporte"))
+            Toast.makeText(ctx, "Excel guardado en Descargas.", Toast.LENGTH_LONG).show()
+            startActivity(Intent.createChooser(Intent(Intent.ACTION_VIEW).setDataAndType(uri, XLSX).addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION), "Abrir reporte"))
         }.onFailure { Toast.makeText(ctx, "No pude guardar el reporte.", Toast.LENGTH_LONG).show() }
     }
 
@@ -418,5 +505,6 @@ class AsistenteFragment : Fragment() {
 
     companion object {
         const val KEY_NUEVA_IMPLEMENTACION = "asistente_nueva_implementacion"
+        const val XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     }
 }

@@ -36,7 +36,7 @@ class Asistente007Repository @Inject constructor(private val api: Api007Service)
     suspend fun mensaje(texto: String) = api.mensaje(mapOf("texto" to texto))
     suspend fun mensaje(body: Map<String, Any?>) = api.mensaje(body)
     suspend fun redactar(datos: Any?) = api.redactar(mapOf("datos" to datos))
-    suspend fun reporteCsv(desde: String, hasta: String): ByteArray = api.reporteCsv(desde, hasta).use { it.bytes() }
+    suspend fun reporteXlsx(consulta: Map<String, Any?>): ByteArray = api.reporteXlsx(consulta).use { it.bytes() }
     suspend fun panel(dias: Int) = api.panel(dias)
     suspend fun equipo() = api.equipo()
     suspend fun cambiarRol(id: Long, rol: String) = api.equipoRol(id, mapOf("rol" to rol))

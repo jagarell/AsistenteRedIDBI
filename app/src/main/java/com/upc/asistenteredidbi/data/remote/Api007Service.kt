@@ -58,10 +58,10 @@ interface Api007Service {
     @POST("api/asistente/redactar")
     suspend fun redactar(@Body body: Map<String, @JvmSuppressWildcards Any?>): Map<String, @JvmSuppressWildcards Any?>
 
-    /** Reporte del periodo en CSV (se abre en Excel). */
+    /** Reporte del Asistente IA en Excel (.xlsx) según su consulta (periodo, estado, persona…). */
     @retrofit2.http.Streaming
-    @GET("api/asistente/reporte.csv")
-    suspend fun reporteCsv(@Query("desde") desde: String, @Query("hasta") hasta: String): okhttp3.ResponseBody
+    @POST("api/asistente/reporte.xlsx")
+    suspend fun reporteXlsx(@Body consulta: Map<String, @JvmSuppressWildcards Any?>): okhttp3.ResponseBody
 
     /** Indicadores del Inicio según el rol: técnico (Pendientes, En revisión, Esperando validación) o supervisor/administrador. */
     @GET("api/inicio/indicadores")
