@@ -326,14 +326,14 @@
                 android:orientation="horizontal"
                 android:padding="16dp">
 
-                <TextView
+                <ImageView
                     android:layout_width="52dp"
                     android:layout_height="52dp"
                     android:background="@drawable/bg_new_icon"
-                    android:gravity="center"
-                    android:text="✦"
-                    android:textColor="@android:color/white"
-                    android:textSize="24sp" />
+                    android:padding="13dp"
+                    android:contentDescription="Asistente IA"
+                    app:srcCompat="@drawable/ic_ln_sparkle"
+                    app:tint="@android:color/white" />
 
                 <LinearLayout
                     android:layout_width="0dp"

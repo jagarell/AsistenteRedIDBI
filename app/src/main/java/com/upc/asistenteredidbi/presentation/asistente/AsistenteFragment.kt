@@ -85,20 +85,23 @@ class AsistenteFragment : Fragment() {
         val header = Ui007.row(ctx).apply {
             setBackgroundColor(Ui007.BLUE); setPadding(dp(ctx, 12), dp(ctx, 14), dp(ctx, 12), dp(ctx, 14))
         }
-        header.addView(Ui007.text(ctx, "←", 24f, Color.WHITE, true).apply {
-            setPadding(dp(ctx, 8), 0, dp(ctx, 12), 0); setOnClickListener { findNavController().navigateUp() }
+        header.addView(Ui007.icon(ctx, com.upc.asistenteredidbi.R.drawable.ic_ln_back, Color.WHITE, 24).apply {
+            contentDescription = "Volver"; setPadding(dp(ctx, 4), 0, dp(ctx, 4), 0)
+            layoutParams = LinearLayout.LayoutParams(dp(ctx, 36), dp(ctx, 28)).apply { marginEnd = dp(ctx, 8) }
+            setOnClickListener { findNavController().navigateUp() }
         })
-        header.addView(Ui007.text(ctx, "✦", 20f, Color.WHITE, true).apply {
-            gravity = Gravity.CENTER; background = Ui007.round(0x33FFFFFF, 24, ctx); layoutParams = LinearLayout.LayoutParams(dp(ctx, 42), dp(ctx, 42))
+        header.addView(Ui007.icon(ctx, com.upc.asistenteredidbi.R.drawable.ic_ln_sparkle, Color.WHITE, 22).apply {
+            background = Ui007.round(0x33FFFFFF, 24, ctx); setPadding(dp(ctx, 10), dp(ctx, 10), dp(ctx, 10), dp(ctx, 10))
+            layoutParams = LinearLayout.LayoutParams(dp(ctx, 42), dp(ctx, 42))
         })
         val titulos = LinearLayout(ctx).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(ctx, 12), 0, 0, 0) }
         titulos.addView(Ui007.text(ctx, "Asistente IA", 18f, Color.WHITE, true))
         subtitulo = Ui007.text(ctx, "En línea", 12f, 0xCCFFFFFF.toInt())
         titulos.addView(subtitulo)
         header.addView(titulos, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
-        header.addView(Ui007.text(ctx, "↻", 22f, Color.WHITE, true).apply {
-            contentDescription = "Reiniciar la conversación"
-            setPadding(dp(ctx, 12), dp(ctx, 4), dp(ctx, 8), dp(ctx, 4)); setOnClickListener { reiniciar() }
+        header.addView(Ui007.icon(ctx, com.upc.asistenteredidbi.R.drawable.ic_ln_refresh, Color.WHITE, 22).apply {
+            contentDescription = "Reiniciar la conversación"; setPadding(dp(ctx, 6), dp(ctx, 6), dp(ctx, 6), dp(ctx, 6))
+            layoutParams = LinearLayout.LayoutParams(dp(ctx, 38), dp(ctx, 38)); setOnClickListener { reiniciar() }
         })
         root.addView(header)
 
@@ -116,8 +119,8 @@ class AsistenteFragment : Fragment() {
         root.addView(chipsScroll)
 
         val bar = Ui007.row(ctx).apply { setPadding(dp(ctx, 10), dp(ctx, 8), dp(ctx, 10), dp(ctx, 12)); setBackgroundColor(Color.WHITE) }
-        bar.addView(circulo(ctx, "📎", "Adjuntar evidencias") { adjuntar() })
-        bar.addView(circulo(ctx, "🎤", "Dictar un audio") { dictarAudio() }.apply { (layoutParams as LinearLayout.LayoutParams).marginStart = dp(ctx, 8) })
+        bar.addView(circulo(ctx, com.upc.asistenteredidbi.R.drawable.ic_ln_clip, "Adjuntar evidencias") { adjuntar() })
+        bar.addView(circulo(ctx, com.upc.asistenteredidbi.R.drawable.ic_ln_mic, "Dictar un audio") { dictarAudio() }.apply { (layoutParams as LinearLayout.LayoutParams).marginStart = dp(ctx, 8) })
         input = EditText(ctx).apply {
             layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply { marginStart = dp(ctx, 8) }
             background = Ui007.round(Ui007.BG, 22, ctx, Ui007.LINE); setPadding(dp(ctx, 14), dp(ctx, 10), dp(ctx, 14), dp(ctx, 10))
@@ -126,8 +129,8 @@ class AsistenteFragment : Fragment() {
             setOnEditorActionListener { _, a, _ -> if (a == EditorInfo.IME_ACTION_SEND) { enviar(); true } else false }
         }
         bar.addView(input)
-        bar.addView(Ui007.text(ctx, "➤", 18f, Color.WHITE, true).apply {
-            gravity = Gravity.CENTER; background = Ui007.round(Ui007.BLUE, 24, ctx); contentDescription = "Enviar"
+        bar.addView(Ui007.icon(ctx, com.upc.asistenteredidbi.R.drawable.ic_ln_send, Color.WHITE, 22).apply {
+            background = Ui007.round(Ui007.BLUE, 24, ctx); contentDescription = "Enviar"; setPadding(dp(ctx, 12), dp(ctx, 12), dp(ctx, 12), dp(ctx, 12))
             layoutParams = LinearLayout.LayoutParams(dp(ctx, 46), dp(ctx, 46)).apply { marginStart = dp(ctx, 8) }
             setOnClickListener { enviar() }
         })
@@ -135,9 +138,9 @@ class AsistenteFragment : Fragment() {
         return root
     }
 
-    private fun circulo(ctx: android.content.Context, glifo: String, desc: String, onClick: () -> Unit): TextView =
-        Ui007.text(ctx, glifo, 18f, Ui007.BLUE, true).apply {
-            gravity = Gravity.CENTER; contentDescription = desc
+    private fun circulo(ctx: android.content.Context, icono: Int, desc: String, onClick: () -> Unit): View =
+        Ui007.icon(ctx, icono, Ui007.BLUE, 22).apply {
+            setPadding(dp(ctx, 11), dp(ctx, 11), dp(ctx, 11), dp(ctx, 11)); contentDescription = desc
             background = Ui007.round(Color.WHITE, 24, ctx, Ui007.LINE)
             layoutParams = LinearLayout.LayoutParams(dp(ctx, 44), dp(ctx, 44))
             setOnClickListener { onClick() }
@@ -211,7 +214,7 @@ class AsistenteFragment : Fragment() {
         input.hint = s.pista
         chips.removeAllViews()
         s.adjuntos.forEachIndexed { i, a ->
-            chips.addView(Ui007.chip(ctx, "📷 ${a.tipo}  ✕", true) { vm.quitarAdjunto(i) }.apply { (layoutParams as LinearLayout.LayoutParams).marginEnd = dp(ctx, 6) })
+            chips.addView(Ui007.chip(ctx, "${a.tipo}  ✕", true) { vm.quitarAdjunto(i) }.apply { (layoutParams as LinearLayout.LayoutParams).marginEnd = dp(ctx, 6) })
         }
         Ui007.gone(chipsScroll, s.adjuntos.isEmpty())
         if (pintados > s.mensajes.size) { lista.removeAllViews(); pintados = 0 }
@@ -230,7 +233,7 @@ class AsistenteFragment : Fragment() {
         }
         if (m.progreso) { wrap.addView(progresoRedaccion()); return wrap }
         if (m.texto.isNotBlank() || m.adjuntos.isNotEmpty()) {
-            val texto = (if (m.adjuntos.isNotEmpty()) m.adjuntos.joinToString("\n") { "📷 $it" } + (if (m.texto.isNotBlank()) "\n" else "") else "") + m.texto
+            val texto = (if (m.adjuntos.isNotEmpty()) m.adjuntos.joinToString("\n") { "Foto: $it" } + (if (m.texto.isNotBlank()) "\n" else "") else "") + m.texto
             wrap.addView(Ui007.text(ctx, texto, 14f, if (m.deUsuario) Color.WHITE else Ui007.INK).apply {
                 background = Ui007.round(if (m.deUsuario) Ui007.BLUE else Color.WHITE, 16, ctx, if (m.deUsuario) null else Ui007.LINE)
                 setPadding(dp(ctx, 12), dp(ctx, 9), dp(ctx, 12), dp(ctx, 9)); maxWidth = (resources.displayMetrics.widthPixels * 0.82).toInt()

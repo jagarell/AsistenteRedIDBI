@@ -47,7 +47,7 @@ class NotificationsFragment : Fragment() {
         root.addView(LinearLayout(ctx).apply {
             orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
             setBackgroundColor(Ui007.BLUE); setPadding(dp(ctx, 16), dp(ctx, 16), dp(ctx, 16), dp(ctx, 16))
-            addView(TextView(ctx).apply { text = "←"; textSize = 26f; setTextColor(Color.WHITE); setPadding(0, 0, dp(ctx, 16), 0); setOnClickListener { findNavController().navigateUp() } })
+            addView(Ui007.icon(ctx, com.upc.asistenteredidbi.R.drawable.ic_ln_back, Color.WHITE, 24).apply { contentDescription = "Volver"; layoutParams = LinearLayout.LayoutParams(dp(ctx, 40), dp(ctx, 28)); setOnClickListener { findNavController().navigateUp() } })
             addView(TextView(ctx).apply { text = "Notificaciones"; textSize = 22f; typeface = android.graphics.Typeface.DEFAULT_BOLD; setTextColor(Color.WHITE) })
         })
         cuerpo = LinearLayout(ctx).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(ctx, 16), dp(ctx, 12), dp(ctx, 16), dp(ctx, 24)) }
@@ -109,7 +109,7 @@ class NotificationsFragment : Fragment() {
                     setPadding(dp(ctx, 12), dp(ctx, 12), dp(ctx, 12), dp(ctx, 12))
                     layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply { topMargin = dp(ctx, 8) }
                 }
-                c.addView(Ui007.text(ctx, "🔔", 18f).apply { gravity = Gravity.CENTER; background = Ui007.round(0xFFE3F2FD.toInt(), 22, ctx); layoutParams = LinearLayout.LayoutParams(dp(ctx, 40), dp(ctx, 40)) })
+                c.addView(Ui007.icon(ctx, com.upc.asistenteredidbi.R.drawable.ic_ln_bell, Ui007.BLUE, 20).apply { background = Ui007.round(0xFFE3F2FD.toInt(), 22, ctx); setPadding(dp(ctx, 10), dp(ctx, 10), dp(ctx, 10), dp(ctx, 10)); layoutParams = LinearLayout.LayoutParams(dp(ctx, 40), dp(ctx, 40)) })
                 val tx = LinearLayout(ctx).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(ctx, 12), 0, 0, 0) }
                 tx.addView(Ui007.text(ctx, o["texto"]?.toString().orEmpty(), 14f, Ui007.INK))
                 (o["fecha"] as? String)?.take(16)?.replace('T', ' ')?.takeIf { it.isNotBlank() }?.let { tx.addView(Ui007.text(ctx, it, 11.5f, Ui007.GREY)) }
@@ -150,9 +150,9 @@ class NotificationsFragment : Fragment() {
         val acc = Ui007.row(ctx).apply { setPadding(0, dp(ctx, 10), 0, 0) }
         val id = (m["id"] as Number).toLong()
         val ev = (m["evaluationId"] as? Number)?.toLong()
-        fun icono(glifo: String, desc: String, fondo: Int, color: Int, habilitado: Boolean = true, onClick: () -> Unit) {
-            acc.addView(Ui007.text(ctx, glifo, 17f, color, true).apply {
-                gravity = Gravity.CENTER; contentDescription = desc; alpha = if (habilitado) 1f else 0.35f
+        fun icono(res: Int, desc: String, fondo: Int, color: Int, habilitado: Boolean = true, onClick: () -> Unit) {
+            acc.addView(Ui007.icon(ctx, res, color, 20).apply {
+                setPadding(dp(ctx, 12), dp(ctx, 10), dp(ctx, 12), dp(ctx, 10)); contentDescription = desc; alpha = if (habilitado) 1f else 0.35f
                 background = Ui007.round(fondo, 12, ctx, if (fondo == Color.WHITE) Ui007.LINE else null)
                 layoutParams = LinearLayout.LayoutParams(dp(ctx, 44), dp(ctx, 40)).apply { marginEnd = dp(ctx, 8) }
                 setOnClickListener { if (habilitado) onClick() }
@@ -160,11 +160,11 @@ class NotificationsFragment : Fragment() {
         }
         val abrir = { if (ev != null) findNavController().navigate(R.id.minutaProposalFragment, bundleOf("evaluationId" to ev.toString(), "minutaId" to id))
             else Toast.makeText(ctx, "Esta minuta se redactó con el Asistente IA; ábrela desde el Asistente IA.", Toast.LENGTH_SHORT).show() }
-        icono("👁", "Ver minuta", Color.WHITE, Ui007.BLUE) { abrir() }
-        icono("⛓", "Ver topología", Color.WHITE, Ui007.BLUE, m["topologia"] == true) { abrir() }
+        icono(com.upc.asistenteredidbi.R.drawable.ic_ln_eye, "Ver minuta", Color.WHITE, Ui007.BLUE) { abrir() }
+        icono(com.upc.asistenteredidbi.R.drawable.ic_ln_topo, "Ver topología", Color.WHITE, Ui007.BLUE, m["topologia"] == true) { abrir() }
         if (estado == "Completa" && !tecnico) {
-            icono("✓", "Validar", 0xFF2E7D32.toInt(), Color.WHITE) { validar(id) }
-            icono("✕", "Rechazar", Color.WHITE, 0xFFC62828.toInt()) { rechazar(id, m["local"].toString()) }
+            icono(com.upc.asistenteredidbi.R.drawable.ic_ln_check, "Validar", 0xFF2E7D32.toInt(), Color.WHITE) { validar(id) }
+            icono(com.upc.asistenteredidbi.R.drawable.ic_ln_close, "Rechazar", Color.WHITE, 0xFFC62828.toInt()) { rechazar(id, m["local"].toString()) }
         } else {
             val (pbg, pfg) = Ui007.estadoColors(estado)
             acc.addView(Ui007.pill(ctx, if (tecnico && estado == "Completa") "Esperando validación" else estado, pbg, pfg))
