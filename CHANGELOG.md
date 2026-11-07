@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.0.10] - 2026-11-07
+### Agregado
+- **Perfil y configuración › Empresa**: nombre y logo (PNG o JPG, hasta 2 MB) que salen en la cabecera de la minuta y del PDF; solo el administrador los cambia; «Restablecer IDBI».
+- **Ambiente (administrador)**: «Modo demo» y **Pasar a producción** (irreversible, se escribe «PRODUCCIÓN»). Reportes, Inicio y Panel empiezan en 0; se conservan las minutas demo Completas, En revisión y Validadas y dejan de verse las demás; la base de conocimiento de la IA no se borra. La etiqueta **DEMO** aparece junto al saludo mientras no se pase a producción.
+- **Copia de seguridad (administrador)**: frecuencia (diaria, semanal, mensual), correo, «Hacer copia ahora» e historial con descarga (ZIP con las minutas en JSON y Excel).
+- **Trazabilidad**: bitácora de solo inserción (crear, editar, solicitar, validar, rechazar, avisos, empresa y copias), visible para el administrador en Perfil y configuración; resumen por minuta para su equipo.
+- **Prompts frecuentes ★ en la cuenta**: se guardan en el servidor y se ven igual desde cualquier teléfono.
+### Cambiado
+- Los errores con código propio (por ejemplo 409 al pasar dos veces a producción) ya no se convierten en 500.
+
 ## [0.0.9] - 2026-11-07
 ### Agregado
 - **Asistente IA completo** (doc 01): conversación libre sin botones de opciones; 📎 adjuntar evidencias por tipo, 🎤 audio que se transcribe y se revisa antes de enviar, reiniciar la conversación y tarjetas según lo que se pide:

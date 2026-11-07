@@ -67,6 +67,45 @@ interface Api007Service {
     @GET("api/inicio/indicadores")
     suspend fun indicadores(): Map<String, @JvmSuppressWildcards Any?>
 
+    // ---- Empresa, ambiente, copias de seguridad y trazabilidad (doc 0.0.7 §6, §16, §24, §31) ----
+    @GET("api/empresa")
+    suspend fun empresa(): Map<String, @JvmSuppressWildcards Any?>
+
+    @retrofit2.http.PUT("api/empresa")
+    suspend fun empresaNombre(@Body body: Map<String, @JvmSuppressWildcards Any?>): Map<String, @JvmSuppressWildcards Any?>
+
+    @retrofit2.http.PUT("api/empresa/logo")
+    suspend fun empresaLogo(@Body body: Map<String, @JvmSuppressWildcards Any?>): Map<String, @JvmSuppressWildcards Any?>
+
+    @POST("api/empresa/restablecer")
+    suspend fun empresaRestablecer(): Map<String, @JvmSuppressWildcards Any?>
+
+    @POST("api/empresa/produccion")
+    suspend fun empresaProduccion(): Map<String, @JvmSuppressWildcards Any?>
+
+    @retrofit2.http.PUT("api/empresa/copia-seguridad")
+    suspend fun empresaCopia(@Body body: Map<String, @JvmSuppressWildcards Any?>): Map<String, @JvmSuppressWildcards Any?>
+
+    @POST("api/copias/ahora")
+    suspend fun copiaAhora(): Map<String, @JvmSuppressWildcards Any?>
+
+    @GET("api/copias")
+    suspend fun copias(): List<Map<String, @JvmSuppressWildcards Any?>>
+
+    @retrofit2.http.Streaming
+    @GET("api/copias/{id}/descargar")
+    suspend fun copiaDescargar(@Path("id") id: Long): okhttp3.ResponseBody
+
+    @GET("api/bitacora")
+    suspend fun bitacora(): List<Map<String, @JvmSuppressWildcards Any?>>
+
+    /** Prompts frecuentes ★ del usuario (en su cuenta). */
+    @GET("api/asistente/prompts")
+    suspend fun prompts(): Map<String, @JvmSuppressWildcards Any?>
+
+    @retrofit2.http.PUT("api/asistente/prompts")
+    suspend fun guardarPrompts(@Body body: Map<String, @JvmSuppressWildcards Any?>): Map<String, @JvmSuppressWildcards Any?>
+
     @GET("api/panel")
     suspend fun panel(@retrofit2.http.Query("dias") dias: Int): Map<String, @JvmSuppressWildcards Any?>
 

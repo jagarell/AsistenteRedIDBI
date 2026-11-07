@@ -121,6 +121,10 @@ class AsistenteViewModel @Inject constructor(
     /** Sin botones de opciones: el asistente solo se maneja escribiendo o dictando. */
     private fun inicio(@Suppress("UNUSED_PARAMETER") admin: Boolean): List<Opcion> = emptyList()
 
+    /** Prompts frecuentes de la cuenta: se leen al abrir y se guardan al cambiarlos. */
+    suspend fun cargarPrompts(): List<String>? = runCatching { repo.prompts() }.getOrNull()
+    fun guardarPrompts(l: List<String>) { viewModelScope.launch { runCatching { repo.guardarPrompts(l) } } }
+
     fun reiniciar() {
         paso = Paso.LIBRE; modo = ""; tipo = ""; contexto.setLength(0); adjuntosAcumulados.clear(); minutaId = null; sop = Soporte(); consultaReporte = null
         _state.update { it.copy(adjuntos = emptyList(), pista = "Escribe o dicta…", subtitulo = "En línea") }

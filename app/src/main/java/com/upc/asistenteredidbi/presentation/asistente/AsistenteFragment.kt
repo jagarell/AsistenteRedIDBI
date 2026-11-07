@@ -84,7 +84,10 @@ class AsistenteFragment : Fragment() {
         val a = org.json.JSONArray(prefs.getString("lista", "[]")); MutableList(a.length()) { a.getString(it) }
     }.getOrDefault(mutableListOf())
 
-    private fun guardarPrompts(l: List<String>) { prefs.edit().putString("lista", org.json.JSONArray(l).toString()).apply() }
+    private fun guardarPrompts(l: List<String>) {
+        prefs.edit().putString("lista", org.json.JSONArray(l).toString()).apply() // copia local; la cuenta es la fuente
+        vm.guardarPrompts(l)
+    }
 
     private fun alternarPrompt(texto: String) {
         val l = prompts()
@@ -262,6 +265,13 @@ class AsistenteFragment : Fragment() {
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        // Los prompts frecuentes viven en la cuenta: se traen del servidor y se repinta.
+        viewLifecycleOwner.lifecycleScope.launch {
+            vm.cargarPrompts()?.let { remoto ->
+                prefs.edit().putString("lista", org.json.JSONArray(remoto).toString()).apply()
+                actualizarEstrella(); lista.removeAllViews(); pintados = 0; render(vm.state.value)
+            }
+        }
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch { vm.state.collect { render(it) } }

@@ -37,6 +37,8 @@ class Asistente007Repository @Inject constructor(private val api: Api007Service)
     suspend fun mensaje(body: Map<String, Any?>) = api.mensaje(body)
     suspend fun redactar(datos: Any?) = api.redactar(mapOf("datos" to datos))
     suspend fun reporteXlsx(consulta: Map<String, Any?>): ByteArray = api.reporteXlsx(consulta).use { it.bytes() }
+    suspend fun prompts(): List<String> = (api.prompts()["prompts"] as? List<*>)?.map { it.toString() }.orEmpty()
+    suspend fun guardarPrompts(l: List<String>) = api.guardarPrompts(mapOf("prompts" to l))
     suspend fun panel(dias: Int) = api.panel(dias)
     suspend fun equipo() = api.equipo()
     suspend fun cambiarRol(id: Long, rol: String) = api.equipoRol(id, mapOf("rol" to rol))

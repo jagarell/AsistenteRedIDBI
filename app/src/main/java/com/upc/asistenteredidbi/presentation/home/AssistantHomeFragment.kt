@@ -133,6 +133,8 @@ class AssistantHomeFragment : Fragment() {
     /** Indicadores por rol (doc 0.0.7 §20): se actualizan al volver a Inicio; tocar uno abre Reportes ya filtrado. */
     private fun cargarIndicadores() {
         viewLifecycleOwner.lifecycleScope.launch {
+            // Etiqueta DEMO junto al saludo mientras la empresa esté en modo demo (todos los roles).
+            runCatching { api007.empresa() }.getOrNull()?.let { e -> _binding?.tvDemo?.isVisible = e["enProduccion"] != true }
             val r = runCatching { api007.indicadores() }.getOrNull() ?: return@launch
             val b = _binding ?: return@launch
             val rol = r["rol"]?.toString().orEmpty()
