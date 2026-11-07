@@ -473,7 +473,8 @@ class ReportesFragment : Fragment() {
             }
             return
         }
-        val ev = m.evaluacionId ?: return
+        val ev = m.evaluacionId
+        if (ev == null) { com.upc.asistenteredidbi.presentation.common.HojaMinuta.abrir(this, apiAcceso, m.id); return }
         findNavController().navigate(R.id.action_historial_to_minuta, bundleOf("evaluationId" to ev.toString()))
     }
 

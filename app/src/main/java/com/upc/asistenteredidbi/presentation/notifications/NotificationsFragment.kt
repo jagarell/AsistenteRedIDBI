@@ -196,10 +196,10 @@ class NotificationsFragment : Fragment() {
                 setOnClickListener { if (habilitado) onClick() }
             })
         }
-        val abrir = { if (ev != null) findNavController().navigate(R.id.minutaProposalFragment, bundleOf("evaluationId" to ev.toString(), "minutaId" to id))
-            else Toast.makeText(ctx, "Esta minuta se redactó con el Asistente IA; ábrela desde el Asistente IA.", Toast.LENGTH_SHORT).show() }
-        icono(com.upc.asistenteredidbi.R.drawable.ic_ln_eye, "Ver minuta", Color.WHITE, Ui007.BLUE) { abrir() }
-        icono(com.upc.asistenteredidbi.R.drawable.ic_ln_topo, "Ver topología", Color.WHITE, Ui007.BLUE, m["topologia"] == true) { abrir() }
+        val abrir = { topologia: Boolean -> if (ev != null) findNavController().navigate(R.id.minutaProposalFragment, bundleOf("evaluationId" to ev.toString(), "minutaId" to id, "verTopologia" to topologia))
+            else com.upc.asistenteredidbi.presentation.common.HojaMinuta.abrir(this, apiAcceso, id) }
+        icono(com.upc.asistenteredidbi.R.drawable.ic_ln_eye, "Ver minuta", Color.WHITE, Ui007.BLUE) { abrir(false) }
+        icono(com.upc.asistenteredidbi.R.drawable.ic_ln_topo, "Ver topología", Color.WHITE, Ui007.BLUE, m["topologia"] == true) { abrir(true) }
         if (estado == "Completa" && !tecnico) {
             icono(com.upc.asistenteredidbi.R.drawable.ic_ln_check, "Validar", 0xFF2E7D32.toInt(), Color.WHITE) { validar(id) }
             icono(com.upc.asistenteredidbi.R.drawable.ic_ln_close, "Rechazar", Color.WHITE, 0xFFC62828.toInt()) { rechazar(id, m["local"].toString()) }

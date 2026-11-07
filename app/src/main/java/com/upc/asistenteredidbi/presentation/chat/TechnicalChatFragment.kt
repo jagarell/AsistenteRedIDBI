@@ -15,6 +15,7 @@ import android.view.inputmethod.EditorInfo
 import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.TextView
+import android.content.Intent
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
@@ -212,7 +213,29 @@ class TechnicalChatFragment : Fragment() {
         binding.tvQuestionCounter.text = "Preparando evaluación"
     }
 
+    /** Dictar la respuesta por voz (QA D3/G16): se transcribe en el campo de texto y se revisa antes de enviar. */
+    private val dictar = registerForActivityResult(androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult()) { r ->
+        if (r.resultCode == android.app.Activity.RESULT_OK && _binding != null) {
+            val t = r.data?.getStringArrayListExtra(android.speech.RecognizerIntent.EXTRA_RESULTS)?.firstOrNull().orEmpty()
+            if (t.isNotBlank()) {
+                val et = binding.etTextInput
+                et.setText(if (et.text.isBlank()) t else et.text.toString().trimEnd() + " " + t)
+                et.setSelection(et.text.length)
+            }
+        }
+    }
+
+    private fun dictarRespuesta() {
+        val i = Intent(android.speech.RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+            putExtra(android.speech.RecognizerIntent.EXTRA_LANGUAGE_MODEL, android.speech.RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+            putExtra(android.speech.RecognizerIntent.EXTRA_LANGUAGE, "es-PE")
+            putExtra(android.speech.RecognizerIntent.EXTRA_PROMPT, "Di tu respuesta…")
+        }
+        runCatching { dictar.launch(i) }.onFailure { Toast.makeText(requireContext(), "Este teléfono no tiene dictado por voz. Escribe la respuesta.", Toast.LENGTH_LONG).show() }
+    }
+
     private fun setupClicks() {
+        binding.btnDictate.setOnClickListener { dictarRespuesta() }
         binding.btnBack.setOnClickListener { findNavController().navigateUp() }
 
         binding.btnSubmit.setOnClickListener { submitAnswer() }
@@ -652,6 +675,7 @@ class TechnicalChatFragment : Fragment() {
         binding.etTextInput.isVisible = needsTextInput
         // Con la evaluación terminada ya no se adjunta: el chat solo atiende cambios al mapa.
         binding.btnAttach.isVisible = !freeChat
+        binding.btnDictate.isVisible = true
         binding.containerTextRow.isVisible = needsTextInput
 
         if (freeChat) {
@@ -1212,6 +1236,7 @@ class TechnicalChatFragment : Fragment() {
         viewLifecycleOwner.lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.uiState.collect { state ->
+                    controlarPings(state)
                     renderLoading(state)
                     renderProgress(state)
                     renderMessages(state)
@@ -1221,6 +1246,33 @@ class TechnicalChatFragment : Fragment() {
                 }
             }
         }
+    }
+
+    // ---------- Ubicar el puerto del switch (QA D1/F3) ----------
+    // La pregunta dice «la app está enviando pings a su IP durante 20 s, 2 s sí y 2 s no»: aquí se envían de verdad, desde el celular
+    // conectado al WiFi del local, mientras la pregunta siga abierta. Así la luz del puerto parpadea al ritmo que se le pide al técnico.
+    private var pingJob: kotlinx.coroutines.Job? = null
+    private var pingNodo: String? = null
+
+    private fun controlarPings(state: TechnicalChatUiState) {
+        val node = state.node
+        val ip = node?.text?.let { Regex("""IP (\d{1,3}(?:\.\d{1,3}){3})\): la app est[aá] enviando pings""").find(it)?.groupValues?.get(1) }
+        val clave = if (ip != null) "${node.nodeId}|${node.scope}|$ip" else null
+        if (clave == pingNodo) return
+        pingJob?.cancel(); pingJob = null; pingNodo = clave
+        if (ip == null) return
+        pingJob = viewLifecycleOwner.lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            val fin = System.currentTimeMillis() + 20_000
+            while (System.currentTimeMillis() < fin) {
+                val ronda = System.currentTimeMillis() + 2_000        // 2 s con pings seguidos…
+                while (System.currentTimeMillis() < ronda) {
+                    runCatching { java.net.InetAddress.getByName(ip).isReachable(250) }
+                    kotlinx.coroutines.delay(50)
+                }
+                kotlinx.coroutines.delay(2_000)                        // …y 2 s sin nada
+            }
+        }
+        android.widget.Toast.makeText(requireContext(), "Enviando pings a $ip durante 20 s…", android.widget.Toast.LENGTH_SHORT).show()
     }
 
     private fun renderLoading(state: TechnicalChatUiState) {
@@ -1389,6 +1441,7 @@ class TechnicalChatFragment : Fragment() {
     }
 
     override fun onDestroyView() {
+        pingJob?.cancel(); pingNodo = null
         binding.rvMessages.adapter = null
         _binding = null
         super.onDestroyView()

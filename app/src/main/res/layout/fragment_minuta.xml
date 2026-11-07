@@ -90,7 +90,7 @@
                             android:id="@+id/tvGlobalScorePercent"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="72%"
+                            android:text="—"
                             android:textColor="@color/primary_blue"
                             android:textSize="34sp"
                             android:textStyle="bold" />
@@ -198,7 +198,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="18dp"
                     android:lineSpacingExtra="5dp"
-                    android:text="El análisis indica que la infraestructura tiene oportunidades de mejora significativas en cobertura WiFi y cableado estructurado. Se recomienda implementar una solución WiFi 6 con al menos 3 puntos de acceso y un switch administrable para segmentación VLAN."
+                    android:text="Cargando el análisis…"
                     android:textColor="@color/text_body"
                     android:textSize="16sp" />
             </LinearLayout>

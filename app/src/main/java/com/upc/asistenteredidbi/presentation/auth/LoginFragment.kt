@@ -79,9 +79,8 @@ class LoginFragment : Fragment() {
             viewModel.onToggleRememberMe()
         }
 
-        binding.tvSupport.setOnClickListener {
-            Toast.makeText(requireContext(), "Próximamente", Toast.LENGTH_SHORT).show()
-        }
+        // Sin sesión no hay Asistente IA ni canal de soporte propio: se oculta hasta que exista (QA F4).
+        (binding.tvSupport.parent as? View)?.visibility = View.GONE
     }
 
     private fun validateAndLogin() {

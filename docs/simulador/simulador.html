@@ -756,7 +756,7 @@ const MESA_ALL=["Salón 1","Salón 2","Salón 3","Terraza","Balcón","Privado","
 const CANALES=["Mesa","Recojo","Para llevar","Delivery","Backoffice","Habitaciones"];
 const ZONAS_CANAL={"Habitaciones":["Habitaciones","Room service"],"Recojo":["Caja","Mostrador","Ventanilla"],"Para llevar":["Mostrador","Ventanilla","Caja"],"Backoffice":["Administración","Almacén"],"Delivery":["Despacho","Ventanilla","Caja"]};
 const ESTADOS=[{v:"EN_OPERACION",l:"En operación"},{v:"EN_OBRA",l:"En obra"},{v:"POR_INAUGURAR",l:"Por inaugurar"},{v:"SISTEMA_ANTERIOR",l:"Ya cuenta con un sistema de punto de venta anterior"},{v:"OTRO",l:"Otro (escribir)",otro:true}];
-const CONEX=[{v:"FIBRA",l:"Fibra óptica"},{v:"COAXIAL",l:"Cable coaxial"},{v:"CHIP",l:"Internet con chip"},{v:"NO_SE",l:"No sé"},{v:"NO_TIENE",l:"No tiene"},{v:"POR_CONTRATAR",l:"Va a contratar internet antes de implementar"}];
+const CONEX=[{v:"FIBRA",l:"Fibra óptica"},{v:"COAXIAL",l:"Cable coaxial"},{v:"CHIP",l:"Internet con chip"},{v:"SATELITAL",l:"Internet satelital"},{v:"OTRO",l:"Otro (escribir)",otro:true},{v:"NO_SE",l:"No sé"},{v:"NO_TIENE",l:"No tiene"},{v:"POR_CONTRATAR",l:"Va a contratar internet antes de implementar"}];
 const YN=[{v:"SI",l:"Sí"},{v:"NO",l:"No"}];
 const MOZOS=["REST_PESCADOS","PARRILLA","RESTAURANTE","HOSPEDAJE","PIZZERIA","CHIFA","RESTOBAR","DISCOTECA_BAR","POLLERIA","REST_ORIENTAL","FAST_FOOD","CAFETERIA","HELADERIA"]; /* todos menos Retail y Otro; en fast food, cafetería y heladería lo normal es que no haya */
 const MOZOS_RARO=["FAST_FOOD","CAFETERIA","HELADERIA"];
@@ -900,7 +900,7 @@ function build(a){
   X.tomaOk=toma;
 
   /* C · internet */
-  const PROV=[{v:'MOVISTAR',l:'Movistar'},{v:'CLARO',l:'Claro'},{v:'ENTEL',l:'Entel'},{v:'WIN',l:'WIN'},{v:'BITEL',l:'Bitel'},{v:'OTRO',l:'Otro (escribir)',otro:true}];
+  const PROV=[{v:'MOVISTAR',l:'Movistar'},{v:'CLARO',l:'Claro'},{v:'ENTEL',l:'Entel'},{v:'WIN',l:'WIN'},{v:'BITEL',l:'Bitel'},{v:'STARLINK',l:'Starlink'},{v:'OTRO',l:'Otro (escribir)',otro:true}];
   const PLAN={b:'C',kind:'choice',text:'¿De cuánto es su plan de internet? (Mbps)',unit:'Mbps',opts:[300,500,1000].map(n=>({v:n,l:n+' Mbps'})).concat([{v:'OTRO',l:'Otro (escribir)',otro:true,num:true}]),def:500};
   let con=null, ready=false;
   if(fReady){
@@ -916,10 +916,15 @@ function build(a){
         if(a.P15&&askHist) push(ch('P16','C','¿Tiene un internet de respaldo?',YN,{def:'NO'}));
         if(a.P16&&askHist) push(ch('P17','C','¿El local tiene caídas de internet?',YN,{def:'NO'}));
         ready=!!a.P15&&(!askHist||v('P17')!=null);
-      } else ready=con==='NO_TIENE'||con==='POR_CONTRATAR';
+      } else if(con==='POR_CONTRATAR'){
+        /* 0.0.16 (C4): aunque el cliente va a contratar, se anota qué tipo de conexión y con qué proveedor (Starlink, otro) */
+        push(ch('P14t','C','¿Qué tipo de conexión va a contratar?',CONEX.filter(o=>!['NO_SE','NO_TIENE','POR_CONTRATAR'].includes(o.v)),{def:'FIBRA'}));
+        if(a.P14t) push(ch('P13','C','¿Con qué proveedor va a contratar?',PROV,{def:'MOVISTAR'}));
+        ready=!!a.P14t&&!!a.P13;
+      } else ready=con==='NO_TIENE';
     }
   }
-  X.con=X.simple?null:con; X.conL=a.P14?a.P14.label:(X.simple&&a.P15?'Internet del local':null);
+  X.con=X.simple?null:con; X.conL=a.P14?(a.P14t?'Por contratar · '+a.P14t.label:a.P14.label):(X.simple&&a.P15?'Internet del local':null);
   X.sinInt=con==='NO_TIENE'; X.porContratar=con==='POR_CONTRATAR'; X.hasInt=!!con&&!X.sinInt&&!X.porContratar;
   X.proveedor=a.P13?a.P13.label:null;
   X.plan=typeof v('P15')==='number'?v('P15'):(a.P15&&a.P15.v==='OTRO'?(parseInt(a.P15.label)||null):null);

@@ -72,7 +72,7 @@
                     android:id="@+id/tvUserName"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="José Arellano"
+                    android:text=""
                     android:textColor="@android:color/white"
                     android:textSize="21sp"
                     android:textStyle="bold" />
@@ -162,7 +162,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="6dp"
-                        android:text="24"
+                        android:text="–"
                         android:textColor="#1565C0"
                         android:textSize="22sp"
                         android:textStyle="bold" />
@@ -195,7 +195,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="6dp"
-                        android:text="18"
+                        android:text="–"
                         android:textColor="#2E7D32"
                         android:textSize="22sp"
                         android:textStyle="bold" />
@@ -228,7 +228,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="6dp"
-                        android:text="12"
+                        android:text="–"
                         android:textColor="#F57C00"
                         android:textSize="22sp"
                         android:textStyle="bold" />

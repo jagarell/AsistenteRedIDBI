@@ -12,6 +12,15 @@ import retrofit2.http.Query
  */
 interface Api007Service {
 
+    @GET("api/roles")
+    suspend fun roles(): List<Map<String, @JvmSuppressWildcards Any?>>
+
+    @retrofit2.http.PUT("api/roles/{id}")
+    suspend fun rolActualizar(@Path("id") id: String, @Body body: Map<String, @JvmSuppressWildcards Any?>): Map<String, @JvmSuppressWildcards Any?>
+
+    @POST("api/roles")
+    suspend fun rolCrear(@Body body: Map<String, @JvmSuppressWildcards Any?>): Map<String, @JvmSuppressWildcards Any?>
+
     @GET("api/roles/mi-perfil-reportes")
     suspend fun miPerfilReportes(): ReportProfileDto
 
@@ -245,6 +254,9 @@ interface Api007Service {
 
     @POST("api/asistente/sugerencia")
     suspend fun sugerencia(@Body body: Map<String, @JvmSuppressWildcards Any?>): Map<String, @JvmSuppressWildcards Any?>
+
+    @retrofit2.http.POST("api/auth/change-password")
+    suspend fun cambiarClave(@Body body: Map<String, String>): Map<String, @JvmSuppressWildcards Any?>
 
     @GET("api/notifications/avisos")
     suspend fun avisos(): Map<String, @JvmSuppressWildcards Any?>

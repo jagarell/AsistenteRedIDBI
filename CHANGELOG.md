@@ -1,5 +1,27 @@
 # Changelog
 
+## [0.0.16] - 2026-11-07
+### Agregado
+- **Parte 6 · actualizar la minuta desde el Asistente IA** (caso AMAT ROOFTOP): impresoras, equipos, fotos, tomas, router, recomendaciones y pasos; lo actualizado llega al PDF.
+- **Chat IA**: editar una respuesta anterior sin perder las demás; rubro «Otro» con el flujo completo; equipo de los mozos (tablet, celular, iMin móvil, otro o por confirmar); cambiar una foto y agregarle una descripción; «Reportes» y «reporte de los técnicos por terminar» en el Asistente IA.
+- **Chat IA · Internet**: «Internet satelital» y «Otro (escribir)»; si el cliente va a contratar, ahora se anota el tipo de conexión y el proveedor (Starlink, otro).
+- **Ubicar el puerto del switch**: la app envía de verdad los pings a la IP de la impresora (20 s, 2 s sí y 2 s no) mientras la pregunta está abierta.
+- **Dictar la respuesta** por voz en el Chat IA.
+- **Ver minuta** abre también las minutas redactadas con el Asistente IA (sin evaluación) desde Minutas, Notificaciones, Panel y Reportes; «Ver topología» baja hasta el mapa.
+- **Cambiar contraseña** con la sesión iniciada (pide la actual).
+- **Mi Cuenta**: Notificaciones antes que Seguridad; «Recibir notificaciones» (apaga o enciende todo) y «Avisarme cuando…» guardados en la cuenta; la hora de la copia de seguridad y «Incluir fotos»; Ayuda abre el Asistente IA.
+- **Equipo y accesos**: pestañas Personas y Roles y permisos (editar lo que puede hacer cada rol y crear roles) y filtros con cantidad.
+- **Panel**: tarjetas con borde de color y subtítulos reales («N con análisis IA listo», «−N % por minuta»), bloque de avance por técnico con la meta diaria, supervisores con horas promedio de espera (meta 24 h), «Ver todas» y «Ver toda la actividad».
+- **Análisis IA**: «Observaciones de la visita» con «Se resolvió» y el Estado final (APTO, OBSERVADO o NO APTO).
+- **Propuesta PDF**: Ajustar, Editar, Bitácora, Solicitar validación y Compartir.
+### Cambiado
+- El menú lateral solo se abre en Inicio; una notificación tocada en Iniciar sesión se abre al entrar.
+- Se quitaron los interruptores que no hacían nada (2 factores, push, correo y alertas), «Dispositivos activos», «Idioma», «Soporte» de Iniciar sesión y los botones «Próximamente» del Plan.
+- Sin datos de ejemplo visibles en Inicio (24/18/12) ni en Análisis IA (72 %).
+### Pendiente
+- Parte 7 restante: estado de cada equipo, una sola lista de impresoras, punto de red y energía por equipo, equipos que no son del local y notas largas en Observaciones.
+- Web, Verificación en 2 pasos y Sesiones abiertas.
+
 ## [0.0.15] - 2026-11-07
 ### Agregado
 - **Notificaciones push (Firebase)**: proyecto `asistente-red-idbi` creado y probado de punta a punta (el gateway envía y el celular recibe «Minuta rechazada»). Falta cargar la credencial del servidor en Railway.

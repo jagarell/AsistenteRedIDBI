@@ -63,6 +63,8 @@ class EquipoFragment : Fragment() {
         }
     }
 
+    private var pestana = "personas"
+
     private fun rol(p: Map<String, Any?>) = p["rol"].toString()
     private fun id(p: Map<String, Any?>) = (p["id"] as Number).toLong()
 
@@ -75,6 +77,18 @@ class EquipoFragment : Fragment() {
             contentDescription = "Lo que puedes hacer en este módulo"; setPadding(dp(ctx, 12), dp(ctx, 4), dp(ctx, 4), dp(ctx, 4)); setOnClickListener { info() }
         })
         body.addView(cab)
+        // Dos pestañas como el simulador: Personas y Roles y permisos (QA G9).
+        val pest = Ui007.row(ctx).apply { setPadding(0, dp(ctx, 10), 0, 0) }
+        listOf("personas" to "Personas", "roles" to "Roles y permisos").forEach { (k, l) ->
+            pest.addView(Ui007.chip(ctx, l, pestana == k) { pestana = k; render() })
+        }
+        body.addView(pest)
+        if (pestana == "roles") {
+            val cont = LinearLayout(ctx).apply { orientation = LinearLayout.VERTICAL }
+            body.addView(cont)
+            RolesPermisos.pintar(ctx, cont, viewLifecycleOwner.lifecycleScope, api007) { render() }
+            return
+        }
 
         // Solicitudes de contraseña: arriba, en una tarjeta.
         if (solicitudes.isNotEmpty()) {
@@ -105,8 +119,9 @@ class EquipoFragment : Fragment() {
 
         val chips = Ui007.row(ctx).apply { setPadding(0, dp(ctx, 10), 0, 0) }
         val porAtender = personas.count { it["pidioCodigo"] == true }
-        listOf("Todos", "Supervisores", "Técnicos", "Por atender ($porAtender)").forEach { f ->
-            chips.addView(Ui007.chip(ctx, f, f == filtro) { filtro = f; render() })
+        val nSup = personas.count { rol(it) == "SUPERVISOR" }; val nTec = personas.count { rol(it) == "TECNICO" }
+        listOf("Todos" to "Todos · ${personas.size}", "Supervisores" to "Supervisores · $nSup", "Técnicos" to "Técnicos · $nTec", "Por atender ($porAtender)" to "Por atender · $porAtender").forEach { (f, texto) ->
+            chips.addView(Ui007.chip(ctx, texto, f == filtro) { filtro = f; render() })
         }
         body.addView(android.widget.HorizontalScrollView(ctx).apply { isHorizontalScrollBarEnabled = false; addView(chips) })
 

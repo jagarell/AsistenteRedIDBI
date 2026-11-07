@@ -43,6 +43,8 @@ class MinutaFragment : Fragment() {
 
     /** Observaciones del técnico ya guardadas (para no volver a mostrar el aviso). */
     private var observations: MutableMap<String, Any?> = mutableMapOf()
+    /** Observaciones de la visita que el técnico marcó «Se resolvió» (se guardan con la minuta). */
+    private var resueltos: MutableSet<String> = mutableSetOf()
     private var lastAnalysis: AnalysisResponseDto? = null
 
     override fun onCreateView(
@@ -63,6 +65,7 @@ class MinutaFragment : Fragment() {
             editionsUseCase.load(id).onSuccess { editions ->
                 @Suppress("UNCHECKED_CAST")
                 observations = ((editions["obs"] as? Map<String, Any?>) ?: emptyMap()).toMutableMap()
+                resueltos = ((editions["resueltos"] as? List<*>).orEmpty().map { it.toString() }).toMutableSet()
                 lastAnalysis?.let { renderExtras(it) }
             }
         }
@@ -238,6 +241,7 @@ class MinutaFragment : Fragment() {
             })
             container.addView(row)
         }
+        observacionesDeLaVisita(analysis, container, dp)
         analysis.references?.let { refs ->
             if (refs.similar.isEmpty()) return@let
             val box = LinearLayout(requireContext()).apply {
@@ -304,6 +308,62 @@ class MinutaFragment : Fragment() {
                 button.setTextColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#2E7D32"))
                 button.isClickable = false
             }.onFailure { Toast.makeText(requireContext(), it.message ?: "No se pudo agregar", Toast.LENGTH_SHORT).show() }
+        }
+    }
+
+    /**
+     * «Observaciones de la visita» (QA G3): cada hallazgo se puede marcar «Se resolvió» (deja de contar) y abajo sale el Estado final:
+     * APTO sin observaciones por resolver, OBSERVADO con al menos una, NO APTO si el análisis lo marca (internet por debajo del 70 % sin respaldo).
+     */
+    private fun observacionesDeLaVisita(analysis: AnalysisResponseDto, container: LinearLayout, dp: Float) {
+        val hallazgos = analysis.recommendationItems.filter { it.type != "REC" }
+        if (hallazgos.isEmpty() && analysis.estado == null) return
+        val ctx = requireContext()
+        val caja = LinearLayout(ctx).apply {
+            orientation = LinearLayout.VERTICAL
+            setBackgroundResource(R.drawable.bg_home_card)
+            elevation = 5 * dp
+            setPadding((20 * dp).toInt(), (16 * dp).toInt(), (20 * dp).toInt(), (16 * dp).toInt())
+            layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply { topMargin = (18 * dp).toInt() }
+        }
+        caja.addView(TextView(ctx).apply { text = "Observaciones de la visita"; textSize = 17f; typeface = Typeface.DEFAULT_BOLD; setTextColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#1F2937")) })
+        if (hallazgos.isEmpty()) caja.addView(TextView(ctx).apply { text = "Sin observaciones."; textSize = 13f; setPadding(0, (6 * dp).toInt(), 0, 0) })
+        hallazgos.forEach { h ->
+            val hecho = h.id in resueltos
+            val fila = LinearLayout(ctx).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; setPadding(0, (10 * dp).toInt(), 0, 0) }
+            fila.addView(LinearLayout(ctx).apply {
+                orientation = LinearLayout.VERTICAL
+                addView(TextView(ctx).apply { text = h.title; textSize = 14f; typeface = Typeface.DEFAULT_BOLD; paint.isStrikeThruText = hecho; setTextColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse(if (hecho) "#6B7280" else "#1F2937")) })
+                addView(TextView(ctx).apply { text = if (hecho) "Se resolvió en la visita." else h.detail; textSize = 12.5f; setTextColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#6B7280")) })
+            }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+            fila.addView(TextView(ctx).apply {
+                text = if (hecho) "Deshacer" else "Se resolvió"; textSize = 13f; typeface = Typeface.DEFAULT_BOLD
+                setTextColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#1565C0")); setPadding((10 * dp).toInt(), (6 * dp).toInt(), 0, (6 * dp).toInt())
+                setOnClickListener { alternarResuelto(h.id, !hecho) }
+            })
+            caja.addView(fila)
+        }
+        val pendientes = hallazgos.count { it.id !in resueltos }
+        val base = analysis.estado ?: if (pendientes == 0) "APTO" else "OBSERVADO"
+        val final = if (base == "NO APTO") "NO APTO" else if (pendientes == 0) "APTO" else "OBSERVADO"
+        val color = when (final) { "APTO" -> "#2E7D32"; "NO APTO" -> "#C62828"; else -> "#B45309" }
+        caja.addView(LinearLayout(ctx).apply {
+            orientation = LinearLayout.HORIZONTAL; setPadding(0, (14 * dp).toInt(), 0, 0)
+            addView(TextView(ctx).apply { text = "Estado final: "; textSize = 14f })
+            addView(TextView(ctx).apply { text = final; textSize = 14f; typeface = Typeface.DEFAULT_BOLD; setTextColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse(color)) })
+        })
+        container.addView(caja)
+    }
+
+    private fun alternarResuelto(id: String, resuelto: Boolean) {
+        val evalId = viewModel.evaluationId.toLongOrNull() ?: return
+        val nuevo = resueltos.toMutableSet().also { if (resuelto) it.add(id) else it.remove(id) }
+        viewLifecycleOwner.lifecycleScope.launch {
+            val editions = editionsUseCase.load(evalId).getOrNull().orEmpty().toMutableMap()
+            editions["resueltos"] = nuevo.toList()
+            editionsUseCase.save(evalId, editions)
+                .onSuccess { resueltos = nuevo; lastAnalysis?.let { renderExtras(it) } }
+                .onFailure { Toast.makeText(requireContext(), it.message ?: "No se pudo guardar", Toast.LENGTH_SHORT).show() }
         }
     }
 
