@@ -49,7 +49,7 @@ class PreguntasReglasFragment : Fragment() {
         val frame = FrameLayout(ctx).apply { setBackgroundColor(Ui007.BG) }
         val scroll = ScrollView(ctx).apply { isFillViewport = true }
         this.scroll = scroll
-        body = LinearLayout(ctx).apply { orientation = LinearLayout.VERTICAL; val p = dp(ctx, 16); setPadding(p, p + dp(ctx, 28), p, dp(ctx, 32)) }
+        body = LinearLayout(ctx).apply { orientation = LinearLayout.VERTICAL; val p = dp(ctx, 16); setPadding(p, p + dp(ctx, 4), p, dp(ctx, 32)) }
         scroll.addView(body)
         progress = ProgressBar(ctx).apply { layoutParams = FrameLayout.LayoutParams(dp(ctx, 40), dp(ctx, 40), android.view.Gravity.CENTER) }
         frame.addView(scroll); frame.addView(progress)

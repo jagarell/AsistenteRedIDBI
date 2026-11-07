@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.0.14] - 2026-11-07
+### Corregido
+- **Barras del sistema en Android 15**: los botones del sistema ya no tapan la barra de escritura ni los botones de abajo, y las cabeceras ya no quedan bajo la hora y los íconos. La barra de estado se pinta con el azul de la cabecera y el teclado empuja la pantalla en todas las vistas (Asistente IA, Chat IA y el resto).
+- Se quitó el relleno fijo de 24–30 dp que cada cabecera llevaba para la barra de estado.
+
 ## [0.0.13] - 2026-11-07
 ### Agregado
 - **Bitácora de la minuta** (Ver minuta › ⋮ y Reportes): resumen (creada por y con qué, estado, rechazada por con el motivo y quién la corrigió, validada por), quiénes la editaron en las últimas 48 horas e historial con el detalle en palabras simples.

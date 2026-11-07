@@ -51,7 +51,7 @@ class PanelFragment : Fragment() {
         val frame = FrameLayout(ctx).apply { setBackgroundColor(Ui007.BG) }
         val sv = ScrollView(ctx).apply { isFillViewport = true }
         scroll = sv
-        body = LinearLayout(ctx).apply { orientation = LinearLayout.VERTICAL; val p = dp(ctx, 16); setPadding(p, p + dp(ctx, 28), p, dp(ctx, 32)) }
+        body = LinearLayout(ctx).apply { orientation = LinearLayout.VERTICAL; val p = dp(ctx, 16); setPadding(p, p + dp(ctx, 4), p, dp(ctx, 32)) }
         sv.addView(body)
         progress = ProgressBar(ctx).apply { layoutParams = FrameLayout.LayoutParams(dp(ctx, 40), dp(ctx, 40), Gravity.CENTER) }
         frame.addView(sv); frame.addView(progress)
