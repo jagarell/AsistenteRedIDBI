@@ -238,7 +238,7 @@
                 android:layout_marginStart="10dp"
                 android:background="@drawable/bg_send_button"
                 android:padding="12dp"
-                app:srcCompat="@drawable/ic_send"
+                app:srcCompat="@drawable/ic_ln_send"
                 app:tint="@android:color/white" />
         </LinearLayout>
 

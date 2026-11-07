@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.0.9] - 2026-11-07
+### Agregado
+- **Asistente IA completo** (doc 01): conversación libre sin botones de opciones; 📎 adjuntar evidencias por tipo, 🎤 audio que se transcribe y se revisa antes de enviar, reiniciar la conversación y tarjetas según lo que se pide:
+  - **Borrador de minuta**: datos del cliente, conexiones de red (cable, WiFi o USB; si un enlace cambia gana el último medio), contenido y evidencias que faltan; «Agregar más» y «Redactar minuta».
+  - **Actualizar minuta**: «Actualiza la minuta de [cliente] del [fecha]: …» muestra los cambios antes de aplicarlos, con la casilla «Fue una nueva visita al local», y sube la versión.
+  - **Base de datos**: fecha de visita, observaciones, recomendaciones e historial de una minuta (el técnico solo ve el detalle de las suyas).
+  - **Pendientes del día**, **minutas por validar** y **reportes** por periodo, con descarga en archivo que se abre en Excel.
+  - Preguntas abiertas con ChatGPT y las reglas de la empresa como contexto.
+- **Inicio por rol**: «Hola de nuevo,», indicadores reales (técnico: Pendientes · En revisión · Esperando validación; supervisor y administrador: Por validar · Pendientes · En riesgo), tarjeta **Asistente IA** y Reportes filtrado al tocar un indicador.
+- **Notificaciones por rol**: quién envió, local, puntaje y hora; ver minuta, ✓ validar y ✕ rechazar; filtros con cantidad, orden por criticidad o fecha y «Otros avisos». El técnico ve el estado de sus minutas.
+- **Recordatorios** del supervisor y del administrador al técnico («Supervisor … te pide: termina la minuta de …»).
+- **Reportes del Asistente IA en tabla** (Local, Técnico, Supervisor, Estado, Puntaje, Fecha) con filtros por estado (incompletas, por validar, en revisión, validadas, en riesgo), mes y persona (técnico o equipo de un supervisor); se ajustan sin repetir todo («solo el mes anterior», «sin octubre», «de María Quispe»). **Descargar Excel (.xlsx)** con título, fecha de generación, encabezados con filtro, columna Dirección y puntaje numérico.
+- **Prompts frecuentes ★**: la estrella junto a cada mensaje lo guarda; la estrella de arriba abre la lista y escribe el prompt en el chat sin enviarlo.
+- **Pedir al técnico** desde la ficha de Reportes: «Pedir que la termine», «Pedir que la corrija» y, solo el administrador, «Recordar al supervisor».
+### Cambiado
+- Íconos de línea del diseño (clip, micrófono, ojo, topología, ✓, ✕, enviar) en lugar de emojis; sombras de las tarjetas del Inicio como en el prototipo.
+- Menú lateral: Inicio, Panel, Notificaciones; sin «Propuestas» (las minutas por validar se ven en Notificaciones).
+- La orden «Redacta una minuta nueva» ya no se cuela como observación.
+
 ## [0.0.8] - 2026-11-06
 ### Agregado
 - **Fotos obligatorias que ya no traban el Chat IA** (Parte 5): cuando la IA dice «no corresponde» o «no es legible», el técnico puede **Guardar como correcta** con una nota opcional y atajos («La foto es correcta», «Aún no hay puntos», «El cliente no permite», y «Local en obra» si el local está en obra o por inaugurar). En el anexo de la minuta solo se muestra la nota.

@@ -17,6 +17,13 @@ object Ui007 {
     const val LINE = 0xFFE3E8EF.toInt()
     const val BG = 0xFFF5F7FB.toInt()
 
+    /** Ícono de línea del diseño (res/drawable/ic_ln_*), teñido con [color]. */
+    fun icon(ctx: Context, res: Int, color: Int, sizeDp: Int = 22): android.widget.ImageView = android.widget.ImageView(ctx).apply {
+        setImageResource(res); setColorFilter(color)
+        scaleType = android.widget.ImageView.ScaleType.FIT_CENTER
+        layoutParams = LinearLayout.LayoutParams(dp(ctx, sizeDp), dp(ctx, sizeDp))
+    }
+
     fun dp(ctx: Context, v: Int): Int = (v * ctx.resources.displayMetrics.density).toInt()
 
     fun round(color: Int, radiusDp: Int, ctx: Context, stroke: Int? = null): GradientDrawable = GradientDrawable().apply {

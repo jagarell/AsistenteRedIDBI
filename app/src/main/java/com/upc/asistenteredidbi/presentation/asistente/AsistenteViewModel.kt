@@ -24,20 +24,35 @@ data class Mensaje(
     val texto: String,
     val opciones: List<Opcion> = emptyList(),
     /** Documento de minuta de soporte (JSON de bloques) para la vista previa. */
-    val doc: String? = null
+    val doc: String? = null,
+    /** Tarjetas que devuelve el servidor (borrador, actualizar minuta, consulta, pendientes, reportes…). */
+    val bloques: List<Map<String, Any?>> = emptyList(),
+    /** Evidencias que el usuario adjuntó con este mensaje (nombre del tipo). */
+    val adjuntos: List<String> = emptyList(),
+    /** Tarjeta de progreso «Redactando la minuta». */
+    val progreso: Boolean = false
 )
+
+/** Evidencia elegida en «Adjuntar evidencias»: tipo (Frontis del local, Speedtest…) y la foto. */
+data class Adjunto(val tipo: String, val uri: String)
 
 data class AsistenteUiState(
     val mensajes: List<Mensaje> = emptyList(),
     val cargando: Boolean = false,
     val admin: Boolean = false,
-    val pista: String = "Escribe al Asistente IA…"
+    val pista: String = "Escribe o dicta…",
+    val adjuntos: List<Adjunto> = emptyList(),
+    val subtitulo: String = "En línea"
 )
 
 sealed interface AsistenteEvento {
     /** «Implementación»: vuelve al inicio y abre una evaluación nueva con el flujo de siempre. */
     data object NuevaImplementacion : AsistenteEvento
     data class AbrirPdf(val base64: String, val nombre: String) : AsistenteEvento
+    data class AbrirMinuta(val id: Long) : AsistenteEvento
+    data class GuardarXlsx(val bytes: ByteArray, val nombre: String) : AsistenteEvento
+    data object IrReportes : AsistenteEvento
+    data class PrefijarTexto(val texto: String) : AsistenteEvento
 }
 
 /**
@@ -74,17 +89,47 @@ class AsistenteViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            val admin = session.getRole() == Role.ADMINISTRADOR
-            _state.update { it.copy(admin = admin) }
-            bot("Hola, soy el Asistente IA. ¿Qué necesitas?", inicio(admin))
+            val rol = session.getRole()
+            _state.update { it.copy(admin = rol == Role.ADMINISTRADOR) }
+            rolActual = rol
+            bienvenida()
         }
     }
 
-    private fun inicio(admin: Boolean) = buildList {
-        add(Opcion("nueva", "Nueva minuta", true))
-        add(Opcion("actualizar", "Actualizar una minuta"))
-        if (admin) add(Opcion("aprendiste", "¿Qué aprendiste hoy?"))
+    private var rolActual: Role? = null
+
+    /** Un solo mensaje, sin botones: explica por escrito en qué ayuda el asistente según el rol (doc 01 §2.1). */
+    private fun bienvenida() {
+        val tecnico = rolActual == Role.TECNICO || rolActual == null
+        val texto = if (tecnico) "Hola. Soy tu Asistente IA y puedo ayudarte a:\n" +
+            "• Redactar una minuta nueva con tus fotos y lo que me cuentes por texto o audio (datos del cliente, cómo están conectados los equipos de red y lo que encontraste).\n" +
+            "• Actualizar una minuta ya generada: dime el cliente, la fecha y qué cambió.\n" +
+            "• Consultar una minuta: fecha de visita, observaciones, recomendaciones e historial.\n" +
+            "• Decirte tus pendientes del día, tus minutas por validar y darte reportes.\n" +
+            "• Resolver dudas de la visita (router, selftest, AnyDesk…).\n" +
+            "¿En qué te ayudo? Escríbeme o mándame un audio."
+        else "Hola. Soy tu Asistente IA y puedo ayudarte con la gestión de tu equipo:\n" +
+            "• Consultar cualquier minuta: fecha de visita, observaciones, recomendaciones e historial.\n" +
+            "• Decirte las minutas por validar y los pendientes del día.\n" +
+            "• Darte reportes de los técnicos por periodo (y descargarlos en Excel) o programarlos, por ejemplo cada fin de mes.\n" +
+            "• Actualizar una minuta con lo que me cuentes por texto o audio.\n" +
+            (if (rolActual == Role.ADMINISTRADOR) "• Contarte qué aprendí de las visitas y guardarlo como regla nueva si me lo pides.\n" else "") +
+            "¿En qué te ayudo? Escríbeme o mándame un audio."
+        _state.update { it.copy(mensajes = listOf(Mensaje(false, texto))) }
     }
+
+    /** Sin botones de opciones: el asistente solo se maneja escribiendo o dictando. */
+    private fun inicio(@Suppress("UNUSED_PARAMETER") admin: Boolean): List<Opcion> = emptyList()
+
+    fun reiniciar() {
+        paso = Paso.LIBRE; modo = ""; tipo = ""; contexto.setLength(0); adjuntosAcumulados.clear(); minutaId = null; sop = Soporte(); consultaReporte = null
+        _state.update { it.copy(adjuntos = emptyList(), pista = "Escribe o dicta…", subtitulo = "En línea") }
+        bienvenida()
+    }
+
+    // ---------------- Adjuntar evidencias ----------------
+    fun agregarAdjunto(tipo: String, uri: String) = _state.update { it.copy(adjuntos = it.adjuntos + Adjunto(tipo, uri)) }
+    fun quitarAdjunto(i: Int) = _state.update { it.copy(adjuntos = it.adjuntos.filterIndexed { n, _ -> n != i }) }
 
     private fun bot(t: String, op: List<Opcion> = emptyList(), doc: String? = null) =
         _state.update { it.copy(mensajes = it.mensajes + Mensaje(false, t, op, doc)) }
@@ -122,7 +167,14 @@ class AsistenteViewModel @Inject constructor(
 
     fun enviar(texto: String) {
         val t = texto.trim()
-        if (t.isEmpty()) return
+        val adj = _state.value.adjuntos
+        if (t.isEmpty() && adj.isEmpty()) return
+        if (paso == Paso.LIBRE && adj.isNotEmpty()) {
+            _state.update { it.copy(adjuntos = emptyList(), mensajes = it.mensajes + Mensaje(true, t, adjuntos = adj.map { a -> a.tipo })) }
+            adjuntosAcumulados.addAll(adj.map { it.tipo })
+            libre(t)
+            return
+        }
         yo(t)
         when (paso) {
             Paso.S_CLIENTE -> cliente(t)
@@ -139,17 +191,129 @@ class AsistenteViewModel @Inject constructor(
 
     // ---------------- Mensaje libre ----------------
 
-    private fun libre(t: String) = viewModelScope.launch {
+    private var modo = ""
+    private var tipo = ""
+    private val contexto = StringBuilder()
+    private val adjuntosAcumulados = linkedSetOf<String>()
+    private var nuevaVisita = false
+    /** Última consulta de reporte: permite ajustarla («solo el mes anterior», «sin octubre», «de María») sin repetir todo. */
+    private var consultaReporte: Map<String, Any?>? = null
+    var minutaAbierta: Long? = null
+        private set
+
+    fun setNuevaVisita(v: Boolean) { nuevaVisita = v }
+
+    /** Manda el mensaje al servidor, que decide la intención y responde con tarjetas (ver doc 01 §2.2). */
+    private fun libre(t: String, conTipo: String? = null, textoOriginal: String? = null) = viewModelScope.launch {
         ocupado(true)
-        val r = runCatching { repo.mensaje(t) }.getOrNull()
-        ocupado(false)
-        when {
-            r == null -> bot("No pude conectarme con el Asistente IA. Revisa tu conexión e inténtalo de nuevo.")
-            r["casos"] != null -> mostrarAprendizaje(r)
-            r["tipo"] == "tipo_minuta" -> bot(r["texto"].toString(), listOf(Opcion("imp", "Implementación", true), Opcion("sop", "Soporte / incidencia")))
-            r["tipo"] == "soporte" -> { paso = Paso.S_CLIENTE; pista("Cliente o local"); bot(r["texto"].toString()) }
-            else -> bot(r["texto"]?.toString() ?: "Sin respuesta.")
+        val enNueva = modo == "new"
+        if (enNueva && conTipo == null) {
+            if (contexto.isNotEmpty()) { if (!contexto.trimEnd().endsWith('.') && !contexto.trimEnd().endsWith(';')) contexto.append('.'); contexto.append(' ') }
+            contexto.append(t)
         }
+        val texto = when {
+            textoOriginal != null -> textoOriginal
+            enNueva -> contexto.toString()
+            else -> t
+        }
+        val body = buildMap<String, Any?> {
+            put("texto", texto)
+            if (modo.isNotEmpty() || conTipo != null) put("modo", if (conTipo != null) "new" else modo)
+            (conTipo ?: tipo).takeIf { it.isNotEmpty() }?.let { put("tipo", it) }
+            minutaId?.let { if (modo == "upd") put("minutaId", it) }
+            if (adjuntosAcumulados.isNotEmpty()) put("adjuntos", adjuntosAcumulados.toList())
+            consultaReporte?.let { put("reporte", it) }
+        }
+        val r = runCatching { repo.mensaje(body) }.getOrNull()
+        ocupado(false)
+        if (r == null) { bot("No pude conectarme con el Asistente IA. Revisa tu conexión e inténtalo de nuevo."); return@launch }
+        if (r["casos"] != null) { mostrarAprendizaje(r); return@launch }
+        @Suppress("UNCHECKED_CAST")
+        val estado = r["estado"] as? Map<String, Any?>
+        when (estado?.get("modo")) {
+            "soporte" -> { paso = Paso.S_CLIENTE; pista("Cliente o local"); modo = "" }
+            "upd" -> { modo = "upd"; minutaId = (estado["minutaId"] as? Number)?.toLong(); pista("Cuéntame qué cambió en la visita") }
+            "new" -> { modo = "new"; tipo = estado["tipo"]?.toString() ?: "imp"
+                if (contexto.isEmpty()) contexto.append(texto); _state.update { it.copy(subtitulo = "Redactando una minuta nueva") } }
+        }
+        @Suppress("UNCHECKED_CAST")
+        val bloques = (r["bloques"] as? List<Map<String, Any?>>).orEmpty()
+        if (bloques.isEmpty()) { bot(r["texto"]?.toString() ?: "Sin respuesta."); return@launch }
+        // Si la tarjeta es «Tipo», guarda el texto para reenviarlo cuando elijan.
+        bloques.firstOrNull { it["tipo"] == "actualizar_minuta" }?.let { b ->
+            minutaId = (b["minutaId"] as? Number)?.toLong(); modo = "upd"; nuevaVisita = b["nuevaVisita"] == true
+        }
+        // Un reporte deja su consulta para ajustarla; cualquier otra tarjeta (que no sea texto) la cierra.
+        val rep = bloques.firstOrNull { it["tipo"] == "reporte" }
+        @Suppress("UNCHECKED_CAST")
+        if (rep != null) consultaReporte = rep["consulta"] as? Map<String, Any?>
+        else if (bloques.any { it["tipo"] !in setOf("texto", "texto_ia") }) consultaReporte = null
+        _state.update { it.copy(mensajes = it.mensajes + Mensaje(false, "", bloques = bloques)) }
+        bloques.firstOrNull { it["tipo"] == "accion" }?.let { b ->
+            if (b["accion"] == "abrir_minuta") { (b["minutaId"] as? Number)?.toLong()?.let { id -> _eventos.trySend(AsistenteEvento.AbrirMinuta(id)) } }
+        }
+    }
+
+    /** Un botón de una tarjeta: confirmar, agregar más, elegir tipo, abrir una minuta, descargar el reporte… */
+    fun accion(bloque: Map<String, Any?>, a: Map<String, Any?>) {
+        @Suppress("UNCHECKED_CAST")
+        val datos = (a["datos"] as? Map<String, Any?>).orEmpty()
+        when (a["id"]) {
+            "tipo_imp", "tipo_sop" -> {
+                yo(a["label"].toString())
+                val orig = datos["texto"]?.toString().orEmpty()
+                if (a["id"] == "tipo_sop") { modo = ""; libre("Soporte / incidencia", textoOriginal = "Redacta una minuta de soporte") }
+                else { contexto.setLength(0); modo = "new"; contexto.append(orig); libre(orig, conTipo = "imp", textoOriginal = orig) }
+            }
+            "agregar" -> { pista("Agrega más contexto o adjunta más evidencias"); bot("Listo, cuéntame más o adjunta más evidencias con 📎. Cuando termines, toca «Redactar minuta» en el borrador.") }
+            "redactar" -> redactar(bloque["datos"])
+            "cancelar" -> { modo = ""; minutaId = null; bot("Listo, no se cambió la minuta.") }
+            "aplicar" -> aplicarCambiosDeTarjeta(bloque)
+            "abrir_minuta" -> (datos["minutaId"] as? Number)?.toLong()?.let { _eventos.trySend(AsistenteEvento.AbrirMinuta(it)) }
+            "texto" -> datos["texto"]?.toString()?.let { _eventos.trySend(AsistenteEvento.PrefijarTexto(it)) }
+            "descargar_reporte" -> @Suppress("UNCHECKED_CAST") descargar((datos["consulta"] as? Map<String, Any?>).orEmpty())
+            "ver_reportes" -> _eventos.trySend(AsistenteEvento.IrReportes)
+        }
+    }
+
+    fun abrirMinuta(id: Long) { _eventos.trySend(AsistenteEvento.AbrirMinuta(id)) }
+
+    suspend fun cargarMinuta(id: Long): Map<String, Any?> = repo.minuta(id)
+
+    private fun redactar(datos: Any?) = viewModelScope.launch {
+        _state.update { it.copy(mensajes = it.mensajes + Mensaje(false, "", progreso = true)) }
+        ocupado(true)
+        val r = runCatching { repo.redactar(datos) }.getOrNull()
+        ocupado(false)
+        if (r == null) { bot("No pude redactar la minuta. Revisa tu conexión e inténtalo de nuevo."); return@launch }
+        @Suppress("UNCHECKED_CAST")
+        val bloques = (r["bloques"] as? List<Map<String, Any?>>).orEmpty()
+        modo = ""; tipo = ""; contexto.setLength(0); adjuntosAcumulados.clear()
+        _state.update { it.copy(subtitulo = "En línea", mensajes = it.mensajes + Mensaje(false, "", bloques = bloques.filter { b -> b["tipo"] != "accion" })) }
+        bloques.firstOrNull { it["tipo"] == "accion" }?.let { b -> (b["minutaId"] as? Number)?.toLong()?.let { id -> _eventos.trySend(AsistenteEvento.AbrirMinuta(id)) } }
+    }
+
+    private fun aplicarCambiosDeTarjeta(bloque: Map<String, Any?>) = viewModelScope.launch {
+        val id = (bloque["minutaId"] as? Number)?.toLong() ?: return@launch
+        @Suppress("UNCHECKED_CAST")
+        val items = (bloque["items"] as? List<Any?>).orEmpty()
+        yo("Aplicar y ver minuta")
+        ocupado(true)
+        val r = runCatching { repo.aplicar(id, items, nuevaVisita) }
+        ocupado(false)
+        modo = ""; minutaId = null
+        r.onSuccess { m ->
+            bot("Listo. La minuta quedó en la v${(m["version"] as? Number)?.toInt() ?: ""} y vuelve a validación del supervisor. Te llevo a Ver minuta.")
+            _eventos.trySend(AsistenteEvento.AbrirMinuta(id))
+        }.onFailure { bot("No pude aplicar los cambios. Inténtalo de nuevo.") }
+    }
+
+    private fun descargar(consulta: Map<String, Any?>) = viewModelScope.launch {
+        ocupado(true)
+        val bytes = runCatching { repo.reporteXlsx(consulta) }.getOrNull()
+        ocupado(false)
+        if (bytes == null) bot("No pude generar el Excel. Inténtalo de nuevo.")
+        else _eventos.trySend(AsistenteEvento.GuardarXlsx(bytes, "reporte-minutas-${java.time.LocalDate.now()}.xlsx"))
     }
 
     // ---------------- Minuta de soporte ----------------

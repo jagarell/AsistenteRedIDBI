@@ -9,6 +9,7 @@ import android.widget.HorizontalScrollView
 import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.ScrollView
+import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.core.os.bundleOf
 import androidx.fragment.app.Fragment
@@ -60,7 +61,7 @@ class ReportesFragment : Fragment() {
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        if (savedInstanceState == null) vm.load(arguments?.getString("tab"))
+        if (savedInstanceState == null) vm.load(arguments?.getString("tab"), arguments?.getString("estado"), arguments?.getString("criticidad"))
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) { vm.state.collect { render(it) } }
         }
@@ -204,6 +205,35 @@ class ReportesFragment : Fragment() {
             into.addView(Ui007.text(ctx, "v${ver ?: "?"} · ${v["authorName"] ?: ""} · ${fecha(v["createdAt"])}\n${v["resumen"] ?: ""}", 12f).apply { setPadding(0, dp(ctx, 4), 0, 0) })
         }
         into.addView(Ui007.button(ctx, "Ver minuta", true) { verMinuta(m) })
+        recordatorios(m, into)
+    }
+
+    @javax.inject.Inject
+    lateinit var notificaciones: com.upc.asistenteredidbi.data.remote.NotificationApiService
+
+    /** Pedirle algo al técnico (doc 0.0.7 §29): terminar, corregir; solo el administrador recuerda al supervisor. */
+    private fun recordatorios(m: FilaReporteDto, into: LinearLayout) {
+        val ctx = requireContext()
+        val tabs = vm.state.value.tabs
+        val gestiona = tabs.any { it.key == "general" || it.key == "tecnicos" }
+        if (!gestiona) return
+        val admin = tabs.any { it.label == "Por técnico" }
+        val opciones = buildList {
+            when (m.estado) {
+                "Pendiente" -> add("Pedir que la termine" to "terminar")
+                "En revisión" -> add("Pedir que la corrija" to "corregir")
+                "Completa" -> if (admin) add("Recordar al supervisor" to "supervisor")
+            }
+        }
+        opciones.forEach { (label, accion) ->
+            into.addView(Ui007.button(ctx, label, false) {
+                viewLifecycleOwner.lifecycleScope.launch {
+                    runCatching { notificaciones.recordatorio(mapOf("minutaId" to m.id, "accion" to accion)) }
+                        .onSuccess { r -> Toast.makeText(ctx, "✓ ${r["aviso"] ?: "Aviso"} avisado", Toast.LENGTH_SHORT).show() }
+                        .onFailure { Toast.makeText(ctx, "No se pudo enviar el aviso.", Toast.LENGTH_SHORT).show() }
+                }
+            })
+        }
     }
 
     private fun fecha(v: Any?): String = when (v) {

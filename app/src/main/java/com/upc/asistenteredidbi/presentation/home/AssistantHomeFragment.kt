@@ -69,14 +69,12 @@ class AssistantHomeFragment : Fragment() {
                         binding.btnProfile.text = state.userFullName.split(" ").filter { it.isNotBlank() }
                             .take(2).joinToString("") { it.first().uppercase() }
                     }
-                    val roleLabel = if (state.isSupervisor) "Supervisor" else "Técnico"
-                    binding.tvUserRole.text = "$roleLabel · ${state.userCompany.ifBlank { "Asistente de Red" }}"
+                    if (binding.tvUserRole.text.isNullOrBlank() || binding.tvUserRole.text.startsWith("TechNet")) {
+                        val roleLabel = if (state.isSupervisor) "Supervisor" else "Técnico"
+                        binding.tvUserRole.text = "$roleLabel · ${state.userCompany.ifBlank { "Asistente de Red" }}"
+                    }
 
-                    // Mismos números que el prototipo: evaluaciones, propuestas (chat terminado) y validadas.
-                    binding.tvStatEvaluations.text = state.evaluations.size.toString()
-                    binding.tvStatProposals.text = state.evaluations.count { it.stage.isFinished }.toString()
-                    binding.tvStatSent.text = state.evaluations.count { it.stage == EvaluationStage.VALIDADA }.toString()
-
+                    // Los indicadores (por rol) los carga cargarIndicadores() desde /api/inicio/indicadores.
                     recentAdapter.submitList(state.evaluations.take(4).map { it.toHomeRecentItem() })
 
                     binding.cardNewEvaluation.isEnabled = !state.isStartingEvaluation
@@ -130,10 +128,46 @@ class AssistantHomeFragment : Fragment() {
     }
 
     @javax.inject.Inject
+    lateinit var api007: com.upc.asistenteredidbi.data.remote.Api007Service
+
+    /** Indicadores por rol (doc 0.0.7 §20): se actualizan al volver a Inicio; tocar uno abre Reportes ya filtrado. */
+    private fun cargarIndicadores() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            val r = runCatching { api007.indicadores() }.getOrNull() ?: return@launch
+            val b = _binding ?: return@launch
+            val rol = r["rol"]?.toString().orEmpty()
+            @Suppress("UNCHECKED_CAST")
+            val lista = (r["indicadores"] as? List<Map<String, Any?>>).orEmpty()
+            val nums = listOf(b.tvStatEvaluations, b.tvStatProposals, b.tvStatSent)
+            val lbls = listOf(b.lblStat1, b.lblStat2, b.lblStat3)
+            val colores = listOf("#B45309", "#C62828", "#5A3FC0")
+            lista.take(3).forEachIndexed { i, ind ->
+                nums[i].text = (ind["cantidad"] as? Number)?.toInt()?.toString() ?: "0"
+                nums[i].setTextColor(android.graphics.Color.parseColor(if (rol == "TECNICO") listOf("#B45309", "#C62828", "#5A3FC0")[i] else listOf("#5A3FC0", "#B45309", "#C62828")[i]))
+                lbls[i].text = ind["label"]?.toString().orEmpty()
+                (nums[i].parent as View).setOnClickListener {
+                    findNavController().navigate(R.id.action_home_to_historial, Bundle().apply {
+                        (ind["estado"] as? String)?.let { putString("estado", it) }
+                        (ind["criticidad"] as? String)?.let { putString("criticidad", it) }
+                        putString("tab", if (rol == "TECNICO") "mis" else "general")
+                    })
+                }
+            }
+            b.tvReportesSub.text = when (rol) { "ADMINISTRADOR" -> "General y por técnico"; "SUPERVISOR" -> "Tu equipo y tus minutas"; else -> "Mis minutas" }
+            b.tvAsistenteSub.text = when (rol) {
+                "TECNICO" -> "Redacta una minuta con tus evidencias y contexto, o actualiza una minuta ya generada"
+                else -> "Redacta o actualiza minutas y pídele reportes de tu equipo, pendientes o minutas por validar"
+            }
+            b.tvUserRole.text = "${when (rol) { "ADMINISTRADOR" -> "Administrador"; "SUPERVISOR" -> "Supervisor"; else -> "Técnico" }} · ${viewModel.uiState.value.userCompany.ifBlank { "IDBI" }}"
+        }
+    }
+
+    @javax.inject.Inject
     lateinit var notificationApi: com.upc.asistenteredidbi.data.remote.NotificationApiService
 
     override fun onResume() {
         super.onResume()
+        cargarIndicadores()
         // Punto rojo en la campana cuando hay notificaciones sin leer.
         viewLifecycleOwner.lifecycleScope.launch {
             val unread = runCatching { notificationApi.listNotifications().unread }.getOrDefault(0)
@@ -155,6 +189,7 @@ class AssistantHomeFragment : Fragment() {
         }
 
         binding.cardNewEvaluation.setOnClickListener { requestNewEvaluation() }
+        binding.cardAsistente.setOnClickListener { findNavController().navigate(R.id.action_home_to_asistente) }
 
         // Retoma el chat donde se quedó; solo "Nueva Evaluación" lo borra.
         binding.cardContinue.setOnClickListener { viewModel.continuePrevious() }
