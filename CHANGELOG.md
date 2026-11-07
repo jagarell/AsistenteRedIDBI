@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.0.15] - 2026-11-07
+### Agregado
+- **Notificaciones push (Firebase)**: proyecto `asistente-red-idbi` creado y probado de punta a punta (el gateway envía y el celular recibe «Minuta rechazada»). Falta cargar la credencial del servidor en Railway.
+- **Modo sin conexión**: las consultas (Inicio, Reportes, Notificaciones, Panel…) se guardan en el celular y se ven sin señal con la barra «Sin conexión»; el monitor de red detecta bien el corte. Lo guardado se borra al cerrar sesión.
+- **Borradores (evaluaciones sin terminar)** en Reportes con su avance («31 % · sin minuta todavía»), ficha de solo lectura y «Pedir al técnico que la termine»; cuentan en **Pendientes** de Inicio.
+- **Lo que falta · por prioridad** al filtrar Reportes por un técnico: primero lo que falta validar (menor % primero), luego rechazadas, pendientes y sin terminar.
+- **Topología en la minuta: Incluida / No se pudo mapear** (Editar): si no se pudo mapear no sale en el PDF y el supervisor lo ve en la notificación de validación como tarea pendiente del cliente.
+- **Avisarme cuando…** en Notificaciones, según el rol; se respeta al enviar el push.
+- **Asistente IA**: «¿Qué me falta?» / «¿cómo voy?» muestra **Tu progreso**; un cambio «para todas las minutas» no se aplica desde el chat: el administrador abre Preguntas y reglas y los demás **envían una sugerencia al administrador**.
+- **Bitácora**: queda registrado generar el PDF y compartir (correo y menú Compartir); anular un borrador lo **archiva** (no se borra) y el administrador lo ve en **Archivadas** y lo **restaura**.
+### Corregido
+- Fechas de las tarjetas de Reportes en formato legible.
+### Pendiente
+- Orden y borrado de las preguntas base del Chat IA (el motor las arma por código), aviso de AnyDesk en la notificación, responder el Chat IA sin conexión.
+
 ## [0.0.14] - 2026-11-07
 ### Corregido
 - **Barras del sistema en Android 15**: los botones del sistema ya no tapan la barra de escritura ni los botones de abajo, y las cabeceras ya no quedan bajo la hora y los íconos. La barra de estado se pinta con el azul de la cabecera y el teclado empuja la pantalla en todas las vistas (Asistente IA, Chat IA y el resto).

@@ -45,6 +45,9 @@ class MainActivity : AppCompatActivity() {
     lateinit var cola: com.upc.asistenteredidbi.data.session.OutboxStore
 
     @javax.inject.Inject
+    lateinit var copiaLocal: com.upc.asistenteredidbi.data.session.OfflineCacheInterceptor
+
+    @javax.inject.Inject
     lateinit var fotoPerfil: com.upc.asistenteredidbi.presentation.perfil.FotoPerfilStore
     private var fondoAvatarMenu: android.graphics.drawable.Drawable? = null
 
@@ -160,6 +163,7 @@ class MainActivity : AppCompatActivity() {
         drawer.navLogout.setOnClickListener {
             closeDrawer()
             fotoPerfil.limpiar()
+            copiaLocal.limpiar()
             sessionViewModel.logout()
         }
 

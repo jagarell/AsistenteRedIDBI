@@ -30,7 +30,12 @@ class ConnectivityMonitor @Inject constructor(@ApplicationContext private val ct
         runCatching {
             cm.registerDefaultNetworkCallback(object : ConnectivityManager.NetworkCallback() {
                 override fun onAvailable(network: Network) { _online.value = true }
-                override fun onLost(network: Network) { _online.value = hayRed() }
+                // onLost de la red por defecto = no queda ninguna (si hay otra, llega onAvailable enseguida). No se consulta
+                // activeNetwork aquí: durante unos instantes todavía devuelve la red que se acaba de perder.
+                override fun onLost(network: Network) { _online.value = false }
+                override fun onCapabilitiesChanged(network: Network, caps: NetworkCapabilities) {
+                    _online.value = caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+                }
             })
         }
     }

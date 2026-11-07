@@ -232,6 +232,31 @@ interface Api007Service {
 
     @retrofit2.http.DELETE("api/profile/foto")
     suspend fun fotoPerfilQuitar(): Map<String, @JvmSuppressWildcards Any?>
+
+    // ---- 0.0.15 ----
+    @retrofit2.http.PUT("api/minutas/{id}/topologia")
+    suspend fun topologiaEstado(@Path("id") id: Long, @Body body: Map<String, @JvmSuppressWildcards Any?>): Map<String, @JvmSuppressWildcards Any?>
+
+    @POST("api/minutas/{id}/eventos")
+    suspend fun eventoMinuta(@Path("id") id: Long, @Body body: Map<String, @JvmSuppressWildcards Any?>): Map<String, @JvmSuppressWildcards Any?>
+
+    @GET("api/evaluations/{id}/levantamiento")
+    suspend fun levantamiento(@Path("id") id: Long): Map<String, @JvmSuppressWildcards Any?>
+
+    @POST("api/asistente/sugerencia")
+    suspend fun sugerencia(@Body body: Map<String, @JvmSuppressWildcards Any?>): Map<String, @JvmSuppressWildcards Any?>
+
+    @GET("api/notifications/avisos")
+    suspend fun avisos(): Map<String, @JvmSuppressWildcards Any?>
+
+    @retrofit2.http.PUT("api/notifications/avisos")
+    suspend fun avisosGuardar(@Body body: Map<String, @JvmSuppressWildcards Any?>): Map<String, @JvmSuppressWildcards Any?>
+
+    @GET("api/minutas/archivadas")
+    suspend fun archivadas(): List<Map<String, @JvmSuppressWildcards Any?>>
+
+    @POST("api/minutas/{id}/restaurar")
+    suspend fun restaurar(@Path("id") id: Long): Map<String, @JvmSuppressWildcards Any?>
 }
 
 data class ReportProfileDto(val all: Boolean = false, val tecs: String = "none", val own: Boolean = true)
@@ -243,7 +268,9 @@ data class ReportesDto(
     val minutas: List<FilaReporteDto> = emptyList(),
     val total: Int = 0,
     val tecnicos: List<TecnicoReporteDto> = emptyList(),
-    val plazosEmpresa: Boolean = false
+    val plazosEmpresa: Boolean = false,
+    /** Evaluaciones sin terminar (Borrador · sin minuta todavía). */
+    val borradores: List<Map<String, Any?>> = emptyList()
 )
 
 data class IndicadoresDto(

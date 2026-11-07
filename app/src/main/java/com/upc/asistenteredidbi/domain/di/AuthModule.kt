@@ -106,10 +106,12 @@ object AuthModule {
         authInterceptor: Interceptor,
         loggingInterceptor: HttpLoggingInterceptor,
         tokenAuthenticator: TokenAuthenticator,
-        debugInterceptors: Set<@JvmSuppressWildcards Interceptor>
+        debugInterceptors: Set<@JvmSuppressWildcards Interceptor>,
+        offlineCache: com.upc.asistenteredidbi.data.session.OfflineCacheInterceptor
     ): OkHttpClient {
         return OkHttpClient.Builder()
             .addInterceptor(authInterceptor)
+            .addInterceptor(offlineCache)
             .addInterceptor(loggingInterceptor)
             .authenticator(tokenAuthenticator)
             .apply { debugInterceptors.forEach { addInterceptor(it) } }

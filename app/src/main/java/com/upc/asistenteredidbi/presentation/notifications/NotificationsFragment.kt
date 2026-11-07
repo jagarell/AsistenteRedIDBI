@@ -133,6 +133,36 @@ class NotificationsFragment : Fragment() {
                 cuerpo.addView(c)
             }
         }
+        avisarmeCuando()
+    }
+
+    /** «Avisarme cuando…» (doc 0.0.7 §47): lo que se marca vale igual en la web (misma cuenta); según el rol. */
+    private fun avisarmeCuando() {
+        val ctx = requireContext()
+        cuerpo.addView(Ui007.text(ctx, "Avisarme cuando…", 15f, Ui007.INK, true).apply { setPadding(0, dp(ctx, 20), 0, dp(ctx, 2)) })
+        val tarjeta = Ui007.card(ctx)
+        cuerpo.addView(tarjeta)
+        viewLifecycleOwner.lifecycleScope.launch {
+            val r = runCatching { apiAcceso.avisos() }.getOrNull()
+            if (context == null) return@launch
+            @Suppress("UNCHECKED_CAST")
+            val ops = (r?.get("opciones") as? List<Map<String, Any?>>).orEmpty()
+            if (ops.isEmpty()) { tarjeta.addView(Ui007.text(ctx, "No se pudieron cargar tus avisos.", 13f, Ui007.GREY)); return@launch }
+            ops.forEach { o ->
+                val fila = Ui007.row(ctx).apply { setPadding(0, dp(ctx, 6), 0, dp(ctx, 6)) }
+                fila.addView(Ui007.text(ctx, o["texto"].toString(), 13.5f, Ui007.INK), LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+                fila.addView(androidx.appcompat.widget.SwitchCompat(ctx).apply {
+                    isChecked = o["activo"] == true
+                    setOnCheckedChangeListener { _, on ->
+                        viewLifecycleOwner.lifecycleScope.launch {
+                            runCatching { apiAcceso.avisosGuardar(mapOf(o["clave"].toString() to on)) }
+                                .onFailure { Toast.makeText(ctx, "No se pudo guardar.", Toast.LENGTH_SHORT).show() }
+                        }
+                    }
+                })
+                tarjeta.addView(fila)
+            }
+        }
     }
 
     private fun filaMinuta(m: Map<String, Any?>, tecnico: Boolean): View {
