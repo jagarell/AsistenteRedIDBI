@@ -45,6 +45,7 @@ class Asistente007Repository @Inject constructor(private val api: Api007Service)
         okhttp3.MultipartBody.Part.createFormData("archivo", "foto.jpg", okhttp3.RequestBody.create("image/jpeg".toMediaTypeOrNull(), jpeg))
     )
     suspend fun foto(minutaId: Long, archivo: String): ByteArray = api.foto(minutaId, archivo).use { it.bytes() }
+    suspend fun cancelarProgramado(id: Long) = api.cancelarProgramado(id)
     suspend fun panel(dias: Int) = api.panel(dias)
     suspend fun panelResumen(periodo: String, desde: String?, hasta: String?) = api.panelResumen(periodo, desde, hasta)
     suspend fun equipo() = api.equipo()

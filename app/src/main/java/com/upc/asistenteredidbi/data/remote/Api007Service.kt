@@ -119,6 +119,47 @@ interface Api007Service {
     @GET("api/minutas/{id}/fotos/{archivo}")
     suspend fun foto(@Path("id") id: Long, @Path("archivo") archivo: String): okhttp3.ResponseBody
 
+    @POST("api/asistente/programados/{id}/cancelar")
+    suspend fun cancelarProgramado(@Path("id") id: Long): Map<String, @JvmSuppressWildcards Any?>
+
+    // ---- Cambio de contraseña con aprobación del administrador (doc 0.0.7 §36) ----
+    @POST("api/auth/recuperacion")
+    suspend fun recuperacionSolicitar(@Body body: Map<String, @JvmSuppressWildcards Any?>): Map<String, @JvmSuppressWildcards Any?>
+
+    @POST("api/auth/recuperacion/{id}/respuesta")
+    suspend fun recuperacionRespuesta(@Path("id") id: Long, @Body body: Map<String, @JvmSuppressWildcards Any?>): Map<String, @JvmSuppressWildcards Any?>
+
+    @GET("api/recuperaciones")
+    suspend fun recuperaciones(): List<Map<String, @JvmSuppressWildcards Any?>>
+
+    @GET("api/recuperaciones/{id}/codigo")
+    suspend fun recuperacionCodigo(@Path("id") id: Long): Map<String, @JvmSuppressWildcards Any?>
+
+    @POST("api/recuperaciones/{id}/rechazar")
+    suspend fun recuperacionRechazar(@Path("id") id: Long): Map<String, @JvmSuppressWildcards Any?>
+
+    // ---- Acceso temporal a minutas de otros (doc 0.0.7 §46) ----
+    @GET("api/accesos/candidatas")
+    suspend fun accesosCandidatas(): List<Map<String, @JvmSuppressWildcards Any?>>
+
+    @POST("api/accesos")
+    suspend fun accesoPedir(@Body body: Map<String, @JvmSuppressWildcards Any?>): Map<String, @JvmSuppressWildcards Any?>
+
+    @POST("api/accesos/{id}/generar")
+    suspend fun accesoGenerar(@Path("id") id: Long): Map<String, @JvmSuppressWildcards Any?>
+
+    @POST("api/accesos/{id}/rechazar")
+    suspend fun accesoRechazar(@Path("id") id: Long): Map<String, @JvmSuppressWildcards Any?>
+
+    @POST("api/accesos/canjear")
+    suspend fun accesoCanjear(@Body body: Map<String, @JvmSuppressWildcards Any?>): Map<String, @JvmSuppressWildcards Any?>
+
+    @GET("api/accesos/mios")
+    suspend fun accesosMios(): List<Map<String, @JvmSuppressWildcards Any?>>
+
+    @GET("api/accesos/{id}/minuta")
+    suspend fun accesoMinuta(@Path("id") id: Long): Map<String, @JvmSuppressWildcards Any?>
+
     @GET("api/panel")
     suspend fun panel(@retrofit2.http.Query("dias") dias: Int): Map<String, @JvmSuppressWildcards Any?>
 

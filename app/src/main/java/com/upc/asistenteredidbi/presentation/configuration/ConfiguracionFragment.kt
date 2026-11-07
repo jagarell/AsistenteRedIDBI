@@ -61,8 +61,9 @@ class ConfiguracionFragment : Fragment() {
                 viewModel.uiState.collect { state ->
                     state.user?.let { user ->
                         // "Mi Perfil" va sin subtítulo, como en el prototipo.
-                        binding.rowEmpresa.tvRowSubtitle.visibility = View.VISIBLE
-                        binding.rowEmpresa.tvRowSubtitle.text = user.company?.takeIf { it.isNotBlank() } ?: "—"
+                        binding.rowMiPerfil.tvRowTitle.text = user.fullName
+                        binding.rowMiPerfil.tvRowSubtitle.visibility = View.VISIBLE
+                        binding.rowMiPerfil.tvRowSubtitle.text = "${when (user.role.name) { "ADMINISTRADOR" -> "Administrador"; "SUPERVISOR" -> "Supervisor"; else -> "Técnico" }} · ${user.company?.takeIf { it.isNotBlank() } ?: "IDBI"}"
                         binding.rowCorreo.tvRowSubtitle.visibility = View.VISIBLE
                         binding.rowCorreo.tvRowSubtitle.text = user.email
                     }
@@ -83,10 +84,26 @@ class ConfiguracionFragment : Fragment() {
         viewModel.load()
     }
 
+    private fun simplificarMiCuenta() {
+        // La tarjeta de arriba es el usuario (abre Mi perfil): se quitan las filas Empresa y Correo.
+        (binding.rowMiPerfil.root.parent as ViewGroup).let { card ->
+            for (i in 0 until card.childCount) if (card.getChildAt(i) !== binding.rowMiPerfil.root) card.getChildAt(i).visibility = View.GONE
+        }
+        // «Apariencia» se quitó: el Modo noche está en el menú lateral, debajo de Mi Cuenta.
+        (binding.switchDarkMode.parent as View).visibility = View.GONE
+        // Soporte: solo Ayuda y Versión.
+        (binding.rowIdioma.root.parent as ViewGroup).let { card ->
+            val i = card.indexOfChild(binding.rowIdioma.root)
+            binding.rowIdioma.root.visibility = View.GONE
+            card.getChildAt(i + 1)?.visibility = View.GONE
+        }
+    }
+
     private fun setupStaticRows() {
+        simplificarMiCuenta()
         binding.rowMiPerfil.apply {
             ivRowIcon.setImageResource(R.drawable.ic_account_circle)
-            tvRowTitle.text = "Mi Perfil"
+            tvRowTitle.text = "Mi Cuenta"
             root.setOnClickListener { findNavController().navigate(R.id.action_config_to_perfil) }
         }
         binding.rowEmpresa.apply {
@@ -125,7 +142,7 @@ class ConfiguracionFragment : Fragment() {
         }
         binding.rowSoporte.apply {
             ivRowIcon.setImageResource(R.drawable.ic_help)
-            tvRowTitle.text = "Soporte Técnico"
+            tvRowTitle.text = "Ayuda"
             root.setOnClickListener { showComingSoon() }
         }
     }

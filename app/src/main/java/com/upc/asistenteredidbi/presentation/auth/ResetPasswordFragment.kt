@@ -52,7 +52,13 @@ class ResetPasswordFragment : Fragment() {
     ) {
         super.onViewCreated(view, savedInstanceState)
 
-        binding.tvInstructions.text =
+        val aprobado = arguments?.getString("code").orEmpty()
+        if (aprobado.isNotEmpty()) {
+            // Aprobado por el administrador: el código ya viene resuelto; solo se crea la nueva contraseña.
+            binding.etCode.setText(aprobado)
+            binding.tilCode.visibility = View.GONE
+            binding.tvInstructions.text = "Crea tu nueva contraseña. Tienes $expiresInMinutes minutos."
+        } else binding.tvInstructions.text =
             "Ingresa el código generado para $email. El código vence en $expiresInMinutes minutos."
 
         setupClicks()

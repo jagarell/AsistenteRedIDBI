@@ -28,9 +28,11 @@ import javax.inject.Inject
 class EquipoFragment : Fragment() {
 
     @Inject lateinit var repo: Asistente007Repository
+    @Inject lateinit var api007: com.upc.asistenteredidbi.data.remote.Api007Service
     private lateinit var body: LinearLayout
     private lateinit var progress: ProgressBar
     private var personas: List<Map<String, Any?>> = emptyList()
+    private var solicitudes: List<Map<String, Any?>> = emptyList()
     private var filtro = "Todos"
     private var busqueda = ""
 
@@ -51,6 +53,7 @@ class EquipoFragment : Fragment() {
         progress.visibility = View.VISIBLE
         viewLifecycleOwner.lifecycleScope.launch {
             val r = runCatching { repo.equipo() }
+            solicitudes = runCatching { api007.recuperaciones() }.getOrDefault(emptyList())
             progress.visibility = View.GONE
             if (context == null) return@launch
             r.onSuccess { personas = it; render() }.onFailure {
@@ -66,8 +69,29 @@ class EquipoFragment : Fragment() {
     private fun render() {
         val ctx = requireContext()
         body.removeAllViews()
-        body.addView(Ui007.text(ctx, "Equipo y accesos", 24f, Ui007.INK, true))
-        body.addView(Ui007.text(ctx, "Toca una persona para cambiar su rol o su supervisor. Las cuentas nuevas se crean desde la web.", 13f, Ui007.GREY))
+        val cab = Ui007.row(ctx)
+        cab.addView(Ui007.text(ctx, "Equipo y accesos", 24f, Ui007.INK, true), LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+        cab.addView(Ui007.text(ctx, "ⓘ", 24f, Ui007.BLUE, true).apply {
+            contentDescription = "Lo que puedes hacer en este módulo"; setPadding(dp(ctx, 12), dp(ctx, 4), dp(ctx, 4), dp(ctx, 4)); setOnClickListener { info() }
+        })
+        body.addView(cab)
+
+        // Solicitudes de contraseña: arriba, en una tarjeta.
+        if (solicitudes.isNotEmpty()) {
+            val tc = Ui007.card(ctx).apply { layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { topMargin = dp(ctx, 12) } }
+            tc.addView(Ui007.text(ctx, "Solicitudes de contraseña", 15f, Ui007.INK, true))
+            solicitudes.forEach { sol ->
+                val id = (sol["id"] as Number).toLong()
+                tc.addView(Ui007.text(ctx, "${sol["nombre"]} quiere cambiar su contraseña", 14f, Ui007.INK).apply { setPadding(0, dp(ctx, 8), 0, 0) })
+                val acc = Ui007.row(ctx)
+                acc.addView(Ui007.chip(ctx, "Ver código", true) { verCodigo(id) })
+                acc.addView(Ui007.chip(ctx, "Anular", false) {
+                    viewLifecycleOwner.lifecycleScope.launch { runCatching { api007.recuperacionRechazar(id) }; load() }
+                }.apply { (layoutParams as LinearLayout.LayoutParams).marginStart = dp(ctx, 8) })
+                tc.addView(acc)
+            }
+            body.addView(tc)
+        }
 
         val et = android.widget.EditText(ctx).apply {
             hint = "Buscar por nombre o correo"; setText(busqueda); setSingleLine()
@@ -170,5 +194,31 @@ class EquipoFragment : Fragment() {
         }
         sheet.setContentView(col)
         sheet.show()
+    }
+
+    private fun info() {
+        AlertDialog.Builder(requireContext()).setTitle("Lo que puedes hacer en este módulo")
+            .setMessage("• Ver al equipo y buscar a una persona.\n• Cambiar el rol de alguien.\n• Asignar un supervisor a un técnico.\n• Atender los cambios de contraseña: ver el código y decírselo a la persona, o anular la solicitud.\n• Quitar o devolver el acceso.\n• Agregar personas: se hace desde la web.")
+            .setPositiveButton("Entendido", null).show()
+    }
+
+    /** Código de 2 dígitos para decírselo a la persona en persona o por llamada (nunca por chat). */
+    private fun verCodigo(id: Long) {
+        val ctx = requireContext()
+        viewLifecycleOwner.lifecycleScope.launch {
+            val r = runCatching { api007.recuperacionCodigo(id) }.getOrNull()
+            if (r == null) { Toast.makeText(ctx, "La solicitud ya no está vigente.", Toast.LENGTH_SHORT).show(); load(); return@launch }
+            val sheet = com.google.android.material.bottomsheet.BottomSheetDialog(ctx)
+            val col = LinearLayout(ctx).apply { orientation = LinearLayout.VERTICAL; gravity = android.view.Gravity.CENTER_HORIZONTAL; val pad = dp(ctx, 24); setPadding(pad, pad, pad, pad) }
+            col.addView(Ui007.text(ctx, "${r["nombre"]} quiere restablecer su contraseña", 16f, Ui007.INK, true))
+            col.addView(Ui007.text(ctx, r["numero"].toString(), 64f, Ui007.BLUE, true).apply { setPadding(0, dp(ctx, 12), 0, dp(ctx, 8)) })
+            col.addView(Ui007.text(ctx, "Dile este número (en persona o por llamada, nunca por chat). Vence en ${r["minutos"]} minutos.", 13f, Ui007.GREY).apply { gravity = android.view.Gravity.CENTER })
+            col.addView(Ui007.button(ctx, "No, no reconozco esta solicitud", false) {
+                sheet.dismiss(); viewLifecycleOwner.lifecycleScope.launch { runCatching { api007.recuperacionRechazar(id) }; load() }
+            })
+            col.addView(Ui007.button(ctx, "Cerrar", true) { sheet.dismiss() })
+            sheet.setContentView(col)
+            sheet.show()
+        }
     }
 }

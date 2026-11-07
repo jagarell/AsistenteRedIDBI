@@ -114,6 +114,14 @@ class NotificationsFragment : Fragment() {
                 tx.addView(Ui007.text(ctx, o["texto"]?.toString().orEmpty(), 14f, Ui007.INK))
                 (o["fecha"] as? String)?.take(16)?.replace('T', ' ')?.takeIf { it.isNotBlank() }?.let { tx.addView(Ui007.text(ctx, it, 11.5f, Ui007.GREY)) }
                 c.addView(tx, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+                if (o["tipo"] == "ACCESO" && (o["refId"] as? Number) != null) {
+                    val ref = (o["refId"] as Number).toLong()
+                    val acc = Ui007.row(ctx).apply { setPadding(0, dp(ctx, 8), 0, 0) }
+                    acc.addView(Ui007.chip(ctx, "Generar código", true) { generarAcceso(ref) })
+                    acc.addView(Ui007.chip(ctx, "Rechazar", false) { rechazarAcceso(ref) }.apply { (layoutParams as LinearLayout.LayoutParams).marginStart = dp(ctx, 8) })
+                    tx.addView(acc)
+                }
+                if (o["tipo"] == "RECUPERACION") c.setOnClickListener { findNavController().navigate(R.id.equipoFragment) }
                 (o["evaluationId"] as? Number)?.toLong()?.let { ev ->
                     c.setOnClickListener {
                         // El recordatorio de «termina la minuta» retoma el Chat IA donde se quedó; los demás abren la propuesta.
@@ -171,6 +179,23 @@ class NotificationsFragment : Fragment() {
         }
         card.addView(acc)
         return card
+    }
+
+    @Inject lateinit var apiAcceso: com.upc.asistenteredidbi.data.remote.Api007Service
+
+    /** Código de 6 dígitos (24 horas) para decírselo a quien lo pidió. */
+    private fun generarAcceso(id: Long) = viewLifecycleOwner.lifecycleScope.launch {
+        runCatching { apiAcceso.accesoGenerar(id) }.onSuccess { r ->
+            androidx.appcompat.app.AlertDialog.Builder(requireContext()).setTitle("Código para ${r["solicitante"]}")
+                .setMessage("${r["codigo"]}\n\nDíselo a ${r["solicitante"]}. Solo abre esa minuta, solo para esa persona y vale hasta ${r["vence"]}.")
+                .setPositiveButton("Listo", null).show()
+            cargar()
+        }.onFailure { Toast.makeText(requireContext(), "No se pudo generar el código (quizá ya se atendió).", Toast.LENGTH_LONG).show() }
+    }
+
+    private fun rechazarAcceso(id: Long) = viewLifecycleOwner.lifecycleScope.launch {
+        runCatching { apiAcceso.accesoRechazar(id) }.onSuccess { Toast.makeText(requireContext(), "Solicitud rechazada.", Toast.LENGTH_SHORT).show(); cargar() }
+            .onFailure { Toast.makeText(requireContext(), "No se pudo rechazar.", Toast.LENGTH_LONG).show() }
     }
 
     private fun validar(id: Long) = viewLifecycleOwner.lifecycleScope.launch {

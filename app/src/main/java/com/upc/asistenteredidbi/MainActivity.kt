@@ -33,6 +33,12 @@ class MainActivity : AppCompatActivity() {
     lateinit var notificationTokenSync: NotificationTokenSync
 
     @Inject
+    lateinit var notificationApi: com.upc.asistenteredidbi.data.remote.NotificationApiService
+
+    @Inject
+    lateinit var api007: com.upc.asistenteredidbi.data.remote.Api007Service
+
+    @Inject
     lateinit var appPreferences: com.upc.asistenteredidbi.data.session.AppPreferences
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -68,8 +74,56 @@ class MainActivity : AppCompatActivity() {
         navController = navHostFragment.navController
     }
 
+    /** Punto rojo y «Nuevo» en Notificaciones si hay avisos sin leer; el administrador ve su plan («Empresa · N de 10 usuarios»). */
+    private fun refrescarMenu() {
+        lifecycleScope.launch {
+            val sinLeer = runCatching { notificationApi.listNotifications().unread }.getOrDefault(0)
+            val d = binding.navDrawerContent
+            d.navNotifDot.visibility = if (sinLeer > 0) View.VISIBLE else View.GONE
+            d.navNotifBadge.visibility = if (sinLeer > 0) View.VISIBLE else View.GONE
+            if (d.navPreguntas.visibility == View.VISIBLE) {
+                val usuarios = (runCatching { api007.panel(14)["usuarios"] }.getOrNull() as? Number)?.toInt()
+                if (usuarios != null) {
+                    d.navPlan.visibility = View.VISIBLE
+                    d.tvPlanTexto.text = "Empresa · $usuarios de 10 usuarios"
+                    d.pbPlan.progress = usuarios.coerceAtMost(10)
+                }
+            } else d.navPlan.visibility = View.GONE
+        }
+    }
+
+    /** Plan de la empresa (solo administrador): plan actual, usuarios usados y la lista de personas del plan. */
+    private fun mostrarPlan() {
+        lifecycleScope.launch {
+            val personas = runCatching { api007.equipo() }.getOrDefault(emptyList())
+            val dp = resources.displayMetrics.density
+            val sheet = com.google.android.material.bottomsheet.BottomSheetDialog(this@MainActivity)
+            val col = android.widget.LinearLayout(this@MainActivity).apply { orientation = android.widget.LinearLayout.VERTICAL; setPadding((20 * dp).toInt(), (20 * dp).toInt(), (20 * dp).toInt(), (24 * dp).toInt()) }
+            fun t(texto: String, size: Float, bold: Boolean = false, color: Int = 0xFF1F2937.toInt()) = android.widget.TextView(this@MainActivity).apply {
+                text = texto; textSize = size; setTextColor(color); if (bold) typeface = android.graphics.Typeface.DEFAULT_BOLD
+            }
+            col.addView(t("Plan", 20f, true))
+            col.addView(t("Empresa · plan actual", 15f, true, 0xFF1565C0.toInt()).apply { setPadding(0, (6 * dp).toInt(), 0, 0) })
+            col.addView(t("${personas.size} de 10 usuarios (cuenta al administrador)", 14f, false, 0xFF6B7280.toInt()))
+            col.addView(android.widget.ProgressBar(this@MainActivity, null, android.R.attr.progressBarStyleHorizontal).apply { max = 10; progress = personas.size.coerceAtMost(10); setPadding(0, (8 * dp).toInt(), 0, (8 * dp).toInt()) })
+            col.addView(t("Usuarios del plan", 14f, true).apply { setPadding(0, (8 * dp).toInt(), 0, (4 * dp).toInt()) })
+            personas.take(15).forEach { p -> col.addView(t("• ${p["nombre"]} · ${p["rol"].toString().lowercase().replaceFirstChar { c -> c.uppercase() }}", 13.5f).apply { setPadding(0, (3 * dp).toInt(), 0, 0) }) }
+            fun boton(texto: String, relleno: Boolean) = com.google.android.material.button.MaterialButton(this@MainActivity).apply {
+                text = texto; isAllCaps = false
+                setOnClickListener { android.widget.Toast.makeText(this@MainActivity, "Próximamente", android.widget.Toast.LENGTH_SHORT).show() }
+                if (!relleno) { backgroundTintList = android.content.res.ColorStateList.valueOf(android.graphics.Color.WHITE); setTextColor(0xFF1565C0.toInt()); strokeColor = android.content.res.ColorStateList.valueOf(0xFF1565C0.toInt()); strokeWidth = (2 * dp).toInt() }
+            }
+            col.addView(boton("Pedir más usuarios", true).apply { layoutParams = android.widget.LinearLayout.LayoutParams(-1, -2).apply { topMargin = (16 * dp).toInt() } })
+            col.addView(boton("Cambiar a un plan superior", false))
+            col.addView(t("Planes: Free y Empresarial, próximamente. Las personas nuevas se agregan desde la web.", 12f, false, 0xFF6B7280.toInt()).apply { setPadding(0, (10 * dp).toInt(), 0, 0) })
+            sheet.setContentView(android.widget.ScrollView(this@MainActivity).apply { addView(col) })
+            sheet.show()
+        }
+    }
+
     fun openDrawer() {
         sessionViewModel.loadDrawerProfile()
+        refrescarMenu()
         binding.drawerLayoutRoot.openDrawer(GravityCompat.START)
     }
 
@@ -108,6 +162,7 @@ class MainActivity : AppCompatActivity() {
         drawer.navHistorial.setOnClickListener { navigateFromDrawer(R.id.action_home_to_historial) }
         drawer.navAsistente.setOnClickListener { navigateFromDrawer(R.id.action_home_to_asistente) }
         drawer.navPropuestas.setOnClickListener { navigateFromDrawer(R.id.action_home_to_minutas) }
+        drawer.navPlan.setOnClickListener { closeDrawer(); mostrarPlan() }
         drawer.navPanel.setOnClickListener { navigateFromDrawer(R.id.action_home_to_panel) }
         drawer.navPreguntas.setOnClickListener { navigateFromDrawer(R.id.action_home_to_preguntas) }
         drawer.navEquipo.setOnClickListener { navigateFromDrawer(R.id.action_home_to_equipo) }
@@ -129,6 +184,7 @@ class MainActivity : AppCompatActivity() {
                         drawer.navPanel.visibility = if (profile.role != com.upc.asistenteredidbi.domain.model.Role.TECNICO) View.VISIBLE else View.GONE
                         drawer.navPreguntas.visibility = if (profile.role == com.upc.asistenteredidbi.domain.model.Role.ADMINISTRADOR) View.VISIBLE else View.GONE
                         drawer.navEquipo.visibility = if (profile.role == com.upc.asistenteredidbi.domain.model.Role.ADMINISTRADOR) View.VISIBLE else View.GONE
+                        refrescarMenu()
                         drawer.tvDrawerInitials.text = profile.fullName
                             .split(" ")
                             .filter { it.isNotBlank() }

@@ -8,7 +8,7 @@
     <LinearLayout
         android:id="@+id/header"
         android:layout_width="match_parent"
-        android:layout_height="220dp"
+        android:layout_height="132dp"
         android:background="#1976D2"
         android:orientation="vertical"
         android:paddingStart="24dp"
@@ -17,7 +17,7 @@
 
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="52dp"
+            android:layout_height="64dp"
             android:gravity="center_vertical"
             android:orientation="horizontal">
 
@@ -30,71 +30,10 @@
                 app:srcCompat="@drawable/ic_menu"
                 app:tint="@android:color/white" />
 
-            <View
-                android:layout_width="0dp"
-                android:layout_height="1dp"
-                android:layout_weight="1" />
-
-            <FrameLayout
-                android:layout_width="46dp"
-                android:layout_height="46dp">
-
-                <ImageButton
-                    android:id="@+id/btnNotification"
-                    android:layout_width="46dp"
-                    android:layout_height="46dp"
-                    android:background="?attr/selectableItemBackgroundBorderless"
-                    android:padding="11dp"
-                    app:srcCompat="@drawable/ic_notification"
-                    app:tint="@android:color/white" />
-
-                <View
-                    android:id="@+id/notificationBadge"
-                    android:layout_width="9dp"
-                    android:layout_height="9dp"
-                    android:layout_gravity="top|end"
-                    android:layout_marginTop="8dp"
-                    android:layout_marginEnd="8dp"
-                    android:background="@drawable/bg_notification_badge" />
-            </FrameLayout>
-
-            <TextView
-                android:id="@+id/btnProfile"
-                android:layout_width="46dp"
-                android:layout_height="46dp"
-                android:layout_marginStart="8dp"
-                android:background="@drawable/bg_profile_circle"
-                android:gravity="center"
-                android:text="CR"
-                android:textColor="@android:color/white"
-                android:textSize="15sp"
-                android:textStyle="bold" />
-        </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:gravity="center_vertical"
-            android:orientation="horizontal">
-
-            <FrameLayout
-                android:layout_width="72dp"
-                android:layout_height="72dp"
-                android:background="@drawable/bg_home_icon_circle">
-
-                <ImageView
-                    android:layout_width="36dp"
-                    android:layout_height="36dp"
-                    android:layout_gravity="center"
-                    app:srcCompat="@drawable/ic_robot"
-                    app:tint="@android:color/white" />
-            </FrameLayout>
-
             <LinearLayout
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="16dp"
+                android:layout_marginStart="6dp"
                 android:layout_weight="1"
                 android:orientation="vertical">
 
@@ -135,24 +74,61 @@
                     android:layout_height="wrap_content"
                     android:text="José Arellano"
                     android:textColor="@android:color/white"
-                    android:textSize="23sp"
+                    android:textSize="21sp"
                     android:textStyle="bold" />
 
                 <TextView
                     android:id="@+id/tvUserRole"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="TechNet Solutions · Técnico Senior"
-                    android:textColor="#D9EAFE"
-                    android:textSize="14sp" />
+                    android:text=""
+                    android:visibility="gone" />
             </LinearLayout>
+
+
+            <FrameLayout
+                android:layout_width="46dp"
+                android:layout_height="46dp">
+
+                <ImageButton
+                    android:id="@+id/btnNotification"
+                    android:layout_width="46dp"
+                    android:layout_height="46dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:padding="11dp"
+                    app:srcCompat="@drawable/ic_notification"
+                    app:tint="@android:color/white" />
+
+                <View
+                    android:id="@+id/notificationBadge"
+                    android:layout_width="9dp"
+                    android:layout_height="9dp"
+                    android:layout_gravity="top|end"
+                    android:layout_marginTop="8dp"
+                    android:layout_marginEnd="8dp"
+                    android:background="@drawable/bg_notification_badge" />
+            </FrameLayout>
+
+            <TextView
+                android:id="@+id/btnProfile"
+                android:visibility="gone"
+                android:layout_width="46dp"
+                android:layout_height="46dp"
+                android:layout_marginStart="8dp"
+                android:background="@drawable/bg_profile_circle"
+                android:gravity="center"
+                android:text="CR"
+                android:textColor="@android:color/white"
+                android:textSize="15sp"
+                android:textStyle="bold" />
         </LinearLayout>
+
     </LinearLayout>
 
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_marginTop="190dp"
+        android:layout_marginTop="110dp"
         android:clipToPadding="false"
         android:fillViewport="true"
         android:paddingBottom="32dp">
@@ -166,13 +142,13 @@
 
             <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="116dp"
+                android:layout_height="92dp"
                 android:baselineAligned="false"
                 android:orientation="horizontal">
 
                 <LinearLayout
                     android:layout_width="0dp"
-                    android:layout_height="116dp"
+                    android:layout_height="92dp"
                     android:layout_weight="1"
                     android:background="@drawable/bg_home_card"
                     android:elevation="2dp"
@@ -180,14 +156,6 @@
                     android:outlineSpotShadowColor="#240F1E3C"
                     android:gravity="center"
                     android:orientation="vertical">
-
-                    <ImageView
-                        android:layout_width="38dp"
-                        android:layout_height="38dp"
-                        android:background="@drawable/bg_stat_blue"
-                        android:padding="8dp"
-                        app:srcCompat="@drawable/ic_chart"
-                        app:tint="#1976D2" />
 
                     <TextView
                         android:id="@+id/tvStatEvaluations"
@@ -213,7 +181,7 @@
 
                 <LinearLayout
                     android:layout_width="0dp"
-                    android:layout_height="116dp"
+                    android:layout_height="92dp"
                     android:layout_weight="1"
                     android:background="@drawable/bg_home_card"
                     android:elevation="2dp"
@@ -221,14 +189,6 @@
                     android:outlineSpotShadowColor="#240F1E3C"
                     android:gravity="center"
                     android:orientation="vertical">
-
-                    <ImageView
-                        android:layout_width="38dp"
-                        android:layout_height="38dp"
-                        android:background="@drawable/bg_stat_green"
-                        android:padding="8dp"
-                        app:srcCompat="@drawable/ic_document"
-                        app:tint="#2E7D32" />
 
                     <TextView
                         android:id="@+id/tvStatProposals"
@@ -254,7 +214,7 @@
 
                 <LinearLayout
                     android:layout_width="0dp"
-                    android:layout_height="116dp"
+                    android:layout_height="92dp"
                     android:layout_weight="1"
                     android:background="@drawable/bg_home_card"
                     android:elevation="2dp"
@@ -262,14 +222,6 @@
                     android:outlineSpotShadowColor="#240F1E3C"
                     android:gravity="center"
                     android:orientation="vertical">
-
-                    <ImageView
-                        android:layout_width="38dp"
-                        android:layout_height="38dp"
-                        android:background="@drawable/bg_stat_orange"
-                        android:padding="8dp"
-                        app:srcCompat="@drawable/ic_check_circle"
-                        app:tint="#F57C00" />
 
                     <TextView
                         android:id="@+id/tvStatSent"

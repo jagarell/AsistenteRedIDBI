@@ -30,7 +30,7 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="12dp"
             android:layout_weight="1"
-            android:text="Perfil y configuración"
+            android:text="Mi Cuenta"
             android:textColor="@android:color/white"
             android:textSize="22sp"
             android:textStyle="bold" />
@@ -53,7 +53,7 @@
             android:paddingTop="12dp">
 
             <!-- CUENTA -->
-            <TextView style="@style/SettingsSectionLabel" android:text="CUENTA" />
+            <TextView style="@style/SettingsSectionLabel" android:text="CUENTA" android:visibility="gone" />
 
             <LinearLayout style="@style/SettingsCard">
 
@@ -243,9 +243,9 @@
             </LinearLayout>
 
             <!-- APLICACIÓN -->
-            <TextView style="@style/SettingsSectionLabel" android:text="APLICACIÓN" android:visibility="gone" />
+            <TextView style="@style/SettingsSectionLabel" android:text="SOPORTE" />
 
-            <LinearLayout style="@style/SettingsCard" android:visibility="gone">
+            <LinearLayout style="@style/SettingsCard">
 
                 <include
                     android:id="@+id/rowIdioma"
