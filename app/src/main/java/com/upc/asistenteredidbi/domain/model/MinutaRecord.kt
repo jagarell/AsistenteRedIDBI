@@ -42,5 +42,7 @@ data class MinutaRecord(
     val validatedAt: String?,
     /** Motivo con el que el supervisor devolvió la minuta; el técnico la corrige y vuelve a completarla. */
     val rejectionReason: String? = null,
-    val rejectedByName: String? = null
+    val rejectedByName: String? = null,
+    /** Quién la está editando (supervisor o administrador); mientras tanto el técnico no puede editarla. */
+    val bloqueadaPor: String? = null
 )

@@ -11,13 +11,32 @@
         android:layout_height="match_parent"
         android:background="@color/background">
 
+        <!-- Barra del modo sin conexión (doc 0.0.7 §5): «Sin conexión · se guarda en el celular · N por subir» -->
+        <TextView
+            android:id="@+id/tvOfflineBar"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:background="#33425A"
+            android:gravity="center_vertical"
+            android:paddingStart="16dp"
+            android:paddingTop="30dp"
+            android:paddingEnd="16dp"
+            android:paddingBottom="8dp"
+            android:textColor="@android:color/white"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            android:visibility="gone"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
         <!-- NavHostFragment: contenedor único de todos los Fragments -->
         <androidx.fragment.app.FragmentContainerView
             android:id="@+id/nav_host_fragment"
             android:name="androidx.navigation.fragment.NavHostFragment"
             android:layout_width="0dp"
             android:layout_height="0dp"
-            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/tvOfflineBar"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent"

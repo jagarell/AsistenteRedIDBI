@@ -38,6 +38,16 @@ class MainActivity : AppCompatActivity() {
     @Inject
     lateinit var api007: com.upc.asistenteredidbi.data.remote.Api007Service
 
+    @javax.inject.Inject
+    lateinit var conexion: com.upc.asistenteredidbi.data.session.ConnectivityMonitor
+
+    @javax.inject.Inject
+    lateinit var cola: com.upc.asistenteredidbi.data.session.OutboxStore
+
+    @javax.inject.Inject
+    lateinit var fotoPerfil: com.upc.asistenteredidbi.presentation.perfil.FotoPerfilStore
+    private var fondoAvatarMenu: android.graphics.drawable.Drawable? = null
+
     @Inject
     lateinit var appPreferences: com.upc.asistenteredidbi.data.session.AppPreferences
 
@@ -148,6 +158,7 @@ class MainActivity : AppCompatActivity() {
         }
         drawer.navLogout.setOnClickListener {
             closeDrawer()
+            fotoPerfil.limpiar()
             sessionViewModel.logout()
         }
 
@@ -170,6 +181,7 @@ class MainActivity : AppCompatActivity() {
         drawer.navConfiguracion.setOnClickListener { navigateFromDrawer(R.id.action_home_to_config) }
         // Mi perfil sale del menú (doc 0.0.7 §13): se abre tocando el avatar o el nombre de la cabecera.
         val openPerfil = View.OnClickListener { navigateFromDrawer(R.id.action_home_to_perfil) }
+        fondoAvatarMenu = drawer.tvDrawerInitials.background
         drawer.tvDrawerInitials.setOnClickListener(openPerfil)
         drawer.tvDrawerName.setOnClickListener(openPerfil)
 
@@ -177,6 +189,7 @@ class MainActivity : AppCompatActivity() {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 sessionViewModel.drawerProfile.collect { profile ->
                     if (profile != null) {
+                        launch { fotoPerfil.sincronizar() }
                         drawer.tvDrawerName.text = profile.fullName
                         drawer.tvDrawerRole.text = profile.roleLabel
                         drawer.tvDrawerCompany.text = profile.company
@@ -185,15 +198,73 @@ class MainActivity : AppCompatActivity() {
                         drawer.navPreguntas.visibility = if (profile.role == com.upc.asistenteredidbi.domain.model.Role.ADMINISTRADOR) View.VISIBLE else View.GONE
                         drawer.navEquipo.visibility = if (profile.role == com.upc.asistenteredidbi.domain.model.Role.ADMINISTRADOR) View.VISIBLE else View.GONE
                         refrescarMenu()
-                        drawer.tvDrawerInitials.text = profile.fullName
-                            .split(" ")
-                            .filter { it.isNotBlank() }
-                            .take(2)
-                            .joinToString("") { it.first().uppercase() }
+                        val ini = profile.fullName.split(" ").filter { it.isNotBlank() }.take(2).joinToString("") { it.first().uppercase() }
+                        fotoPerfil.pintar(drawer.tvDrawerInitials, ini, fondoAvatarMenu, fotoPerfil.foto.value)
                     }
                 }
             }
         }
+        iniciarModoSinConexion()
+        // Foto de perfil en la cabecera del menú (doc 0.0.7 §35); sin foto se ven las iniciales.
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                fotoPerfil.foto.collect { f ->
+                    val ini = drawer.tvDrawerName.text.toString().split(" ").filter { it.isNotBlank() }.take(2).joinToString("") { it.first().uppercase() }.ifEmpty { drawer.tvDrawerInitials.text.toString() }
+                    fotoPerfil.pintar(drawer.tvDrawerInitials, ini, fondoAvatarMenu, f)
+                }
+            }
+        }
+    }
+
+    /**
+     * Modo sin conexión (doc 0.0.7 §5): barra «Sin conexión · se guarda en el celular · N por subir» con «Ver»; al volver la señal se sube
+     * la cola («Sincronizando N cambios…» y luego «Se subieron N cambios»). Las fotos suben con WiFi o con datos móviles (§34).
+     */
+    private fun iniciarModoSinConexion() {
+        conexion.iniciar()
+        val barra = binding.root.findViewById<android.widget.TextView>(R.id.tvOfflineBar)
+        barra.setOnClickListener { mostrarCola() }
+        var sincronizando = false
+        fun pintar(online: Boolean, n: Int) {
+            barra.visibility = if (!online || n > 0) View.VISIBLE else View.GONE
+            barra.text = when {
+                !online -> "📵 Sin conexión · se guarda en el celular" + (if (n > 0) " · $n por subir" else "") + "   Ver"
+                sincronizando -> "Sincronizando $n ${if (n == 1) "cambio" else "cambios"}…"
+                else -> "$n por subir · toca para sincronizar"
+            }
+        }
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                launch {
+                    kotlinx.coroutines.flow.combine(conexion.online, cola.cola) { o, c -> o to c.size }.collect { (o, n) ->
+                        pintar(o, n)
+                        if (o && n > 0 && !sincronizando) sincronizar { sincronizando = it; pintar(true, cola.cola.value.size) }
+                    }
+                }
+            }
+        }
+    }
+
+    private fun sincronizar(estado: (Boolean) -> Unit) {
+        lifecycleScope.launch {
+            val antes = cola.cola.value.size
+            estado(true)
+            val subidos = cola.subir()
+            estado(false)
+            if (subidos > 0) android.widget.Toast.makeText(this@MainActivity, "Se subieron $subidos ${if (subidos == 1) "cambio" else "cambios"}.", android.widget.Toast.LENGTH_LONG).show()
+            else if (antes > 0 && cola.cola.value.isNotEmpty() && conexion.online.value) android.widget.Toast.makeText(this@MainActivity, "No se pudo subir todo todavía. Se reintentará.", android.widget.Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun mostrarCola() {
+        val l = cola.cola.value
+        val texto = if (l.isEmpty()) "No hay nada por subir.\n\nSin conexión puedes tomar fotos y pedir la validación de una minuta: quedan en el celular y se envían solas al volver la señal."
+        else l.joinToString("\n") { "• " + (if (it.tipo == "completar") "Solicitar la validación" else "Foto") + " · " + it.etiqueta } +
+            "\n\nSe suben solas al volver la señal (WiFi o datos móviles)."
+        androidx.appcompat.app.AlertDialog.Builder(this).setTitle("Modo sin conexión")
+            .setMessage(texto)
+            .setPositiveButton("Sincronizar ahora") { _, _ -> if (conexion.online.value) sincronizar { } else android.widget.Toast.makeText(this, "Sigues sin conexión.", android.widget.Toast.LENGTH_SHORT).show() }
+            .setNegativeButton("Cerrar", null).show()
     }
 
     private fun closeDrawer() {

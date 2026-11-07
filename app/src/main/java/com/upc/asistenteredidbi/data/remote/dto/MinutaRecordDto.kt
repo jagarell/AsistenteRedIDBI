@@ -37,5 +37,6 @@ data class MinutaRecordResponseDto(
     val validatedByName: String?,
     val validatedAt: String?,
     val rejectionReason: String? = null,
-    val rejectedByName: String? = null
+    val rejectedByName: String? = null,
+    val bloqueadaPor: String? = null
 )

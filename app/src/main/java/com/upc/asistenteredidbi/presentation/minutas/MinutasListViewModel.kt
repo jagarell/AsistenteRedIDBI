@@ -34,7 +34,9 @@ class MinutasListViewModel @Inject constructor(
     private val completeMinutaUseCase: CompleteMinutaUseCase,
     private val validateMinutaUseCase: ValidateMinutaUseCase,
     private val rejectMinutaUseCase: com.upc.asistenteredidbi.domain.usecase.RejectMinutaUseCase,
-    private val sessionManager: SessionManager
+    private val sessionManager: SessionManager,
+    private val conexion: com.upc.asistenteredidbi.data.session.ConnectivityMonitor,
+    private val cola: com.upc.asistenteredidbi.data.session.OutboxStore
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(MinutasListUiState())
@@ -68,6 +70,13 @@ class MinutasListViewModel @Inject constructor(
 
     fun complete(id: Long) {
         viewModelScope.launch {
+            // Sin conexión, la solicitud queda en la cola y se envía al volver la señal (doc 0.0.7 §5).
+            if (!conexion.online.value) {
+                val local = _uiState.value.minutas.firstOrNull { it.id == id }?.clientName ?: "minuta"
+                cola.encolarCompletar(id, local)
+                _uiState.update { it.copy(errorMessage = "Sin conexión: la solicitud de validación de $local queda en el celular y se enviará sola.") }
+                return@launch
+            }
             completeMinutaUseCase(id)
                 .onSuccess { updated -> replaceInList(updated) }
                 .onFailure { error ->

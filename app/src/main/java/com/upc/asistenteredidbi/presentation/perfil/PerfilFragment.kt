@@ -21,6 +21,12 @@ class PerfilFragment : Fragment() {
     private var _binding: FragmentPerfilBinding? = null
     private val binding get() = _binding!!
     private val viewModel: PerfilViewModel by viewModels()
+    @javax.inject.Inject lateinit var fotoStore: FotoPerfilStore
+    private val elegirFoto = registerForActivityResult(androidx.activity.result.contract.ActivityResultContracts.GetContent()) { uri ->
+        if (uri != null) viewLifecycleOwner.lifecycleScope.launch {
+            fotoStore.subir(uri)?.let { android.widget.Toast.makeText(requireContext(), it, android.widget.Toast.LENGTH_LONG).show() }
+        }
+    }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentPerfilBinding.inflate(inflater, container, false)
@@ -36,6 +42,26 @@ class PerfilFragment : Fragment() {
         binding.rowTelefono.tvLabel.text = "Teléfono"
         binding.rowCiudad.tvLabel.text = "Ciudad"
         binding.rowEmpresa.tvLabel.text = "Empresa"
+
+        val fondoIniciales = binding.tvAvatarInitials.background
+        binding.tvCambiarFoto.setOnClickListener { elegirFoto.launch("image/*") }
+        binding.tvAvatarInitials.setOnClickListener { elegirFoto.launch("image/*") }
+        binding.tvQuitarFoto.setOnClickListener {
+            viewLifecycleOwner.lifecycleScope.launch {
+                fotoStore.quitar()?.let { android.widget.Toast.makeText(requireContext(), it, android.widget.Toast.LENGTH_LONG).show() }
+            }
+        }
+        viewLifecycleOwner.lifecycleScope.launch { fotoStore.sincronizar() }
+        viewLifecycleOwner.lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                fotoStore.foto.collect { f ->
+                    val ini = binding.tvName.text.toString().split(" ").filter { it.isNotBlank() }.take(2).joinToString("") { it.first().uppercase() }.ifEmpty { "--" }
+                    fotoStore.pintar(binding.tvAvatarInitials, ini, fondoIniciales, f)
+                    binding.tvQuitarFoto.visibility = if (f != null) View.VISIBLE else View.GONE
+                    binding.tvCambiarFoto.text = if (f != null) "📷 Cambiar foto" else "📷 Subir foto"
+                }
+            }
+        }
 
         binding.btnEditProfile.setOnClickListener { viewModel.startEditing() }
         binding.btnCancelEdit.setOnClickListener { viewModel.cancelEditing() }
@@ -56,7 +82,7 @@ class PerfilFragment : Fragment() {
                             user.role.toDisplayLabel()
                         ).joinToString(" · ")
 
-                        binding.tvAvatarInitials.text = user.fullName
+                        if (fotoStore.foto.value == null) binding.tvAvatarInitials.text = user.fullName
                             .split(" ")
                             .filter { it.isNotBlank() }
                             .take(2)

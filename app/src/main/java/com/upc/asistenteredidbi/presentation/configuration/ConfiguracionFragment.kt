@@ -29,6 +29,8 @@ class ConfiguracionFragment : Fragment() {
     @javax.inject.Inject lateinit var api007: com.upc.asistenteredidbi.data.remote.Api007Service
     @javax.inject.Inject lateinit var sessionManager: com.upc.asistenteredidbi.data.session.SessionManager
     private var gestion: GestionCuenta? = null
+    @javax.inject.Inject lateinit var conexion: com.upc.asistenteredidbi.data.session.ConnectivityMonitor
+    @javax.inject.Inject lateinit var cola: com.upc.asistenteredidbi.data.session.OutboxStore
 
     /** Logo de la empresa: el administrador elige una imagen (PNG o JPG, hasta 2 MB). */
     private val elegirLogo = registerForActivityResult(androidx.activity.result.contract.ActivityResultContracts.GetContent()) { uri ->
@@ -81,7 +83,43 @@ class ConfiguracionFragment : Fragment() {
             gestion = GestionCuenta(requireContext(), binding.gestionContainer, api007, viewLifecycleOwner.lifecycleScope, admin) { elegirLogo.launch("image/*") }.also { it.cargar() }
         }
 
+        sincronizacion()
         viewModel.load()
+    }
+
+    /** «Sincronización» (doc 0.0.7 §5 y §47): estado, última subida, por subir y «Sincronizar ahora». */
+    private fun sincronizacion() {
+        val ctx = requireContext()
+        val padre = binding.gestionContainer.parent as ViewGroup
+        val tarjeta = com.upc.asistenteredidbi.presentation.reportes.Ui007.card(ctx)
+        val titulo = com.upc.asistenteredidbi.presentation.reportes.Ui007.text(ctx, "MODO SIN CONEXIÓN Y SINCRONIZACIÓN", 11f, com.upc.asistenteredidbi.presentation.reportes.Ui007.GREY, true)
+        val estado = com.upc.asistenteredidbi.presentation.reportes.Ui007.text(ctx, "", 14f, com.upc.asistenteredidbi.presentation.reportes.Ui007.INK, true)
+        val detalle = com.upc.asistenteredidbi.presentation.reportes.Ui007.text(ctx, "", 12.5f, com.upc.asistenteredidbi.presentation.reportes.Ui007.GREY)
+        tarjeta.addView(estado); tarjeta.addView(detalle)
+        tarjeta.addView(com.upc.asistenteredidbi.presentation.reportes.Ui007.button(ctx, "Sincronizar ahora", false) {
+            if (!conexion.online.value) android.widget.Toast.makeText(ctx, "Sigues sin conexión.", android.widget.Toast.LENGTH_SHORT).show()
+            else viewLifecycleOwner.lifecycleScope.launch {
+                val n = cola.subir()
+                android.widget.Toast.makeText(ctx, if (n > 0) "Se subieron $n cambios." else "No había nada por subir.", android.widget.Toast.LENGTH_SHORT).show()
+            }
+        })
+        val i = padre.indexOfChild(binding.gestionContainer)
+        padre.addView(titulo, i + 1, android.widget.LinearLayout.LayoutParams(android.widget.LinearLayout.LayoutParams.MATCH_PARENT, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT).apply { topMargin = (18 * resources.displayMetrics.density).toInt(); marginStart = (4 * resources.displayMetrics.density).toInt() })
+        padre.addView(tarjeta, i + 2)
+        fun pintar() {
+            val n = cola.cola.value.size
+            estado.text = if (conexion.online.value) "✓ Sincronizado con la cuenta" else "📵 Sin conexión · se guarda en el celular"
+            val ultima = cola.ultimaSubida.value?.let { java.text.SimpleDateFormat("dd/MM HH:mm", java.util.Locale("es", "PE")).format(java.util.Date(it)) } ?: "—"
+            detalle.text = "Por subir: $n · Última subida: $ultima\nLas fotos se suben con WiFi o con datos móviles."
+        }
+        pintar()
+        viewLifecycleOwner.lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                launch { conexion.online.collect { pintar() } }
+                launch { cola.cola.collect { pintar() } }
+                launch { cola.ultimaSubida.collect { pintar() } }
+            }
+        }
     }
 
     private fun simplificarMiCuenta() {

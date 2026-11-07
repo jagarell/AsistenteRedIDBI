@@ -321,6 +321,9 @@ class ReportesFragment : Fragment() {
             into.addView(Ui007.text(ctx, "v${ver ?: "?"} · ${v["authorName"] ?: ""} · ${fecha(v["createdAt"])}\n${v["resumen"] ?: ""}", 12f).apply { setPadding(0, dp(ctx, 4), 0, 0) })
         }
         into.addView(Ui007.button(ctx, "Ver minuta", true) { verMinuta(m) })
+        into.addView(Ui007.button(ctx, "Bitácora de la minuta", false) {
+            com.upc.asistenteredidbi.presentation.minuta.BitacoraMinutaSheet.mostrar(ctx, viewLifecycleOwner.lifecycleScope, api007, m.id)
+        })
         // Editar: siempre abre el Asistente IA con la minuta cargada (doc 0.0.7 §12).
         into.addView(Ui007.button(ctx, "Pedir un cambio al Asistente IA", false) {
             androidx.navigation.fragment.NavHostFragment.findNavController(this).navigate(com.upc.asistenteredidbi.R.id.asistenteFragment,
@@ -331,6 +334,9 @@ class ReportesFragment : Fragment() {
 
     @javax.inject.Inject
     lateinit var notificaciones: com.upc.asistenteredidbi.data.remote.NotificationApiService
+
+    @javax.inject.Inject
+    lateinit var api007: com.upc.asistenteredidbi.data.remote.Api007Service
 
     /** Pedirle algo al técnico (doc 0.0.7 §29): terminar, corregir; solo el administrador recuerda al supervisor. */
     private fun recordatorios(m: FilaReporteDto, into: LinearLayout) {

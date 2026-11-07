@@ -26,6 +26,13 @@ class Asistente007Repository @Inject constructor(private val api: Api007Service)
         f.estado.toList().ifEmpty { null }, f.criticidad.toList().ifEmpty { null }, f.esfuerzo.toList().ifEmpty { null }, f.plazo.toList().ifEmpty { null }
     )
 
+    suspend fun tiempos(mes: String? = null) = api.tiempos(mes)
+    suspend fun plazos() = api.plazos()
+    suspend fun plazosGuardar(body: Map<String, Any?>) = api.plazosGuardar(body)
+    suspend fun catalogoFlujo() = api.catalogoFlujo()
+    suspend fun moverPregunta(id: String, dir: String) = api.moverPregunta(id, mapOf("dir" to dir))
+    suspend fun bloquear(minutaId: Long) = api.bloquear(minutaId)
+    suspend fun liberar(minutaId: Long) = api.liberar(minutaId)
     suspend fun minuta(minutaId: Long) = api.minuta(minutaId)
     suspend fun versiones(minutaId: Long) = api.versiones(minutaId)
     suspend fun plan(minutaId: Long, texto: String) = api.planCambios(minutaId, mapOf("texto" to texto))

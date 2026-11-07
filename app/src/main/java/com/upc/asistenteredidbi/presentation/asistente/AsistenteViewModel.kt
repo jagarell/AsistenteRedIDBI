@@ -2,6 +2,7 @@ package com.upc.asistenteredidbi.presentation.asistente
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.upc.asistenteredidbi.data.remote.toFriendlyMessage
 import com.upc.asistenteredidbi.data.repository.Asistente007Repository
 import com.upc.asistenteredidbi.data.repository.Asistente007Repository.Filtros
 import com.upc.asistenteredidbi.data.session.SessionManager
@@ -64,7 +65,8 @@ sealed interface AsistenteEvento {
 class AsistenteViewModel @Inject constructor(
     private val repo: Asistente007Repository,
     private val session: SessionManager,
-    @dagger.hilt.android.qualifiers.ApplicationContext private val appCtx: android.content.Context
+    @dagger.hilt.android.qualifiers.ApplicationContext private val appCtx: android.content.Context,
+    private val cola: com.upc.asistenteredidbi.data.session.OutboxStore
 ) : ViewModel() {
 
     private enum class Paso { LIBRE, S_CLIENTE, S_MOTIVO, S_ALCANCE, S_EVID, S_HECHO, S_REGLAS, S_ESTADO, U_ELEGIR, U_TEXTO, U_CONFIRMAR, L_CASOS }
@@ -131,9 +133,32 @@ class AsistenteViewModel @Inject constructor(
         paso = Paso.LIBRE; modo = "upd"; minutaId = id
         _state.update { it.copy(subtitulo = "Actualizando: $local", pista = "¿Qué cambió? Cuéntalo por texto o audio") }
         bot("Vas a actualizar la minuta de $local. Cuéntame qué cambió (datos, observaciones, recomendaciones, pasos o conexiones) y te muestro «Cambios que haré» antes de aplicar.")
+        // Mientras el supervisor o el administrador edita, el técnico ve «En edición por …» (doc 0.0.7 §12).
+        viewModelScope.launch {
+            val r = runCatching { repo.bloquear(id) }
+            r.onSuccess { bloqueada = it["bloqueada"] == true }
+            r.onFailure { bot("Esa minuta la está editando otra persona. ${it.toFriendlyMessage()}") }
+        }
+    }
+
+    private var bloqueada = false
+
+    /** Cancela la edición para que el técnico pueda volver a editar la minuta. */
+    private fun soltarBloqueo() {
+        val id = minutaId ?: return
+        if (!bloqueada) return
+        bloqueada = false
+        @OptIn(kotlinx.coroutines.DelicateCoroutinesApi::class)
+        kotlinx.coroutines.GlobalScope.launch { runCatching { repo.liberar(id) } }
+    }
+
+    override fun onCleared() {
+        soltarBloqueo()
+        super.onCleared()
     }
 
     fun reiniciar() {
+        soltarBloqueo()
         paso = Paso.LIBRE; modo = ""; tipo = ""; contexto.setLength(0); adjuntosAcumulados.clear(); fotosPorSubir.clear(); minutaId = null; sop = Soporte(); consultaReporte = null
         _state.update { it.copy(adjuntos = emptyList(), pista = "Escribe o dicta…", subtitulo = "En línea") }
         bienvenida()
@@ -324,9 +349,15 @@ class AsistenteViewModel @Inject constructor(
         if (id != null) {
             // Las fotos adjuntas pasan a ser evidencias de la minuta (se reducen a 1600 px para el celular).
             val fotos = fotosPorSubir.toList(); fotosPorSubir.clear()
-            var fallaron = 0
-            fotos.forEach { f -> runCatching { repo.subirFoto(id, f.tipo, reducir(f.uri)) }.onFailure { fallaron++ } }
-            if (fallaron > 0) bot("No pude subir $fallaron foto${if (fallaron > 1) "s" else ""}. Quedan como «Evidencias por subir» en la minuta.")
+            var enCola = 0
+            fotos.forEach { f ->
+                val jpeg = reducir(f.uri)
+                runCatching { repo.subirFoto(id, f.tipo, jpeg) }.onFailure { e ->
+                    // Sin conexión (o el servidor no respondió) la foto queda en el celular y sube sola (doc 0.0.7 §5).
+                    if (e is java.io.IOException || e is retrofit2.HttpException && e.code() >= 500) { cola.encolarFoto(id, f.tipo, jpeg, "minuta #$id"); enCola++ }
+                }
+            }
+            if (enCola > 0) bot("$enCola foto${if (enCola > 1) "s" else ""} queda${if (enCola > 1) "n" else ""} en el celular y se subirán solas al volver la señal.")
             _eventos.trySend(AsistenteEvento.AbrirMinuta(id))
         }
     }
@@ -337,7 +368,7 @@ class AsistenteViewModel @Inject constructor(
         val items = (bloque["items"] as? List<Any?>).orEmpty()
         yo("Aplicar y ver minuta")
         ocupado(true)
-        val r = runCatching { repo.aplicar(id, items, nuevaVisita) }
+        val r = runCatching { repo.aplicar(id, items, nuevaVisita) }.onSuccess { bloqueada = false }
         ocupado(false)
         modo = ""; minutaId = null
         r.onSuccess { m ->
@@ -468,7 +499,7 @@ class AsistenteViewModel @Inject constructor(
     private fun aplicarPlan() = viewModelScope.launch {
         val id = minutaId ?: return@launch
         ocupado(true)
-        val r = runCatching { repo.aplicar(id, plan) }
+        val r = runCatching { repo.aplicar(id, plan) }.onSuccess { bloqueada = false }
         ocupado(false)
         paso = Paso.LIBRE
         r.onSuccess { m -> bot("Listo. La minuta quedó en la versión ${(m["version"] as? Number)?.toInt() ?: ""} y se envió a validación del supervisor.", inicio(_state.value.admin)) }

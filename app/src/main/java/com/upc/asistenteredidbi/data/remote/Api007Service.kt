@@ -195,6 +195,43 @@ interface Api007Service {
 
     @POST("api/conocimiento/fichas")
     suspend fun fichas(@Body body: Map<String, @JvmSuppressWildcards Any?>): Map<String, @JvmSuppressWildcards Any?>
+
+    // ---- 0.0.13 ----
+    /** Bitácora de la minuta: resumen, quiénes la editaron en las últimas 48 h e historial. */
+    @GET("api/minutas/{id}/bitacora")
+    suspend fun bitacoraMinuta(@Path("id") id: Long): Map<String, @JvmSuppressWildcards Any?>
+
+    /** El supervisor o administrador empieza a editar (el técnico ve «En edición por …») o cancela. */
+    @POST("api/minutas/{id}/bloqueo")
+    suspend fun bloquear(@Path("id") id: Long): Map<String, @JvmSuppressWildcards Any?>
+
+    @retrofit2.http.DELETE("api/minutas/{id}/bloqueo")
+    suspend fun liberar(@Path("id") id: Long): Map<String, @JvmSuppressWildcards Any?>
+
+    @GET("api/panel/plazos")
+    suspend fun plazos(): Map<String, @JvmSuppressWildcards Any?>
+
+    @retrofit2.http.PUT("api/panel/plazos")
+    suspend fun plazosGuardar(@Body body: Map<String, @JvmSuppressWildcards Any?>): Map<String, @JvmSuppressWildcards Any?>
+
+    @GET("api/panel/tiempos")
+    suspend fun tiempos(@Query("mes") mes: String? = null): Map<String, @JvmSuppressWildcards Any?>
+
+    @GET("api/flujo/catalogo")
+    suspend fun catalogoFlujo(): Map<String, @JvmSuppressWildcards Any?>
+
+    @retrofit2.http.PUT("api/preguntas/{id}/mover")
+    suspend fun moverPregunta(@Path("id") id: String, @Body body: Map<String, String>): List<Map<String, @JvmSuppressWildcards Any?>>
+
+    @retrofit2.http.Multipart
+    @retrofit2.http.PUT("api/profile/foto")
+    suspend fun fotoPerfilSubir(@retrofit2.http.Part file: okhttp3.MultipartBody.Part): Map<String, @JvmSuppressWildcards Any?>
+
+    @GET("api/profile/foto")
+    suspend fun fotoPerfil(): retrofit2.Response<okhttp3.ResponseBody>
+
+    @retrofit2.http.DELETE("api/profile/foto")
+    suspend fun fotoPerfilQuitar(): Map<String, @JvmSuppressWildcards Any?>
 }
 
 data class ReportProfileDto(val all: Boolean = false, val tecs: String = "none", val own: Boolean = true)
