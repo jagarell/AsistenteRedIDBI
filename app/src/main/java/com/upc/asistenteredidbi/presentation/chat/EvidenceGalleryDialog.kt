@@ -15,6 +15,11 @@ import android.widget.ScrollView
 import android.widget.TextView
 import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 import com.bumptech.glide.Glide
 import com.upc.asistenteredidbi.R
 import com.upc.asistenteredidbi.domain.model.TechnicalChatInputType
@@ -91,6 +96,14 @@ class EvidenceGalleryDialog : DialogFragment() {
 
         render()
         return root
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        // 0.0.15: al guardar o borrar una descripción se vuelve a pintar la lista
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewModel.uiState.map { it.evidenceNotes }.distinctUntilChanged().drop(1).collect { render() }
+        }
     }
 
     private fun header(context: android.content.Context): View = LinearLayout(context).apply {
@@ -239,25 +252,39 @@ class EvidenceGalleryDialog : DialogFragment() {
                     textSize = 11f
                     setTextColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#9CA3AF"))
                 })
-            })
-
-            if (warn) {
-                addView(TextView(context).apply {
-                    text = "Repetir"
-                    textSize = 12f
-                    typeface = Typeface.DEFAULT_BOLD
-                    setTextColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#B45309"))
-                    gravity = Gravity.CENTER
-                    background = rounded("#FFFFFF", 16f, context, com.upc.asistenteredidbi.presentation.common.NightColors.parse("#E0A040"))
-                    setPadding(dp(12), dp(6), dp(12), dp(6))
-                    layoutParams = LinearLayout.LayoutParams(
-                        ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT
-                    ).apply { marginStart = dp(8) }
-                    setOnClickListener { confirmRetake(e) }
+                // 0.0.15: descripción de la foto (sale debajo de la foto en la minuta)
+                val nota = viewModel.evidenceNote(e)
+                if (nota.isNotBlank()) addView(TextView(context).apply {
+                    text = "Descripción: $nota"
+                    textSize = 12.5f
+                    setTextColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse("#1F2937"))
+                    setPadding(0, dp(4), 0, 0)
                 })
-            }
+                // 0.0.15: en todas las evidencias se puede cambiar la foto y escribir, editar o eliminar la descripción
+                addView(LinearLayout(context).apply {
+                    orientation = LinearLayout.HORIZONTAL
+                    setPadding(0, dp(8), 0, 0)
+                    addView(action(context, if (missing) "Tomar foto" else "Cambiar foto", warn) { confirmRetake(e) })
+                    if (!missing) addView(action(context, if (nota.isBlank()) "Agregar descripción" else "Editar descripción", false) {
+                        EvidenceNoteDialog.show(context, "Descripción · ${e.title}", nota) { t -> viewModel.saveEvidenceNote(viewModel.evidenceNodeId(e), t) }
+                    }.apply { (layoutParams as LinearLayout.LayoutParams).marginStart = dp(8) })
+                })
+            })
         }
     }
+
+    private fun action(context: android.content.Context, label: String, warn: Boolean, onClick: () -> Unit): TextView =
+        TextView(context).apply {
+            text = label
+            textSize = 12f
+            typeface = Typeface.DEFAULT_BOLD
+            setTextColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse(if (warn) "#B45309" else "#1565C0"))
+            gravity = Gravity.CENTER
+            background = rounded("#FFFFFF", 16f, context, com.upc.asistenteredidbi.presentation.common.NightColors.parse(if (warn) "#E0A040" else "#1565C0"))
+            setPadding(dp(12), dp(6), dp(12), dp(6))
+            layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+            setOnClickListener { onClick() }
+        }
 
     /** Los datos entre * van en azul y negrita; el resto, en gris. */
     private fun highlighted(text: String): CharSequence {
@@ -276,9 +303,9 @@ class EvidenceGalleryDialog : DialogFragment() {
 
     private fun confirmRetake(e: ChatEvidenceItem) {
         androidx.appcompat.app.AlertDialog.Builder(requireContext())
-            .setTitle("Repetir ${e.title}")
-            .setMessage("Vuelves a esa pregunta para subir la evidencia. Las respuestas que diste después se descartan.")
-            .setPositiveButton("Repetir") { _, _ ->
+            .setTitle("Cambiar foto · ${e.title}")
+            .setMessage("Vuelves a pedir solo esta evidencia para subir otra foto. Tus demás respuestas y la descripción se mantienen.")
+            .setPositiveButton("Cambiar foto") { _, _ ->
                 viewModel.retakeEvidence(e.messageId)
                 dismiss()
             }

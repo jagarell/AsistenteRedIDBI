@@ -826,10 +826,10 @@ function build(a){
   X.estadoV=v('P08'); X.estadoL=a.P08?a.P08.label:null;
   if(a.P08) push(ch('P09','B','¿Qué tipo de negocio es?',RUBROS.map(([k,l])=>({v:k,l,otro:k==='OTRO'})),{def:'RESTAURANTE'}));
   const rub=v('P09'); X.rub=rub; X.rubL=a.P09?a.P09.label:null; const P=PERFIL[rub]||PERFIL.OTRO; X.P=P;
-  /* Retail y Otro: flujo corto (sin energía, WiFi ni cámaras; solo impresoras de caja) */
-  X.simple=rub==='RETAIL'||rub==='OTRO';
+  /* Retail: flujo corto (sin energía, WiFi ni cámaras; solo impresoras de caja) */
+  X.simple=rub==='RETAIL'; X.otroRub=rub==='OTRO'; /* «Otro»: flujo completo sin opciones marcadas (0.0.15) */
   const est=X.estadoV; X.obra=est==='EN_OBRA'; X.inaug=est==='POR_INAUGURAR'; X.anterior=est==='SISTEMA_ANTERIOR';
-  X.mozosQ=MOZOS.includes(rub);
+  X.mozosQ=MOZOS.includes(rub)||rub==='OTRO';
   /* P09c (mozos con tablet) se pregunta al final, justo antes del WiFi por zona */
   const mozReady=true;
   let prep=[];
@@ -841,7 +841,7 @@ function build(a){
       X.prepRef=a.P11r&&Array.isArray(a.P11r.v)?a.P11r.v:[];
     } else {
       const pre=P.prep;
-      push({id:'P11e',b:'B',kind:'multi',text:pre.length?`¿Qué áreas de preparación tiene el local? Ya marqué las más comunes en ${P.un.replace(/^(Un|Una) /,'').replace(/^El local$/,'el local')}; puedes quitarlas o agregar otras.`:'¿Qué áreas de preparación tiene el local? Márcalas o escríbelas con Otro.',opts:uniq([...pre,...PREP_ALL]),sel:pre,def:pre.length?pre:['Cocina'],min:1});
+      push({id:'P11e',b:'B',kind:'multi',text:pre.length?`¿Qué áreas de preparación tiene el local? Ya marqué las más comunes en ${P.un.replace(/^(Un|Una) /,'').replace(/^El local$/,'el local')}; puedes quitarlas o agregar otras.`:'¿Qué áreas de preparación tiene el local? Márcalas o escríbelas con Otro.',opts:uniq([...pre,...PREP_ALL]),sel:pre,def:pre.length?pre:['Cocina'],...(X.otroRub?{none:'Ninguna: no prepara productos',min:0}:{min:1})});
       prep=v('P11e')||[];
     }
   }
@@ -1100,14 +1100,14 @@ function build(a){
   }
 
   /* H · WiFi y cámaras (no aplica en Retail ni en Otro; en obra no se mide el WiFi) */
-  const mozAsk=printersDone&&X.mozosQ&&!X.simple&&!X.obra; if(mozAsk) push(ch('P09c','H','¿Hay mozos que toman pedidos con tablet o celular?',YN,{def:MOZOS_RARO.includes(rub)?'NO':'SI'}));
+  const mozAsk=printersDone&&X.mozosQ&&!X.simple&&!X.obra; const MOZ15=[{v:'TABLET',l:'Sí, con tablet'},{v:'CELULAR',l:'Sí, con su celular'},{v:'IMIN_MOVIL',l:'Sí, con iMin móvil (toma el pedido e imprime)'},{v:'NO',l:'No, los mozos no toman pedidos con un equipo'}]; if(mozAsk) push(ch('P09c','H','¿Los mozos toman pedidos con algún equipo? Puede ser tablet, su celular o un iMin móvil.',MOZ15,{def:MOZOS_RARO.includes(rub)?'NO':'TABLET'}));
   const mozOk=!mozAsk||!!a.P09c;
   X.wifiSkip=X.simple||X.obra||(X.mozosQ&&v('P09c')==='NO');
   const allZ=uniq([...zonas.map(z=>z.z),...prep]); X.allZ=X.simple?[]:allZ; X.sinSenal=[]; X.wz=[];
   let wifiDone=false;
   if(printersDone&&mozOk){
     if(X.simple) wifiDone=true;
-    else if(X.wifiSkip){ push({id:'I_NOWIFI',kind:'alert',tone:'info',tag:'PERFIL',text:X.obra?'Local en obra: no se revisa el WiFi por zona.':'Sin mozos con tablet: no se revisa el WiFi por zona (perfil del rubro).'}); wifiDone=true; }
+    else if(X.wifiSkip){ push({id:'I_NOWIFI',kind:'alert',tone:'info',tag:'PERFIL',text:X.obra?'Local en obra: no se revisa el WiFi por zona.':'Los mozos no toman pedidos con un equipo: no se revisa el WiFi por zona.'}); wifiDone=true; }
     else if(allZ.length){
       push({id:'P46',b:'H',kind:'multi',text:'¿Hay zonas o lugares de preparación sin señal WiFi?',opts:allZ,sel:[],none:'Ninguna',def:[],min:1});
       if(a.P46) push(ch('WZ','H','Revisar WiFi por zona (opcional). Estás conectado a la red del local. ¿Quieres medir la señal en cada zona?',[{v:'REVISAR',l:'Revisar WiFi por zona'},{v:'OMITIR',l:'Omitir'}],{def:'OMITIR'}));
@@ -1160,7 +1160,7 @@ function bwNeed(X){
     else if(c.adq) add(1,5,(c.adqL||'equipo').toLowerCase());
   });
   if(X.decision==='RASPBERRY'&&!(X.cajasInfo||[]).some(c=>c.rasp||c.adq==='RASPBERRY')) add(1,5,'Raspberry');
-  if(X.rub&&X.rub!=='RETAIL'&&(!MOZOS.includes(X.rub)||(A.P09c&&A.P09c.v==='SI'))) add(X.zonas.filter(z=>z.canal==='Mesa').length,10,'tablet o celular de mozo por WiFi');
+  if(X.rub&&X.rub!=='RETAIL'&&(!X.mozosQ||(A.P09c&&A.P09c.v!=='NO'))) add(X.zonas.filter(z=>z.canal==='Mesa').length,10,'tablet o celular de mozo por WiFi');
   const zonas=uniq(X.zonas.map(z=>z.z)).length;
   return {min,det,zonas,rec:150*zonas};
 }
@@ -1173,6 +1173,7 @@ function rate(m){
 function evaluate(X,a){
   const it=[]; const add=o=>it.push(o);
   if(X.sunmi) add({id:'A_SUNMI',tipo:'REC',t:'Sunmi con chip',d:'La comanda sale solo en caja.',eq:'Sunmi con chip'});
+  { const p9=a.P09c||{}; if(X.mozosQ&&(p9.v==='IMIN_MOVIL'||p9.pc52)) add({id:'R_IMIN_MOVIL',tipo:'REC',t:'iMin móvil para los mozos',d:p9.v==='IMIN_MOVIL'?'Los mozos usarán iMin móvil: toma el pedido e imprime en el mismo equipo. Debe tener buena señal WiFi en las zonas de atención.':'Aún no se define con qué equipo tomarán pedidos los mozos. Sugerir iMin móvil: toma el pedido e imprime en el mismo equipo. Se cotiza con Desarrollo de Negocios.',eq:'iMin móvil'}); }
   if(X.sinInt) add({id:'SIN_INT',tipo:'OBS',t:'Sin internet',d:X.inaug?'Conectividad 0 %. Por inaugurar: el proveedor de internet ya debe estar contratado y el router instalado antes del inicio.':'Conectividad 0 %.'});
   /* estado del local */
   if(X.obra){
@@ -2415,7 +2416,7 @@ function minutaSections(X,R){
     mRow('Técnico responsable',X.tecnico),mRow('Validada por',MIN.validadaPor||'No verificada: sin validar por el supervisor',{bad:!MIN.validadaPor})];
   const neg=[mRow('Áreas de preparación',X.prep.join(', ')||(X.prepRef&&X.prepRef.length?X.prepRef.join(', ')+' (solo referencia, sin impresora)':(X.simple?'No aplica':''))),
     mRow('Canales y zonas de atención',X.canales.map(c=>c+': '+X.zonas.filter(z=>z.canal===c).map(z=>z.z).join(', ')).join(' · ')),
-    mRow('Cantidad de cajas',String(X.cajas)),mRow('Comandas en caja',a.P12b?a.P12b.label:(X.rub==='RETAIL'?'No aplica (retail)':''))];
+    mRow('Cantidad de cajas',String(X.cajas)),mRow('Comandas en caja',a.P12b?a.P12b.label:(X.rub==='RETAIL'?'No aplica (retail)':'')),...(a.P09c?[mRow('Mozos toman pedidos con',a.P09c.label)]:[])];
   const sp=R.sp, na=X.sinInt||X.porContratar?'No aplica':'';
   const RT=X.router||{}, ipc=X.ipconfig, scn=X.scanner;
   const net=[...(X.simple?[]:[mRow('Tipo de conexión',X.conL),mRow('Proveedor',X.proveedor||RT.proveedor||na)]),mRow('Plan contratado',X.plan?X.plan+' Mbps':(X.sinInt?'Sin internet':'')),
@@ -3340,7 +3341,7 @@ function renderPanel(){
   if(X.printers.some(p=>p.auto)) ocultas.push(`Cómo se conecta la impresora (P28): se completó con las fotos en ${X.printers.filter(p=>p.auto).length} impresora(s)`);
   if(X.comparte) ocultas.push(`Impresora de caja aparte: la caja comparte la impresora de ${X.comparte}`);
   const agregadas=[];
-  if(X.mozosQ) agregadas.push('P09c mozos con tablet');
+  if(X.mozosQ) agregadas.push('P09c equipo de los mozos (tablet, celular o iMin móvil)');
   if(X.rub==='DISCOTECA_BAR') agregadas.push('P22g equipo de caja permanente');
   if(X.rub==='RETAIL') agregadas.push('P11r lugares de preparación (referencia) y P22h periféricos del equipo de caja');
   if(X.estadoV==='EN_OBRA') agregadas.push('P28h ¿ya tiene la impresora? por cada impresora');
@@ -5648,13 +5649,13 @@ function period14(t){
 }
 function scopeRows14(){ return APP.role==='tec'?rows6('mis'):rows6('gen'); }
 function topic14(t){ const s=norm(t);
-  const est=/validad/.test(s)?'VALIDADA':/observad|revision|devuelt/.test(s)?'EN_REVISION':/completa|por validar/.test(s)?'COMPLETA':/pendiente/.test(s)?'BORRADOR':null;
+  const est=/por terminar|sin terminar|falta(n)? terminar|no (ha|han) terminado|en curso/.test(s)?'PORTERM':/validad/.test(s)?'VALIDADA':/observad|revision|devuelt/.test(s)?'EN_REVISION':/completa|por validar/.test(s)?'COMPLETA':/pendiente/.test(s)?'BORRADOR':null;
   const tec=[...new Set(scopeRows14().map(r=>r.tec))].find(n=>s.includes(norm(n))); return {est,tec}; }
-const ESTL14={EN_CURSO:'Borrador',BORRADOR:'Pendiente',COMPLETA:'Completa',EN_REVISION:'En revisión',VALIDADA:'Validada'};
+const ESTL14={PORTERM:'Por terminar',EN_CURSO:'Borrador',BORRADOR:'Pendiente',COMPLETA:'Completa',EN_REVISION:'En revisión',VALIDADA:'Validada'};
 function buildReport14(t){
   const P=period14(t), T=topic14(t); const b2=new Date(P.b); b2.setHours(23,59,59);
   let R=scopeRows14().filter(r=>{const d=pd14(r.fecha); return d&&d>=P.a&&d<=b2;});
-  if(T.tec) R=R.filter(r=>r.tec===T.tec); if(T.est) R=R.filter(r=>r.estado===T.est);
+  if(T.tec) R=R.filter(r=>r.tec===T.tec); if(T.est) R=R.filter(r=>T.est==='PORTERM'?(r.estado==='BORRADOR'||r.estado==='EN_CURSO'):r.estado===T.est);
   const by={}; R.forEach(r=>{const o=by[r.tec]=by[r.tec]||{n:0,val:0,rev:0,pend:0,pct:0}; o.n++; o.pct+=r.pct||0; if(r.estado==='VALIDADA')o.val++; else if(r.estado==='EN_REVISION')o.rev++; else o.pend++;});
   return {P,T,R,by};
 }
@@ -5663,8 +5664,8 @@ function report14(S){
   const sched=/(cada|todos los|todas las)\s+(fin de mes|mes|semana|lunes|martes|miercoles|jueves|viernes|dia|dias|meses|semanas)|mensual|semanal|programa/.test(s)&&/reporte|informe|resumen/.test(s);
   const porVal=/(por|a) (validar|verificar|revisar)|pendientes? de (validacion|validar)|minutas? (que|para) (validar|verificar)/.test(s);
   const pend=/pendientes?( del dia| de hoy| para hoy| hoy)|que (tengo|hay) (para |pendiente )?hoy|mis pendientes/.test(s);
-  const rep=/(dame|quiero|genera|generame|muestra|muestrame|envia|enviame|necesito|saca|hazme|ver|pasame)\b[^.]*\b(reporte|informe)|^(reporte|informe)\b/.test(s);
-  if(CMD11.test(text)) return false;
+  const rep=/(dame|quiero|genera|generame|muestra|muestrame|envia|enviame|necesito|saca|hazme|ver|pasame)\b[^.]*\b(reporte|informe)|^(reportes?|informes?)\b|por terminar|sin terminar|falta(n)? terminar|no (ha|han) terminado/.test(s);
+  if(CMD11.test(text)&&!/\b(reportes?|informes?)\b|por validar|por terminar|sin terminar|falta(n)? terminar|no (ha|han) terminado|en curso/.test(s)) return false;
   if(!(sched||porVal||pend||rep)) return false;
   S.msgs.push({me:text,att:S.att.slice()}); S.draft=''; S.att=[];
   if(sched){ const fm=/fin de mes|cada mes|mensual|todos los meses/.test(s)?'fin':/semana|lunes|semanal/.test(s)?'sem':'dia';
@@ -7182,7 +7183,7 @@ document.addEventListener('click',e=>{ if(e.target.closest&&e.target.closest('#w
 render();
 /* P09c (mozos con tablet) va al final: en la sección H, justo antes del WiFi por zona (P46) */
 (function(){ if(typeof q10!=='function'||!q10('P09c')) return; const H=M10.secs.find(s=>s.id==='H'); if(!H) return;
-  const was=typeof dirty10==='function'?dirty10():false; const q=q10('P09c'); q.text='¿Hay mozos que toman pedidos con tablet o celular?';
+  const was=typeof dirty10==='function'?dirty10():false; const q=q10('P09c'); q.text='¿Los mozos toman pedidos con algún equipo? Puede ser tablet, su celular o un iMin móvil.';
   const i=H.qs.findIndex(x=>x.id==='P46'); moveQ10('P09c','H',i<0?0:i); if(!was) M10.pub=JSON.stringify(M10.secs); render(); })();
 
 
@@ -8491,7 +8492,8 @@ function report42(text){
   let L=(role==='tec'?rows6('mis'):rows6('gen')).map(m=>({...m}));
   /* estado */
   let est=null, estTxt='todas';
-  if(/incomplet|sin terminar|pendientes? de terminar|no termin|sin cerrar/.test(t)){ est=['EN_CURSO','BORRADOR','EN_REVISION']; estTxt='incompletas'; }
+  if(/por terminar|falta(n)? terminar|en curso/.test(t)){ est=['EN_CURSO','BORRADOR']; estTxt='por terminar'; }
+  else if(/incomplet|sin terminar|pendientes? de terminar|no termin|sin cerrar/.test(t)){ est=['EN_CURSO','BORRADOR','EN_REVISION']; estTxt='incompletas'; }
   else if(/borrador/.test(t)){ est=['EN_CURSO']; estTxt='en borrador'; }
   else if(/pendiente/.test(t)){ est=['BORRADOR']; estTxt='pendientes'; }
   else if(/por validar|complet/.test(t)){ est=['COMPLETA']; estTxt='por validar'; }
@@ -9326,7 +9328,8 @@ function step50(t,att){ const S=APP.as, st=S50(); if(t) S.msgs.push({me:t,att:at
     st.reglas=auto50(st).R; st.step='reglas'; S.msgs.push({bot:'Revisé lo realizado con las reglas de soporte. Confirma o corrige cada una.'}); S.msgs.push({sp50:'reglas',st}); return; }
   if(st.step==='reglas'||st.step==='estado'){ S.msgs.push({bot:st.step==='reglas'?'Confirma las reglas de soporte con los botones.':'Elige el estado final y toca «Redactar minuta de soporte».'}); } }
 /* entrada de texto: mientras dura el flujo de soporte, el chat responde a cada paso */
-const NEWCMD50=t=>CMD11.test(t)&&!/actualiz|modific|corrig|cambi/i.test(t);
+const PIDE15=/\b(reportes?|informes?)\b|por validar|por terminar|sin terminar|falta(n)? terminar|no (ha|han) terminado|en curso/;
+const NEWCMD50=t=>CMD11.test(t)&&!/actualiz|modific|corrig|cambi/i.test(t)&&!PIDE15.test(norm(t));
 const __v7ba_send=asSend11;
 asSend11=function(){ const S=APP.as; const t=(S.draft||'').trim(); const att=(S.att||[]).slice();
   if(S.sop50&&S.sop50.step!=='done'&&(t||att.length)){ S.draft=''; S.att=[]; step50(t,att); return; }
@@ -9619,7 +9622,7 @@ const PC52={
   P15:{n:'OTRO',num:true,tema:'la velocidad del plan de internet'},
   P16:{n:'NS',tema:'si tiene internet de respaldo'},
   P17:{n:'NS',tema:'si el local tiene caídas de internet'},
-  P09c:{n:'SI',tema:'si los mozos tomarán pedidos con tablet o celular'},
+  P09c:{n:'PC',ns:'Aún por confirmar (sugerir iMin móvil)',tema:'con qué equipo tomarán pedidos los mozos (tablet, celular o iMin móvil)'},
   P47:{n:'NO',tema:'si se conectarán cámaras a la red'},
   P47a:{n:0,num:true,tema:'cuántas cámaras irán conectadas a la red'},
   P22g:{n:'SI',tema:'si el equipo de caja se queda en el local'},
@@ -9644,6 +9647,7 @@ function norm52(id,val){
     else if(val.v==='OTRO'){
       const t=String(val.label||'').trim(), k=parseInt((t.match(/\d+/)||[])[0]);
       if(c.num){ const top={P12:20,P47a:64,P15:10000}[String(id).split('#')[0]]; const ok=k>=(c.n===0?0:1)&&k<=top; val={v:ok?k:c.n,label:t,pc52:ok?0:1}; }
+      else if(id.startsWith('P09c')){ val=NO52.test(t)?{v:'NO',label:t,pc52:0}:{v:'OTRO',label:t,pc52:0}; }
       else if(id.startsWith('P22b')){ const m=/rasp/i.test(t)?'RASPBERRY':/laptop|port[aá]til/i.test(t)?'LAPTOP':/\bpc\b|computador/i.test(t)?'PC':null; val={v:m||c.n,label:t,pc52:m?0:1}; }
       else { const m=SI52.test(t)?'SI':NO52.test(t)?'NO':null; val={v:m||c.n,label:t,pc52:m?0:1}; }
     }
@@ -9663,6 +9667,201 @@ const __bb_fin=finHTML;
 finHTML=function(X,R){ let h=__bb_fin(X,R); const L=pend52(); if(A.P04&&A.P04.label==='Por confirmar') L.unshift('el encargado del local'); if(A.P01b&&A.P01b.label==='Por confirmar') L.unshift('el RUC');
   if(L.length) h=bot(esc(`Quedan por confirmar: ${L.join('; ')}. Van como pasos del cliente; cuando los tengas, actualiza la minuta desde el Asistente IA.`),'info')+h;
   return h; };
+
+
+/* ===== 0.0.15 · Editar una respuesta sin perder las demás =====
+   - En curso o terminada: solo se vuelve a hacer esa pregunta; lo demás se conserva.
+   - La pregunta vuelve con lo que ya se había respondido (selección múltiple marcada, «Mantener» en opciones, texto escrito).
+   - Al responder, solo se borran las respuestas que dependían de ella (preguntas que ya no salen u opciones que ya no existen). */
+var ED15=null;
+(function(){
+  const strip=t=>String(t||'').replace(/<[^>]+>/g,'');
+  function choiceOk(n,val){
+    if(!val||val.pc52) return true;
+    const v=val.v;
+    if((n.opts||[]).some(o=>o.v===v||String(o.v)===String(v))) return true;
+    const otro=(n.opts||[]).find(o=>o.otro);
+    return !!otro&&(v==='OTRO'||typeof v==='number');
+  }
+  /* todos los nodos si lo que falta se respondiera con lo sugerido (como qEstimate): lo nuevo que aún no se preguntó
+     no esconde las respuestas que vienen después */
+  function completeN15(a){
+    const a2=Object.assign({},a); let N=[];
+    for(let g=0;g<400;g++){ N=build(a2).N; const n=N.find(x=>x.kind!=='alert'&&x.kind!=='fin'&&a2[x.id]===undefined); if(!n) break;
+      const d=n.def; let v;
+      if(n.kind==='ev') v={v:'OK',data:Object.assign({},d&&d.data)};
+      else if(n.kind==='check'||n.kind==='summary') v={v:'OK',label:''};
+      else if(n.kind==='multi') v={v:Array.isArray(d)?d:[],label:''};
+      else if(n.kind==='choice'){const o=(n.opts||[]).find(o=>o.v===d)||(n.opts||[])[0]||{v:d,l:''};v={v:o.v,label:o.l};}
+      else if(n.kind==='rcard') v={v:Object.assign({},d),label:''};
+      else if(n.kind==='links'||n.kind==='pasos') v={v:[],label:''};
+      else if(n.kind==='wifi') v={v:{},label:''};
+      else v={v:d==null?'':d,label:d==null?'':String(d)};
+      a2[n.id]=v; }
+    return N;
+  }
+  function prune15(before){
+    const reset=[]; const texts=Object.assign({},before||{});
+    for(let g=0;g<20;g++){
+      if(typeof current==='function') current();
+      const N=completeN15(A); const by={}; N.forEach(n=>{by[n.id]=n; if(!texts[n.id]) texts[n.id]=strip(n.text);});
+      const valid=new Set(N.map(n=>n.id)); const keys=new Set(); N.forEach(n=>{if(n.kind==='check')(n.items||[]).forEach(i=>keys.add(i.k));});
+      const bad=new Set();
+      ORDER.forEach(e=>{
+        if(e.t==='ck'){ if(!keys.has(e.k)) bad.add('ck:'+e.k); return; }
+        if(e.t!=='ans') return;
+        if(!valid.has(e.id)){bad.add(e.id);return;}
+        const n=by[e.id];
+        if(n&&n.kind==='choice'&&!choiceOk(n,A[e.id])) bad.add(e.id);
+        else if(n&&n.id==='P33a'&&A[e.id]&&Array.isArray(A[e.id].v)&&A[e.id].v.some(x=>!(n.opts||[]).includes(x))) bad.add(e.id);
+      });
+      if(!bad.size) break;
+      bad.forEach(i=>{const t=i.startsWith('ck:')?'Foto: '+i.slice(3):texts[i]; if(t&&!reset.includes(t)) reset.push(t);});
+      ORDER=ORDER.filter(e=>e.t==='ck'?!bad.has('ck:'+e.k):!bad.has(e.id));
+      replay();
+    }
+    return reset;
+  }
+  const _rewind15=rewind;
+  rewind=function(id){
+    const terminado=(typeof APP!=='undefined'&&APP.es)||A.SUM||fin();
+    if(terminado||id==='EV') return _rewind15(id);
+    const {N}=build(A); const node=N.find(n=>n.id===id); if(!node) return _rewind15(id);
+    const before={}; N.forEach(n=>before[n.id]=strip(n.text));
+    ED15={id,prev:A[id]?JSON.parse(JSON.stringify(A[id])):null,before};
+    ORDER=ORDER.filter(e=>!((e.t==='ans'||e.t==='try'||e.t==='read')&&e.id===id));
+    replay(); UI.curId=null; UI.otro=null; if(typeof render==='function') render();
+  };
+  if(typeof esStart==='function'){
+    const _es15=esStart;
+    esStart=function(id){
+      const {N}=build(A); const before={}; N.forEach(n=>before[n.id]=strip(n.text));
+      ED15=A[id]?{id,prev:JSON.parse(JSON.stringify(A[id])),before}:null;
+      return _es15(id);
+    };
+  }
+  const _build15=build;
+  build=function(a){
+    const r=_build15(a);
+    if(ED15&&ED15.prev&&!a[ED15.id]){
+      const n=r.N.find(x=>x.id===ED15.id); const p=ED15.prev;
+      if(n&&n.kind==='multi'&&Array.isArray(p.v)){ n.sel=p.v.slice(); n.opts=[...(n.opts||[]),...p.v.filter(x=>!(n.opts||[]).includes(x))]; }
+      else if(n&&n.kind==='choice') n.cur15=p;
+      else if(n&&(n.kind==='text'||n.kind==='longtext'||n.kind==='date')) n.def=p.v!=null&&p.v!==''?p.v:p.label;
+    }
+    return r;
+  };
+  if(typeof live==='function'){
+    const _live15=live;
+    live=function(n,X,R){
+      let h=_live15(n,X,R);
+      if(n.kind==='choice'&&n.cur15){
+        const i=(n.opts||[]).findIndex(o=>!o.otro&&(o.v===n.cur15.v||String(o.v)===String(n.cur15.v)));
+        const keep=i>=0?`<button type="button" class="qr fill" data-act="opt" data-i="${i}">✓ Mantener: ${esc(n.cur15.label||n.opts[i].l)}</button>`
+          :`<button type="button" class="qr fill" data-act="keep15">✓ Mantener: ${esc(n.cur15.label||'')}</button>`;
+        h=h.replace('<div class="qrs">','<div class="qrs">'+keep);
+      }
+      if((n.kind==='text'||n.kind==='longtext')&&ED15&&ED15.id===n.id&&ED15.prev){
+        h=h.replace('<div class="qrs">',`<div class="qrs"><button type="button" class="qr fill" data-act="keep15">✓ Mantener: ${esc(ED15.prev.label||'')}</button>`);
+      }
+      return h;
+    };
+  }
+  if(typeof appEl!=='undefined'&&appEl&&appEl.addEventListener){
+    appEl.addEventListener('click',e=>{
+      const el=e.target.closest('[data-act="keep15"]'); if(!el||!ED15||!ED15.prev) return;
+      e.stopImmediatePropagation(); commit(ED15.id,ED15.prev);
+    },true);
+  }
+  const _commit15=commit;
+  commit=function(id,val){
+    const ed=ED15&&ED15.id===id?ED15:null;
+    _commit15(id,val);
+    if(ed){
+      ED15=null;
+      const reset=prune15(ed.before);
+      const corto=t=>t.length>70?t.slice(0,68).replace(/\s+\S*$/,'')+'…':t;
+      const msg=reset.length?`Respuesta actualizada. Se mantienen tus demás respuestas. Se quitaron las que dependían de esta (si hacen falta, te las vuelvo a preguntar): ${reset.slice(0,6).map(corto).join(' · ')}${reset.length>6?` y ${reset.length-6} más`:''}.`
+        :'Respuesta actualizada. Tus demás respuestas se mantienen.';
+      if(typeof toast==='function'){ toast(msg); } if(typeof render==='function') render();
+      if(typeof window!=='undefined') window.__ed15last=msg;
+    }
+  };
+})();
+
+/* ===== 0.0.15 · Descripción de cada evidencia y «Cambiar foto» =====
+   - Lista de evidencias: «Cambiar foto» (antes «Repetir») y «Agregar / Editar descripción» (también se puede eliminar).
+   - Chat IA: debajo de cada evidencia leída, «Cambiar foto» y «Descripción». Cambiar la foto ya no borra las demás respuestas.
+   - Minuta: la descripción sale debajo de la foto («Descripción: …»). La IA la usa como dato del técnico. */
+(function(){
+  const key=id=>String(id).replace(/^EV\|/,'EV#');
+  const dec=s=>String(s).replace(/&quot;/g,'"').replace(/&#39;/g,"'").replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&amp;/g,'&');
+  const e15=s=>String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  window.desc15=function(id){const k=key(id);let t='';(ORDER||[]).forEach(e=>{if(e.t==='desc'&&e.id===k)t=e.val||'';});return t;};
+  function setDesc(id,t){ORDER.push({t:'desc',id:key(id),val:String(t||'').trim().slice(0,500)});}
+  const reEsc=s=>s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+
+  const _ov15=ovHTML;
+  ovHTML=function(){
+    let h=_ov15(); const o=APP.ov;
+    if(o&&o.k==='galeria'){
+      h=h.replace(/(<div class="ck"><div>([^<]*)<small>Foto adjunta<\/small>)(<\/div><div>)<button class="mini" data-gal="rep" data-id="([^"]+)">Repetir<\/button>/g,(m,a,t,b,id)=>{
+        const d=desc15(dec(id));
+        return a+(d?`<small style="display:block;color:#1F2937;margin-top:3px">Descripción: ${e15(d)}</small>`:'')+b+
+          `<button class="mini" data-gal="rep" data-id="${id}">Cambiar foto</button> <button class="mini" data-ev15="desc" data-id="${id}" data-t="${t}">${d?'Editar descripción':'Agregar descripción'}</button>`;});
+    }
+    if(o&&o.k==='desc15'){
+      const d=desc15(o.id);
+      h+=dlg('Descripción de la foto','',`<p style="margin:0 0 8px;color:#4B5563;font-size:14px;line-height:1.4">${e15(o.t||'Evidencia')}: escribe qué muestra la foto. Por ejemplo «La PC ya está en caja y es del local» o «El speedtest lo hice desde mi laptop». Sale debajo de la foto en la minuta y la IA la usa para sus observaciones y recomendaciones.</p><textarea id="d15t" rows="4" style="width:100%;box-sizing:border-box;border:1px solid #D1D5DB;border-radius:10px;padding:10px;font:inherit">${e15(d)}</textarea>`,
+        `${d?'<button class="tbtn" data-ev15="del">Eliminar</button>':''}<button class="tbtn" data-ev15="back">Cancelar</button><button class="abtn fill" data-ev15="save">Guardar</button>`);
+    }
+    return h;
+  };
+
+  if(typeof scrChat==='function'){
+    const _chat15=scrChat;
+    scrChat=function(){
+      let h=_chat15.apply(this,arguments);
+      return h.replace(/(<div class="b bot" data-act="fix" data-id="([^"]+)" style="cursor:pointer" title="Toca para corregir la lectura">[^<]*<\/div>)/g,(m,a,id)=>{
+        const d=desc15(dec(id));
+        return a+(d?`<div class="b bot info">Descripción: ${e15(d)}</div>`:'')+
+          `<div class="qrs"><button type="button" class="qr chip" data-ev15="chg" data-id="${id}">Cambiar foto</button><button type="button" class="qr chip" data-ev15="desc" data-id="${id}">${d?'Editar descripción':'Agregar descripción'}</button></div>`;});
+    };
+  }
+
+  if(typeof annexHTML==='function'){
+    const _annex15=annexHTML;
+    annexHTML=function(X){
+      let h=_annex15.apply(this,arguments); const {N}=build(A);
+      const T={E1:'Speedtest por cable',E1b:'Speedtest con chip',E1c:'ipconfig',E1d:'Escáner de IP',E2u:'Ubicación',E2:'Puertos',E2e:'Etiqueta (SN y modelo)'};
+      const add=(re,d)=>{ h=h.replace(re,(m)=>m+`<br>Descripción: ${e15(d)}`); };
+      N.forEach(n=>{
+        if(n.kind==='check') (n.items||[]).forEach(i=>{ const d=desc15('EV#'+i.k); if(d) add(new RegExp(`<div class="mcap"><b>${reEsc(e15(i.k))}</b>(?:<br>[^<]*)*`),d); });
+        if(n.kind!=='ev'||!A[n.id]) return; const d=desc15(n.id); if(!d) return;
+        const base=n.id.split('#')[0], sc=n.id.split('#')[1];
+        if(/^E5[ab]?$/.test(base)&&sc){ const LB={E5a:'Etiqueta',E5b:'Conexiones',E5:'Selftest'}[base];
+          add(new RegExp(`Imagen de: IMP\\. ${reEsc(e15(sc))} · ${reEsc(LB)}[\\s\\S]*?<div class="mcap"><b>[^<]*</b>(?:<br>[^<]*)*`),d); return; }
+        const t=T[base]||(base==='E7'?'AnyDesk':n.name)||'';
+        if(t) add(new RegExp(`<div class="mcap"><b>${reEsc(e15(t))}</b>(?:<br>[^<]*)*`),d);
+      });
+      return h;
+    };
+  }
+
+  if(typeof document!=='undefined'&&document.addEventListener){
+    document.addEventListener('click',ev=>{
+      const b=ev.target&&ev.target.closest&&ev.target.closest('[data-ev15]'); if(!b) return;
+      ev.stopPropagation(); ev.preventDefault();
+      const d=b.dataset, o=APP.ov;
+      if(d.ev15==='desc'){ APP.ov={k:'desc15',id:key(dec(d.id)),t:d.t||'',back:o&&o.k==='galeria'?o:null}; render(); return; }
+      if(d.ev15==='chg'){ APP.ov=null; rewind(dec(d.id)); return; }
+      if(!o||o.k!=='desc15') return;
+      if(d.ev15==='save'){ const t=(document.getElementById('d15t')||{}).value||''; setDesc(o.id,t); replay(); APP.ov=o.back; toast(t.trim()?'Descripción guardada: sale debajo de la foto en la minuta.':'Descripción eliminada.'); render(); return; }
+      if(d.ev15==='del'){ setDesc(o.id,''); replay(); APP.ov=o.back; toast('Descripción eliminada.'); render(); return; }
+      if(d.ev15==='back'){ APP.ov=o.back; render(); }
+    },true);
+  }
+})();
 
 </script>
 

@@ -112,6 +112,10 @@ data class ChatNodePrompt(
     val noneLabel: String? = null,
     val allowOther: Boolean = false,
     val multiline: Boolean = false,
+    /** Editando una respuesta anterior (doc 0.0.15): lo ya respondido viene marcado. */
+    val editing: Boolean = false,
+    val currentValue: String? = null,
+    val currentLabel: String? = null,
     val unit: String? = null,
     /** Foto opcional (zonas de atención): se puede saltar. */
     val optional: Boolean = false,
@@ -170,7 +174,9 @@ data class TechnicalChatProgress(
     /** Respuestas que vinieron de un adjunto. */
     val attachedNodeIds: List<String> = emptyList(),
     /** Fotos obligatorias pendientes («Subir después»): mientras haya, no se genera la minuta. */
-    val pendingMandatory: List<ChatPendingPhoto> = emptyList()
+    val pendingMandatory: List<ChatPendingPhoto> = emptyList(),
+    /** 0.0.15: descripción de cada evidencia por nodeId (sale debajo de la foto en la minuta). */
+    val evidenceNotes: Map<String, String> = emptyMap()
 )
 
 /** Dato leído de un documento adjunto, para revisar antes de usarlo. */

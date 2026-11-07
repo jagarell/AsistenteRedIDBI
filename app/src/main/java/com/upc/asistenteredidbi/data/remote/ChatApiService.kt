@@ -67,6 +67,15 @@ interface ChatApiService {
         /** «Guardar como correcta» (mode = "forzar"): nota opcional del técnico. */
         @Part("nota") nota: RequestBody? = null,
         /** «Subir después»: foto pendiente que se sube al final (EV#Calientes). */
-        @Part("nodeId") nodeId: RequestBody? = null
+        @Part("nodeId") nodeId: RequestBody? = null,
+        /** 0.0.15: descripción opcional de la foto («¿Qué muestra esta foto?»). */
+        @Part("descripcion") descripcion: RequestBody? = null
+    ): TechnicalChatResponseDto
+
+    /** 0.0.15: agregar, editar o borrar (descripcion vacía) la descripción de una evidencia. Body: {state, nodeId, descripcion}. */
+    @POST("api/evaluations/{evaluationId}/chat/evidence-note")
+    suspend fun evidenceNote(
+        @Path("evaluationId") evaluationId: Long,
+        @Body body: Map<String, @JvmSuppressWildcards Any?>
     ): TechnicalChatResponseDto
 }

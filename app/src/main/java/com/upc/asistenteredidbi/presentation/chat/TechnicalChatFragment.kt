@@ -158,6 +158,7 @@ class TechnicalChatFragment : Fragment() {
                     else -> handleCardAction(action)
                 }
             },
+            onPhotoClick = { message -> showEvidenceOptions(message) },
             onMapClick = { map ->
                 val evidences = viewModel.uiState.value.evidences
                 com.upc.asistenteredidbi.presentation.map.MapZoomDialog.show(requireContext(), map) { image ->
@@ -689,8 +690,15 @@ class TechnicalChatFragment : Fragment() {
             }
 
             TechnicalChatInputType.CHOICE -> {
+                // Editando: la respuesta anterior se puede mantener con un toque y su opción sale marcada (doc 0.0.15).
+                val actual = node?.takeIf { it.editing }?.currentValue
+                if (actual != null) {
+                    val etiqueta = node?.currentLabel?.takeIf { it.isNotBlank() } ?: actual.removePrefix("OTRO:")
+                    addQuickReplyChip("✓ Mantener: $etiqueta", filled = true) { viewModel.sendAnswer(actual, etiqueta) }
+                }
                 node?.options?.forEach { option ->
-                    addQuickReplyChip(option.label.replace(" (lo más común)", "").let { if (option.label.contains("(lo más común)")) option.label else it }) {
+                    val marca = if (actual != null && option.value == actual) "✓ " else ""
+                    addQuickReplyChip(marca + option.label.replace(" (lo más común)", "").let { if (option.label.contains("(lo más común)")) option.label else it }) {
                         if (option.other) askOther(node, option) else viewModel.sendAnswer(option.value, option.label.replace(" (lo más común)", "").replace(" (se ve en la foto)", ""))
                     }
                 }
@@ -708,7 +716,7 @@ class TechnicalChatFragment : Fragment() {
                 if (node?.keyboard == "date") {
                     node.defaultValue?.takeIf { it.length == 10 && node.required }?.let { iso ->
                         val shown = "${iso.substring(8, 10)}/${iso.substring(5, 7)}/${iso.substring(0, 4)}"
-                        addQuickReplyChip("Hoy · $shown", filled = true) { viewModel.sendAnswer(iso, shown) }
+                        addQuickReplyChip((if (node.editing) "✓ Mantener · " else "Hoy · ") + shown, filled = true) { viewModel.sendAnswer(iso, shown) }
                     }
                     addQuickReplyChip("📅 Elegir fecha") { showDatePicker(node.defaultValue) }
                     if (node.required == false) addQuickReplyChip("Sin fecha") { viewModel.sendAnswer("", "Sin fecha") }
@@ -780,11 +788,51 @@ class TechnicalChatFragment : Fragment() {
     }
 
     // ---- evidencias: Tomar foto / Subir foto / Saltar evidencia ----------------------------
+    /** 0.0.15: opciones al tocar la foto de una evidencia en el chat. */
+    private fun showEvidenceOptions(message: ChatMessage) {
+        val state = viewModel.uiState.value
+        val item = state.evidences.firstOrNull { it.messageId == message.id }
+        if (item == null) {
+            Toast.makeText(requireContext(), "Esta foto todavía no quedó guardada como evidencia.", Toast.LENGTH_SHORT).show()
+            return
+        }
+        val nota = viewModel.evidenceNote(item)
+        val opciones = arrayOf("Cambiar foto", if (nota.isBlank()) "Agregar descripción" else "Editar descripción")
+        androidx.appcompat.app.AlertDialog.Builder(requireContext())
+            .setTitle(item.title + if (nota.isNotBlank()) "\nDescripción: $nota" else "")
+            .setItems(opciones) { _, which ->
+                when (which) {
+                    0 -> androidx.appcompat.app.AlertDialog.Builder(requireContext())
+                        .setTitle("Cambiar foto · ${item.title}")
+                        .setMessage("Vuelves a pedir solo esta evidencia para subir otra foto. Tus demás respuestas y la descripción se mantienen.")
+                        .setPositiveButton("Cambiar foto") { _, _ -> viewModel.retakeEvidence(item.messageId) }
+                        .setNegativeButton("Cancelar", null)
+                        .show()
+                    else -> EvidenceNoteDialog.show(requireContext(), "Descripción · ${item.title}", nota) { t ->
+                        viewModel.saveEvidenceNote(viewModel.evidenceNodeId(item), t)
+                    }
+                }
+            }
+            .setNegativeButton("Cerrar", null)
+            .show()
+    }
+
     private fun addEvidenceActions(node: ChatNodePrompt?) {
         val ev = node?.evidence
         if (ev?.status == "REVIEW") return // la tarjeta del chat trae Correcto / Editar / No es correcto
         val status = ev?.status ?: "WAITING"
         val bar = binding.actionBar
+        // 0.0.15: descripción opcional antes de subir la foto («¿Qué muestra esta foto?»); viaja con la foto
+        val pendiente = viewModel.uiState.value.pendingDescription
+        bar.addView(TextView(requireContext()).apply {
+            text = if (pendiente.isNullOrBlank()) "✎ Agregar descripción (opcional)" else "✎ Descripción: $pendiente"
+            textSize = 13f
+            setTextColor(Color.parseColor("#1565C0"))
+            setPadding(0, 0, 0, dp(8))
+            setOnClickListener {
+                EvidenceNoteDialog.show(requireContext(), "Descripción de la foto", pendiente.orEmpty()) { t -> viewModel.setPendingDescription(t) }
+            }
+        })
         val takeLabel = if (status == "IL" || status == "WRONG") "Volver a tomar foto" else "Tomar foto"
         val pickLabel = if (status == "NC" || status == "WRONG") "Volver a subir foto" else "Subir foto"
         val row = LinearLayout(requireContext()).apply { orientation = LinearLayout.HORIZONTAL }
