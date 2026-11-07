@@ -38,7 +38,7 @@ class PerfilFragment : Fragment() {
         binding.btnBack.setOnClickListener { findNavController().navigateUp() }
 
         binding.rowNombre.tvLabel.text = "Nombre"
-        binding.rowCorreo.tvLabel.text = "Correo"
+        binding.rowCorreo.tvLabel.text = "Correo electrónico"
         binding.rowTelefono.tvLabel.text = "Teléfono"
         binding.rowCiudad.tvLabel.text = "Ciudad"
         binding.rowEmpresa.tvLabel.text = "Empresa"

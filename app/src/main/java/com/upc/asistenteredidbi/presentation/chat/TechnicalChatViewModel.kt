@@ -75,7 +75,11 @@ data class TechnicalChatUiState(
     val editMessages: List<ChatMessage> = emptyList(),
     val editAnswers: Map<String, String> = emptyMap(),
     /** 0.0.7: fotos obligatorias dejadas con «Subir después»; se suben antes de generar la minuta. */
-    val pendingMandatory: List<com.upc.asistenteredidbi.domain.model.ChatPendingPhoto> = emptyList()
+    val pendingMandatory: List<com.upc.asistenteredidbi.domain.model.ChatPendingPhoto> = emptyList(),
+    /** 0.0.15: descripción de cada evidencia por nodeId (E1, EV#Frontis del local…). */
+    val evidenceNotes: Map<String, String> = emptyMap(),
+    /** 0.0.15: descripción escrita antes de subir la foto del paso actual; viaja con la foto. */
+    val pendingDescription: String? = null
 )
 
 @HiltViewModel
@@ -434,6 +438,7 @@ class TechnicalChatViewModel @Inject constructor(
                 proposal = response.proposal,
                 pending = null,
                 pendingMandatory = response.pendingMandatory,
+                evidenceNotes = response.evidenceNotes,
                 reviewDraft = draft,
                 reviewDeleted = emptySet(),
                 errorMessage = null
@@ -459,6 +464,48 @@ class TechnicalChatViewModel @Inject constructor(
             return
         }
         sendPhotos(lastEvidenceUris, "forzar", nota)
+    }
+
+    // ---- 0.0.15: descripción de cada evidencia ------------------------------------------------
+    /** nodeId de la API para una evidencia de la lista (E1, E5a#Cocina, EV#Frontis del local…). */
+    fun evidenceNodeId(item: ChatEvidenceItem): String = if (item.scope.isBlank()) item.code else "${item.code}#${item.scope}"
+
+    fun evidenceNote(item: ChatEvidenceItem): String = _uiState.value.evidenceNotes[evidenceNodeId(item)].orEmpty()
+
+    /** Descripción que viajará con la próxima foto del paso actual (vacía = sin descripción). */
+    fun setPendingDescription(text: String?) {
+        _uiState.update { it.copy(pendingDescription = text?.trim()?.takeIf { t -> t.isNotEmpty() }) }
+    }
+
+    /** Agrega, cambia o borra (texto vacío) la descripción de una evidencia ya subida. Sale debajo de la foto en la minuta
+     *  y la IA la usa como dato del técnico. No cambia ninguna respuesta. */
+    fun saveEvidenceNote(nodeId: String, text: String) {
+        val state = _uiState.value
+        val flowState = state.flowState ?: return
+        if (state.isSending || state.isLoading || validEvaluationId == null) return
+        _uiState.update { it.copy(isSending = true, errorMessage = null) }
+        viewModelScope.launch {
+            chatRepository.saveEvidenceNote(evaluationId, flowState, nodeId, text.trim())
+                .onSuccess { response ->
+                    if (response.validationError != null) {
+                        _uiState.update { it.copy(isSending = false, errorMessage = response.validationError) }
+                        return@onSuccess
+                    }
+                    _uiState.update { ui ->
+                        ui.copy(
+                            isSending = false, flowState = response.state ?: ui.flowState, evidenceNotes = response.evidenceNotes,
+                            messages = ui.messages + ChatMessage(
+                                if (text.isBlank()) "Descripción eliminada." else "Descripción guardada: «${text.trim()}». Sale debajo de la foto en la minuta.",
+                                false, id = ui.messages.size.toLong()
+                            )
+                        )
+                    }
+                    persistProgress()
+                }
+                .onFailure { error ->
+                    _uiState.update { it.copy(isSending = false, errorMessage = error.message ?: "No se pudo guardar la descripción") }
+                }
+        }
     }
 
     /** «Subir después»: la foto obligatoria se deja para el final; se pide antes de generar la minuta. */
@@ -488,7 +535,7 @@ class TechnicalChatViewModel @Inject constructor(
                 _uiState.update { it.copy(isSending = false, errorMessage = e.message) }
                 return@launch
             }
-            answerWithPhotosUseCase(evaluationId, flowState, files, mode, nota, nodeId)
+            answerWithPhotosUseCase(evaluationId, flowState, files, mode, nota, nodeId, state.pendingDescription)
                 .onSuccess { response ->
                     if (response.validationError != null) {
                         // la IA la observó: sigue pendiente y se puede guardar como correcta
@@ -515,7 +562,7 @@ class TechnicalChatViewModel @Inject constructor(
                         )
                         ui.copy(
                             isSending = false, flowState = response.state ?: ui.flowState, messages = msgs,
-                            pendingMandatory = response.pendingMandatory,
+                            pendingMandatory = response.pendingMandatory, evidenceNotes = response.evidenceNotes, pendingDescription = null,
                             evidences = ui.evidences.filterNot { e -> item != null && e.code == item.code && e.scope == item.scope } + listOfNotNull(item)
                         )
                     }
@@ -561,7 +608,7 @@ class TechnicalChatViewModel @Inject constructor(
             val withPhoto = state.messages + photoMessage
             _uiState.update { it.copy(messages = withPhoto) }
 
-            answerWithPhotosUseCase(evaluationId, flowState, files, mode, nota)
+            answerWithPhotosUseCase(evaluationId, flowState, files, mode, nota, null, state.pendingDescription)
                 .onSuccess { response ->
                     if (response.validationError != null) {
                         _uiState.update {
@@ -584,9 +631,10 @@ class TechnicalChatViewModel @Inject constructor(
                             messageId = photoMessage.id
                         )
                     }
-                    // Si ya había una foto de la misma evidencia, esta la reemplaza.
+                    // Si ya había una foto de la misma evidencia, esta la reemplaza («Cambiar foto»).
                     _uiState.update { ui ->
-                        ui.copy(evidences = ui.evidences.filterNot { e -> item != null && e.code == item.code && e.scope == item.scope } + listOfNotNull(item))
+                        ui.copy(evidences = ui.evidences.filterNot { e -> item != null && e.code == item.code && e.scope == item.scope } + listOfNotNull(item),
+                            pendingDescription = null)
                     }
                     applyResponse(withPhoto, response.copy(processedImages = emptyList()))
                 }
@@ -771,8 +819,8 @@ class TechnicalChatViewModel @Inject constructor(
     }
 
     /**
-     * "Repetir" desde la galería: vuelve a pedir esa evidencia. Con la evaluación terminada solo se vuelve a
-     * preguntar esa foto; en curso, se borra lo respondido desde ahí.
+     * «Cambiar foto» desde la lista de evidencias o desde el chat: vuelve a pedir solo esa evidencia (0.0.15: en curso o
+     * terminada, las demás respuestas y la descripción se conservan; la foto nueva reemplaza a la anterior).
      */
     fun retakeEvidence(messageId: Long) {
         val state = _uiState.value
@@ -796,24 +844,17 @@ class TechnicalChatViewModel @Inject constructor(
         val finished = state.completed || state.editSnapshot != null
         _uiState.update { it.copy(isSending = true, errorMessage = null) }
         viewModelScope.launch {
-            editUseCase(evaluationId, flowState, nodeId, if (finished) "reopen" else "rewind")
+            // Siempre «reopen» (doc 0.0.15): solo se vuelve a hacer esa pregunta, con la respuesta anterior marcada;
+            // las demás se conservan y el servidor solo borra las que dependían de ella.
+            editUseCase(evaluationId, flowState, nodeId, "reopen")
                 .onSuccess { response ->
                     if (response.validationError != null) {
                         _uiState.update { it.copy(isSending = false, errorMessage = response.validationError) }
                         return@onSuccess
                     }
-                    val node = response.node
-                    val messages: List<ChatMessage>
-                    if (finished) {
-                        // Evaluación terminada: se agrega la pregunta al final y el resto de respuestas se conserva.
-                        messages = state.messages
-                    } else {
-                        // En curso: se vuelve a esa pregunta y se descarta lo que le siguió.
-                        val questionIndex = state.messages.indexOfLast { it.prompt?.nodeId == nodeId && !it.isFromUser }
-                            .takeIf { it >= 0 } ?: state.messages.size - 1
-                        messages = state.messages.subList(0, questionIndex)
-                    }
-                    val evidences = if (finished) state.evidences else state.evidences.filter { it.messageId < messages.size }
+                    // En curso o terminada: el historial se conserva y la pregunta editada se agrega al final.
+                    val messages: List<ChatMessage> = state.messages
+                    val evidences = state.evidences
                     val first = finished && state.editSnapshot == null
                     _uiState.update {
                         it.copy(

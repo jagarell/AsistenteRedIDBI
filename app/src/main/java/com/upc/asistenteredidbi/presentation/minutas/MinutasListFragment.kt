@@ -20,6 +20,8 @@ import kotlinx.coroutines.launch
 @AndroidEntryPoint
 class MinutasListFragment : Fragment() {
 
+    @javax.inject.Inject lateinit var api007: com.upc.asistenteredidbi.data.remote.Api007Service
+
     private var _binding: FragmentMinutasListBinding? = null
     private val binding get() = _binding!!
     private val viewModel: MinutasListViewModel by viewModels()
@@ -46,7 +48,7 @@ class MinutasListFragment : Fragment() {
             onOpen = { record ->
                 val evaluationId = record.evaluationId
                 if (evaluationId == null) {
-                    Toast.makeText(requireContext(), "Esta minuta no tiene evaluación asociada", Toast.LENGTH_SHORT).show()
+                    com.upc.asistenteredidbi.presentation.common.HojaMinuta.abrir(this, api007, record.id)
                 } else {
                     findNavController().navigate(
                         com.upc.asistenteredidbi.R.id.minutaProposalFragment,

@@ -101,7 +101,9 @@ data class ChatMessage(
 class ChatMessagesAdapter(
     private val onEditClick: (ChatMessage) -> Unit,
     private val onCardAction: (String) -> Unit = {},
-    private val onMapClick: (com.upc.asistenteredidbi.domain.model.NetworkMap) -> Unit = {}
+    private val onMapClick: (com.upc.asistenteredidbi.domain.model.NetworkMap) -> Unit = {},
+    /** 0.0.15: tocar la foto de una evidencia → «Cambiar foto» o «Descripción». */
+    private val onPhotoClick: (ChatMessage) -> Unit = {}
 ) : ListAdapter<ChatMessage, ChatMessagesAdapter.VH>(
     object : DiffUtil.ItemCallback<ChatMessage>() {
         override fun areItemsTheSame(oldItem: ChatMessage, newItem: ChatMessage): Boolean =
@@ -281,6 +283,7 @@ class ChatMessagesAdapter(
             return
         }
         box.visibility = View.VISIBLE
+        box.setOnClickListener { onPhotoClick(item) }
         item.imagePaths.take(3).forEach { path ->
             val image = ImageView(context).apply {
                 layoutParams = LinearLayout.LayoutParams(220.dp(context), 120.dp(context)).apply {
@@ -293,7 +296,7 @@ class ChatMessagesAdapter(
             box.addView(image)
         }
         box.addView(TextView(context).apply {
-            text = "${item.text}   ✓ Subida"
+            text = "${item.text}   ✓ Subida · toca para cambiarla o describirla"
             textSize = 12f
             setTextColor(Color.WHITE)
             gravity = Gravity.END

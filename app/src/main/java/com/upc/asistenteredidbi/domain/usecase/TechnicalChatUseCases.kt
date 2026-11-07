@@ -43,7 +43,8 @@ class AnswerTechnicalChatWithPhotosUseCase @Inject constructor(
         photos: List<File>,
         mode: String = "subir",
         nota: String? = null,
-        nodeId: String? = null
+        nodeId: String? = null,
+        descripcion: String? = null
     ): Result<TechnicalChatProgress> {
         return repository.answerTechnicalChatWithPhotos(
             evaluationId = evaluationId,
@@ -51,7 +52,8 @@ class AnswerTechnicalChatWithPhotosUseCase @Inject constructor(
             photos = photos,
             mode = mode,
             nota = nota,
-            nodeId = nodeId
+            nodeId = nodeId,
+            descripcion = descripcion
         )
     }
 }

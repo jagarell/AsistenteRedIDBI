@@ -37,7 +37,16 @@ interface ChatRepository {
         photos: List<File>,
         mode: String = "subir",
         nota: String? = null,
-        nodeId: String? = null
+        nodeId: String? = null,
+        descripcion: String? = null
+    ): Result<TechnicalChatProgress>
+
+    /** 0.0.15: agregar, editar o borrar (texto vacío) la descripción de una evidencia (`nodeId`: E1, EV#Frontis del local…). */
+    suspend fun saveEvidenceNote(
+        evaluationId: Long,
+        state: String,
+        nodeId: String,
+        descripcion: String
     ): Result<TechnicalChatProgress>
 
     /** Lee un documento del cliente. Devuelve el JSON del servidor (status, tipo, titulo, nota, campos). */

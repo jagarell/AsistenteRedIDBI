@@ -86,6 +86,13 @@ class MainActivity : AppCompatActivity() {
             .findFragmentById(R.id.nav_host_fragment) as NavHostFragment
 
         navController = navHostFragment.navController
+        // El menú lateral solo se abre en Inicio: en Iniciar sesión, el Chat IA o la Propuesta el deslizamiento desde el borde
+        // lo abría y sus opciones no llevaban a ningún lado (QA F2).
+        navController.addOnDestinationChangedListener { _, destination, _ ->
+            binding.drawerLayoutRoot.setDrawerLockMode(
+                if (destination.id == R.id.assistantHomeFragment) DrawerLayout.LOCK_MODE_UNLOCKED else DrawerLayout.LOCK_MODE_LOCKED_CLOSED
+            )
+        }
     }
 
     /** Punto rojo y «Nuevo» en Notificaciones si hay avisos sin leer; el administrador ve su plan («Empresa · N de 10 usuarios»). */
@@ -121,15 +128,14 @@ class MainActivity : AppCompatActivity() {
             col.addView(t("${personas.size} de 10 usuarios (cuenta al administrador)", 14f, false, 0xFF6B7280.toInt()))
             col.addView(android.widget.ProgressBar(this@MainActivity, null, android.R.attr.progressBarStyleHorizontal).apply { max = 10; progress = personas.size.coerceAtMost(10); setPadding(0, (8 * dp).toInt(), 0, (8 * dp).toInt()) })
             col.addView(t("Usuarios del plan", 14f, true).apply { setPadding(0, (8 * dp).toInt(), 0, (4 * dp).toInt()) })
-            personas.take(15).forEach { p -> col.addView(t("• ${p["nombre"]} · ${p["rol"].toString().lowercase().replaceFirstChar { c -> c.uppercase() }}", 13.5f).apply { setPadding(0, (3 * dp).toInt(), 0, 0) }) }
-            fun boton(texto: String, relleno: Boolean) = com.google.android.material.button.MaterialButton(this@MainActivity).apply {
-                text = texto; isAllCaps = false
-                setOnClickListener { android.widget.Toast.makeText(this@MainActivity, "Próximamente", android.widget.Toast.LENGTH_SHORT).show() }
-                if (!relleno) { backgroundTintList = android.content.res.ColorStateList.valueOf(android.graphics.Color.WHITE); setTextColor(0xFF1565C0.toInt()); strokeColor = android.content.res.ColorStateList.valueOf(0xFF1565C0.toInt()); strokeWidth = (2 * dp).toInt() }
+            personas.take(30).forEach { p ->
+                val rol = p["rol"].toString().lowercase().replaceFirstChar { c -> c.uppercase() }
+                val sup = (p["supervisorNombre"] as? String)?.let { " · supervisor: $it" }.orEmpty()
+                val estado = if (p["pidioCodigo"] == true) "  — Pidió código" else ""
+                col.addView(t("• ${p["nombre"]} · $rol$sup$estado", 13.5f, false, if (p["pidioCodigo"] == true) 0xFF8A5A00.toInt() else 0xFF1F2937.toInt()).apply { setPadding(0, (3 * dp).toInt(), 0, 0) })
             }
-            col.addView(boton("Pedir más usuarios", true).apply { layoutParams = android.widget.LinearLayout.LayoutParams(-1, -2).apply { topMargin = (16 * dp).toInt() } })
-            col.addView(boton("Cambiar a un plan superior", false))
-            col.addView(t("Planes: Free y Empresarial, próximamente. Las personas nuevas se agregan desde la web.", 12f, false, 0xFF6B7280.toInt()).apply { setPadding(0, (10 * dp).toInt(), 0, 0) })
+            // «Pedir más usuarios» y «Cambiar a un plan superior» no tenían acción: se quitan hasta que existan los planes.
+            col.addView(t("Para agregar personas, entra a Equipo y accesos.", 12f, false, 0xFF6B7280.toInt()).apply { setPadding(0, (12 * dp).toInt(), 0, 0) })
             sheet.setContentView(android.widget.ScrollView(this@MainActivity).apply { addView(col) })
             sheet.show()
         }
@@ -149,6 +155,10 @@ class MainActivity : AppCompatActivity() {
         drawer.tvDrawerVersion.text = "v$versionName · Asistente de Red"
 
         drawer.btnCloseDrawer.setOnClickListener { closeDrawer() }
+        // Al abrirlo deslizando (no con el botón) el menú salía sin nombre ni opciones de rol: se cargan al abrirse.
+        binding.drawerLayoutRoot.addDrawerListener(object : DrawerLayout.SimpleDrawerListener() {
+            override fun onDrawerOpened(drawerView: View) { sessionViewModel.loadDrawerProfile(); refrescarMenu() }
+        })
         // Modo noche: mismo valor que el interruptor de Perfil y configuración.
         val isNight = (resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK) ==
             android.content.res.Configuration.UI_MODE_NIGHT_YES
@@ -360,8 +370,9 @@ class MainActivity : AppCompatActivity() {
     private fun openFromNotification(intent: android.content.Intent?) {
         val evaluationId = intent?.getStringExtra("evaluationId")?.takeIf { it.isNotBlank() } ?: return
         val minutaId = intent.getStringExtra("minutaId")?.toLongOrNull() ?: -1L
-        intent.removeExtra("evaluationId")
+        // QA F7: el dato se borra solo al navegar; si aún está en Iniciar sesión se conserva para abrirla al entrar.
         if (navController.currentDestination?.id == R.id.loginFragment) return
+        intent.removeExtra("evaluationId")
         navController.navigate(R.id.minutaProposalFragment, Bundle().apply {
             putString("evaluationId", evaluationId)
             putLong("minutaId", minutaId)

@@ -132,6 +132,11 @@ data class ChatNodeDto(
     val videoTypes: List<String>? = null,
     val questionsTotal: Int? = null,
     val evidencesTotal: Int? = null,
+    /** Editar una respuesta anterior: la pregunta vuelve con la respuesta que tenía. */
+    val editing: Boolean? = null,
+    /** CHOICE en edición: valor elegido antes ("OTRO:texto" si se escribió con Otro). */
+    val currentValue: String? = null,
+    val currentLabel: String? = null,
     /** Tipo de documento que se puede adjuntar para esta pregunta (ruc, comp, recibo, tarjeta, frontis). */
     val attachHint: String? = null
 )
@@ -165,7 +170,9 @@ data class TechnicalChatResponseDto(
     val notices: List<ChatNoticeDto>? = null,
     val attachedNodeIds: List<String>? = null,
     /** Fotos obligatorias pendientes («Subir después»). */
-    val pendingMandatory: List<ChatPendingPhotoDto>? = null
+    val pendingMandatory: List<ChatPendingPhotoDto>? = null,
+    /** 0.0.15: descripción de cada evidencia por nodeId. */
+    val evidenceNotes: Map<String, String>? = null
 )
 
 data class TechnicalChatProposalDto(

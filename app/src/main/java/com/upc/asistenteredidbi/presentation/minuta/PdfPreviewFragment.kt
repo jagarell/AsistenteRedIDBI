@@ -37,6 +37,11 @@ class PdfPreviewFragment : Fragment() {
         arguments?.getString("pdfPath")?.takeIf { it.isNotBlank() }?.let { File(it) }
     }
 
+    private val minutaId: Long by lazy { arguments?.getLong("minutaId", -1L) ?: -1L }
+
+    @javax.inject.Inject lateinit var api007: com.upc.asistenteredidbi.data.remote.Api007Service
+    @javax.inject.Inject lateinit var minutaApi: com.upc.asistenteredidbi.data.remote.MinutaApiService
+
     private val establishmentName: String by lazy {
         arguments?.getString("establishmentName").orEmpty()
     }
@@ -79,6 +84,16 @@ class PdfPreviewFragment : Fragment() {
         binding.btnDownload.setOnClickListener { downloadPdf() }
         binding.btnWhatsapp.setOnClickListener { sharePdf(targetPackage = "com.whatsapp") }
         binding.btnEmail.setOnClickListener { sharePdf(asEmail = true) }
+        binding.btnWhatsapp.text = "Compartir · WhatsApp"
+        binding.btnEmail.text = "Compartir · Email"
+        // «Ajustar»: vuelve al tamaño de la página (QA G4).
+        (binding.tvZoom.parent as? android.widget.LinearLayout)?.addView(android.widget.TextView(requireContext()).apply {
+            text = "Ajustar"; textSize = 13f; typeface = android.graphics.Typeface.DEFAULT_BOLD
+            setTextColor(requireContext().getColor(com.upc.asistenteredidbi.R.color.primary_blue))
+            setPadding(24, 0, 8, 0)
+            setOnClickListener { pageAdapter.notifyDataSetChanged(); binding.tvZoom.text = "100 %" }
+        })
+        agregarAccionesDeLaMinuta()
 
         loadPages()
     }
@@ -110,6 +125,34 @@ class PdfPreviewFragment : Fragment() {
             }
     }
 
+    /** Bitácora, Editar y Solicitar validación debajo de Descargar (como en el simulador, QA G4). */
+    private fun agregarAccionesDeLaMinuta() {
+        if (isPreview) return
+        val ctx = requireContext()
+        val caja = binding.shareBox
+        val fila = android.widget.LinearLayout(ctx).apply {
+            orientation = android.widget.LinearLayout.HORIZONTAL
+            layoutParams = android.widget.LinearLayout.LayoutParams(-1, -2).apply { topMargin = (12 * resources.displayMetrics.density).toInt() }
+        }
+        fun boton(texto: String, accion: () -> Unit) = com.google.android.material.button.MaterialButton(ctx, null, com.google.android.material.R.attr.materialButtonOutlinedStyle).apply {
+            this.text = texto; isAllCaps = false; textSize = 13f
+            layoutParams = android.widget.LinearLayout.LayoutParams(0, (48 * resources.displayMetrics.density).toInt(), 1f).apply { marginEnd = (6 * resources.displayMetrics.density).toInt() }
+            setOnClickListener { accion() }
+        }
+        fila.addView(boton("Editar") { findNavController().navigateUp() })
+        if (minutaId > 0) {
+            fila.addView(boton("Bitácora") { BitacoraMinutaSheet.mostrar(ctx, viewLifecycleOwner.lifecycleScope, api007, minutaId) })
+            fila.addView(boton("Solicitar validación") {
+                viewLifecycleOwner.lifecycleScope.launch {
+                    runCatching { minutaApi.completeMinuta(minutaId) }
+                        .onSuccess { Toast.makeText(ctx, "Pediste la validación al supervisor.", Toast.LENGTH_LONG).show() }
+                        .onFailure { Toast.makeText(ctx, "No se pudo solicitar la validación.", Toast.LENGTH_LONG).show() }
+                }
+            })
+        }
+        caja.addView(fila, 2)
+    }
+
     private fun downloadPdf() {
         val file = pdfFile ?: return
         val ok = PdfFileUtils.downloadToPublicDownloads(requireContext(), file.readBytes(), file.name)
@@ -127,7 +170,7 @@ class PdfPreviewFragment : Fragment() {
         val intent = Intent(Intent.ACTION_SEND).apply {
             type = if (asEmail) "message/rfc822" else "application/pdf"
             putExtra(Intent.EXTRA_STREAM, uri)
-            putExtra(Intent.EXTRA_SUBJECT, "Propuesta técnica de infraestructura — $establishmentName")
+            putExtra(Intent.EXTRA_SUBJECT, "Minuta técnica — $establishmentName")
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             targetPackage?.let { setPackage(it) }
         }

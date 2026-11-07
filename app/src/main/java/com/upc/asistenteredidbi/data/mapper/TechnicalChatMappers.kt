@@ -54,7 +54,8 @@ fun TechnicalChatResponseDto.toDomain(): TechnicalChatProgress {
                 it.nodeId, it.name ?: it.nodeId.substringAfter('#'), it.text.orEmpty(),
                 it.lastTry, it.canForce ?: false, it.message, it.enObra ?: false
             )
-        }
+        },
+        evidenceNotes = evidenceNotes.orEmpty()
     )
 }
 
@@ -93,6 +94,9 @@ fun ChatNodeDto.toDomain(): ChatNodePrompt = ChatNodePrompt(
     noneLabel = noneLabel,
     allowOther = allowOther ?: false,
     multiline = multiline ?: false,
+    editing = editing ?: false,
+    currentValue = currentValue,
+    currentLabel = currentLabel,
     unit = unit,
     optional = optional ?: false,
     evidence = evidence?.let {

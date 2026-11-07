@@ -130,6 +130,18 @@ class MinutaProposalFragment : Fragment() {
 
         viewModel.load()
         viewModel.loadAnalysis()
+        // «Ver topología» (Notificaciones): abre la minuta y baja hasta el mapa de red (QA F6).
+        if (arguments?.getBoolean("verTopologia") == true) binding.root.postDelayed({
+            val b = _binding ?: return@postDelayed
+            val card = b.tvTopologyDetail.parent as? View ?: return@postDelayed
+            var sv: View? = card.parent as? View
+            while (sv != null && sv !is android.widget.ScrollView) sv = sv.parent as? View
+            (sv as? android.widget.ScrollView)?.let { scroll ->
+                val r = android.graphics.Rect(); card.getDrawingRect(r)
+                scroll.offsetDescendantRectToMyCoords(card, r)
+                scroll.smoothScrollTo(0, r.top)
+            }
+        }, 900)
         addEditMapButton()
         showSavedMapIfAny()
         observeRole()
@@ -733,6 +745,7 @@ class MinutaProposalFragment : Fragment() {
                             putString("pdfPath", file.absolutePath)
                             putString("establishmentName", binding.tvEstablishmentName.text.toString())
                             putBoolean("preview", preview)
+                            putLong("minutaId", minutaId)
                         }
                     )
                 }

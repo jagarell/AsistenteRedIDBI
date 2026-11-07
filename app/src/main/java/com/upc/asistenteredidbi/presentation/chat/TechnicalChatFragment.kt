@@ -15,6 +15,7 @@ import android.view.inputmethod.EditorInfo
 import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.TextView
+import android.content.Intent
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
@@ -158,6 +159,7 @@ class TechnicalChatFragment : Fragment() {
                     else -> handleCardAction(action)
                 }
             },
+            onPhotoClick = { message -> showEvidenceOptions(message) },
             onMapClick = { map ->
                 val evidences = viewModel.uiState.value.evidences
                 com.upc.asistenteredidbi.presentation.map.MapZoomDialog.show(requireContext(), map) { image ->
@@ -211,7 +213,29 @@ class TechnicalChatFragment : Fragment() {
         binding.tvQuestionCounter.text = "Preparando evaluación"
     }
 
+    /** Dictar la respuesta por voz (QA D3/G16): se transcribe en el campo de texto y se revisa antes de enviar. */
+    private val dictar = registerForActivityResult(androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult()) { r ->
+        if (r.resultCode == android.app.Activity.RESULT_OK && _binding != null) {
+            val t = r.data?.getStringArrayListExtra(android.speech.RecognizerIntent.EXTRA_RESULTS)?.firstOrNull().orEmpty()
+            if (t.isNotBlank()) {
+                val et = binding.etTextInput
+                et.setText(if (et.text.isBlank()) t else et.text.toString().trimEnd() + " " + t)
+                et.setSelection(et.text.length)
+            }
+        }
+    }
+
+    private fun dictarRespuesta() {
+        val i = Intent(android.speech.RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+            putExtra(android.speech.RecognizerIntent.EXTRA_LANGUAGE_MODEL, android.speech.RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+            putExtra(android.speech.RecognizerIntent.EXTRA_LANGUAGE, "es-PE")
+            putExtra(android.speech.RecognizerIntent.EXTRA_PROMPT, "Di tu respuesta…")
+        }
+        runCatching { dictar.launch(i) }.onFailure { Toast.makeText(requireContext(), "Este teléfono no tiene dictado por voz. Escribe la respuesta.", Toast.LENGTH_LONG).show() }
+    }
+
     private fun setupClicks() {
+        binding.btnDictate.setOnClickListener { dictarRespuesta() }
         binding.btnBack.setOnClickListener { findNavController().navigateUp() }
 
         binding.btnSubmit.setOnClickListener { submitAnswer() }
@@ -651,6 +675,7 @@ class TechnicalChatFragment : Fragment() {
         binding.etTextInput.isVisible = needsTextInput
         // Con la evaluación terminada ya no se adjunta: el chat solo atiende cambios al mapa.
         binding.btnAttach.isVisible = !freeChat
+        binding.btnDictate.isVisible = true
         binding.containerTextRow.isVisible = needsTextInput
 
         if (freeChat) {
@@ -689,8 +714,15 @@ class TechnicalChatFragment : Fragment() {
             }
 
             TechnicalChatInputType.CHOICE -> {
+                // Editando: la respuesta anterior se puede mantener con un toque y su opción sale marcada (doc 0.0.15).
+                val actual = node?.takeIf { it.editing }?.currentValue
+                if (actual != null) {
+                    val etiqueta = node?.currentLabel?.takeIf { it.isNotBlank() } ?: actual.removePrefix("OTRO:")
+                    addQuickReplyChip("✓ Mantener: $etiqueta", filled = true) { viewModel.sendAnswer(actual, etiqueta) }
+                }
                 node?.options?.forEach { option ->
-                    addQuickReplyChip(option.label.replace(" (lo más común)", "").let { if (option.label.contains("(lo más común)")) option.label else it }) {
+                    val marca = if (actual != null && option.value == actual) "✓ " else ""
+                    addQuickReplyChip(marca + option.label.replace(" (lo más común)", "").let { if (option.label.contains("(lo más común)")) option.label else it }) {
                         if (option.other) askOther(node, option) else viewModel.sendAnswer(option.value, option.label.replace(" (lo más común)", "").replace(" (se ve en la foto)", ""))
                     }
                 }
@@ -708,7 +740,7 @@ class TechnicalChatFragment : Fragment() {
                 if (node?.keyboard == "date") {
                     node.defaultValue?.takeIf { it.length == 10 && node.required }?.let { iso ->
                         val shown = "${iso.substring(8, 10)}/${iso.substring(5, 7)}/${iso.substring(0, 4)}"
-                        addQuickReplyChip("Hoy · $shown", filled = true) { viewModel.sendAnswer(iso, shown) }
+                        addQuickReplyChip((if (node.editing) "✓ Mantener · " else "Hoy · ") + shown, filled = true) { viewModel.sendAnswer(iso, shown) }
                     }
                     addQuickReplyChip("📅 Elegir fecha") { showDatePicker(node.defaultValue) }
                     if (node.required == false) addQuickReplyChip("Sin fecha") { viewModel.sendAnswer("", "Sin fecha") }
@@ -780,11 +812,51 @@ class TechnicalChatFragment : Fragment() {
     }
 
     // ---- evidencias: Tomar foto / Subir foto / Saltar evidencia ----------------------------
+    /** 0.0.15: opciones al tocar la foto de una evidencia en el chat. */
+    private fun showEvidenceOptions(message: ChatMessage) {
+        val state = viewModel.uiState.value
+        val item = state.evidences.firstOrNull { it.messageId == message.id }
+        if (item == null) {
+            Toast.makeText(requireContext(), "Esta foto todavía no quedó guardada como evidencia.", Toast.LENGTH_SHORT).show()
+            return
+        }
+        val nota = viewModel.evidenceNote(item)
+        val opciones = arrayOf("Cambiar foto", if (nota.isBlank()) "Agregar descripción" else "Editar descripción")
+        androidx.appcompat.app.AlertDialog.Builder(requireContext())
+            .setTitle(item.title + if (nota.isNotBlank()) "\nDescripción: $nota" else "")
+            .setItems(opciones) { _, which ->
+                when (which) {
+                    0 -> androidx.appcompat.app.AlertDialog.Builder(requireContext())
+                        .setTitle("Cambiar foto · ${item.title}")
+                        .setMessage("Vuelves a pedir solo esta evidencia para subir otra foto. Tus demás respuestas y la descripción se mantienen.")
+                        .setPositiveButton("Cambiar foto") { _, _ -> viewModel.retakeEvidence(item.messageId) }
+                        .setNegativeButton("Cancelar", null)
+                        .show()
+                    else -> EvidenceNoteDialog.show(requireContext(), "Descripción · ${item.title}", nota) { t ->
+                        viewModel.saveEvidenceNote(viewModel.evidenceNodeId(item), t)
+                    }
+                }
+            }
+            .setNegativeButton("Cerrar", null)
+            .show()
+    }
+
     private fun addEvidenceActions(node: ChatNodePrompt?) {
         val ev = node?.evidence
         if (ev?.status == "REVIEW") return // la tarjeta del chat trae Correcto / Editar / No es correcto
         val status = ev?.status ?: "WAITING"
         val bar = binding.actionBar
+        // 0.0.15: descripción opcional antes de subir la foto («¿Qué muestra esta foto?»); viaja con la foto
+        val pendiente = viewModel.uiState.value.pendingDescription
+        bar.addView(TextView(requireContext()).apply {
+            text = if (pendiente.isNullOrBlank()) "✎ Agregar descripción (opcional)" else "✎ Descripción: $pendiente"
+            textSize = 13f
+            setTextColor(Color.parseColor("#1565C0"))
+            setPadding(0, 0, 0, dp(8))
+            setOnClickListener {
+                EvidenceNoteDialog.show(requireContext(), "Descripción de la foto", pendiente.orEmpty()) { t -> viewModel.setPendingDescription(t) }
+            }
+        })
         val takeLabel = if (status == "IL" || status == "WRONG") "Volver a tomar foto" else "Tomar foto"
         val pickLabel = if (status == "NC" || status == "WRONG") "Volver a subir foto" else "Subir foto"
         val row = LinearLayout(requireContext()).apply { orientation = LinearLayout.HORIZONTAL }
@@ -1164,6 +1236,7 @@ class TechnicalChatFragment : Fragment() {
         viewLifecycleOwner.lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.uiState.collect { state ->
+                    controlarPings(state)
                     renderLoading(state)
                     renderProgress(state)
                     renderMessages(state)
@@ -1173,6 +1246,33 @@ class TechnicalChatFragment : Fragment() {
                 }
             }
         }
+    }
+
+    // ---------- Ubicar el puerto del switch (QA D1/F3) ----------
+    // La pregunta dice «la app está enviando pings a su IP durante 20 s, 2 s sí y 2 s no»: aquí se envían de verdad, desde el celular
+    // conectado al WiFi del local, mientras la pregunta siga abierta. Así la luz del puerto parpadea al ritmo que se le pide al técnico.
+    private var pingJob: kotlinx.coroutines.Job? = null
+    private var pingNodo: String? = null
+
+    private fun controlarPings(state: TechnicalChatUiState) {
+        val node = state.node
+        val ip = node?.text?.let { Regex("""IP (\d{1,3}(?:\.\d{1,3}){3})\): la app est[aá] enviando pings""").find(it)?.groupValues?.get(1) }
+        val clave = if (ip != null) "${node.nodeId}|${node.scope}|$ip" else null
+        if (clave == pingNodo) return
+        pingJob?.cancel(); pingJob = null; pingNodo = clave
+        if (ip == null) return
+        pingJob = viewLifecycleOwner.lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            val fin = System.currentTimeMillis() + 20_000
+            while (System.currentTimeMillis() < fin) {
+                val ronda = System.currentTimeMillis() + 2_000        // 2 s con pings seguidos…
+                while (System.currentTimeMillis() < ronda) {
+                    runCatching { java.net.InetAddress.getByName(ip).isReachable(250) }
+                    kotlinx.coroutines.delay(50)
+                }
+                kotlinx.coroutines.delay(2_000)                        // …y 2 s sin nada
+            }
+        }
+        android.widget.Toast.makeText(requireContext(), "Enviando pings a $ip durante 20 s…", android.widget.Toast.LENGTH_SHORT).show()
     }
 
     private fun renderLoading(state: TechnicalChatUiState) {
@@ -1341,6 +1441,7 @@ class TechnicalChatFragment : Fragment() {
     }
 
     override fun onDestroyView() {
+        pingJob?.cancel(); pingNodo = null
         binding.rvMessages.adapter = null
         _binding = null
         super.onDestroyView()

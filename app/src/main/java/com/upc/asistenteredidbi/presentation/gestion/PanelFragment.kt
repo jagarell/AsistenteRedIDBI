@@ -36,6 +36,7 @@ import javax.inject.Inject
 class PanelFragment : Fragment() {
 
     @Inject lateinit var repo: Asistente007Repository
+    @Inject lateinit var api007: com.upc.asistenteredidbi.data.remote.Api007Service
     private lateinit var body: LinearLayout
     private lateinit var progress: ProgressBar
     private var periodo = "hoy"
@@ -100,19 +101,30 @@ class PanelFragment : Fragment() {
         val ind = datos["indicadores"] as? Map<String, Any?>
         val total = num(ind, "total"); val ant = num(ind, "totalAnterior")
         val delta = if (ant == 0L) "sin periodo anterior" else (if (total >= ant) "+" else "") + (total - ant) + " vs periodo anterior"
+        val conAnalisis = num(ind, "pendientesConAnalisis")
+        val ahorro = (ind?.get("ahorroPct") as? Number)?.toInt()
+        // título, valor, subtítulo, color del borde, color de fondo del subtítulo, color del texto del subtítulo
         val tarjetas = listOf(
-            Triple("Total minutas", total.toString(), delta),
-            Triple("Por validar", num(ind, "porValidar").toString(), "${num(ind, "porValidarRiesgo")} con riesgo"),
-            Triple("Pendientes de cerrar", num(ind, "pendientes").toString(), "sin terminar o sin solicitar validación"),
-            Triple("En revisión", num(ind, "enRevision").toString(), "devueltas al técnico"),
-            Triple("Validadas", num(ind, "validadas").toString(), "${num(ind, "validadasPct")} % del total"),
-            Triple("Horas ahorradas", "%.1f".format((ind?.get("horasAhorradas") as? Number)?.toDouble() ?: 0.0), "1,5 h menos por minuta")
+            listOf("Total minutas", total.toString(), when { ant == 0L -> "Sin periodo anterior"; total == ant -> "Igual que el periodo anterior"; else -> (if (total > ant) "+" else "") + (total - ant) + " vs periodo anterior" }, 0xFF1565C0.toInt(), 0xFFE8F0FC.toInt(), 0xFF1565C0.toInt()),
+            listOf("Por validar", num(ind, "porValidar").toString(), "${num(ind, "porValidarRiesgo")} con riesgo", 0xFFB45309.toInt(), 0xFFFFF3E0.toInt(), 0xFFB45309.toInt()),
+            listOf("Pendientes de cerrar", num(ind, "pendientes").toString(), if (conAnalisis > 0) "$conAnalisis con análisis IA listo" else "Sin análisis IA listo", 0xFF6B7280.toInt(), 0xFFEEF1F6.toInt(), 0xFF4A5A72.toInt()),
+            listOf("En revisión", num(ind, "enRevision").toString(), "Devueltas al técnico", 0xFFC62828.toInt(), 0xFFFBE4E2.toInt(), 0xFF9E2B23.toInt()),
+            listOf("Validadas", num(ind, "validadas").toString(), "${num(ind, "validadasPct")} % del total", 0xFF2E7D32.toInt(), 0xFFE8F5E9.toInt(), 0xFF2E7D32.toInt()),
+            listOf("Horas ahorradas", "%.1f".format((ind?.get("horasAhorradas") as? Number)?.toDouble() ?: 0.0), if (ahorro != null) "−$ahorro % por minuta" else "Aún sin tiempos registrados", 0xFF1565C0.toInt(), 0xFFE8F0FC.toInt(), 0xFF1565C0.toInt())
         )
         tarjetas.chunked(2).forEach { par ->
             val fila = Ui007.row(ctx).apply { gravity = Gravity.TOP }
-            par.forEach { (t, v, s) ->
-                val c = Ui007.card(ctx).apply { layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply { topMargin = dp(ctx, 10); marginEnd = dp(ctx, 8) } }
-                c.addView(Ui007.text(ctx, t, 12f, Ui007.GREY)); c.addView(Ui007.text(ctx, v, 26f, Ui007.BLUE, true)); c.addView(Ui007.text(ctx, s, 11f, Ui007.GREY))
+            par.forEach { t ->
+                // Borde de color arriba, título en mayúsculas y subtítulo en un chip de color (como el simulador).
+                val borde = t[3] as Int
+                val c = Ui007.card(ctx).apply {
+                    layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply { topMargin = dp(ctx, 10); marginEnd = dp(ctx, 8) }
+                    setPadding(dp(ctx, 12), 0, dp(ctx, 12), dp(ctx, 12))
+                }
+                c.addView(View(ctx).apply { setBackgroundColor(borde) }, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(ctx, 4)))
+                c.addView(Ui007.text(ctx, (t[0] as String).uppercase(), 11f, Ui007.GREY, true).apply { setPadding(0, dp(ctx, 10), 0, 0) })
+                c.addView(Ui007.text(ctx, t[1] as String, 26f, Ui007.INK, true))
+                c.addView(Ui007.pill(ctx, t[2] as String, t[4] as Int, t[5] as Int).apply { (layoutParams as? LinearLayout.LayoutParams)?.topMargin = dp(ctx, 4) })
                 fila.addView(c)
             }
             body.addView(fila)
@@ -134,6 +146,7 @@ class PanelFragment : Fragment() {
         }
         body.addView(c)
 
+        avanceDelDia()
         equipo()
         porValidarPrimero()
         actividad()
@@ -281,7 +294,33 @@ class PanelFragment : Fragment() {
     }
 
     /** Avance y tiempos del equipo: por técnico, minutas por estado y horas promedio por minuta frente a la meta de 2 h. */
+    /** «Avance · meta: N por técnico al día hábil»: barra y «Meta cumplida / Faltan» por técnico (QA G6). */
     @Suppress("UNCHECKED_CAST")
+    private fun avanceDelDia() {
+        val ctx = requireContext()
+        val l = extras["avanceHoy"] as? List<Map<String, Any?>> ?: return
+        val meta = num(extras, "metaDiaria").toInt().coerceAtLeast(1)
+        body.addView(titulo("Avance · meta: $meta por técnico al día hábil"))
+        val c = Ui007.card(ctx)
+        if (l.isEmpty()) c.addView(Ui007.text(ctx, "No hay técnicos a tu cargo.", 14f, Ui007.GREY))
+        l.forEach { t ->
+            val hechas = num(t, "terminadas").toInt(); val curso = num(t, "enCurso").toInt()
+            val cumplida = hechas >= meta
+            val fila = LinearLayout(ctx).apply { orientation = LinearLayout.VERTICAL; setPadding(0, dp(ctx, 8), 0, dp(ctx, 6)) }
+            val cab = Ui007.row(ctx)
+            cab.addView(Ui007.text(ctx, t["tecnico"].toString(), 14f, Ui007.INK, true), LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+            cab.addView(Ui007.text(ctx, if (cumplida) "Meta cumplida $hechas/$meta" else "Faltan ${meta - hechas}" + if (curso > 0) " · $curso en curso" else "", 12f,
+                if (cumplida) 0xFF2E7D32.toInt() else 0xFFB45309.toInt(), true))
+            fila.addView(cab)
+            fila.addView(ProgressBar(ctx, null, android.R.attr.progressBarStyleHorizontal).apply {
+                max = meta; progress = hechas.coerceAtMost(meta)
+                progressTintList = android.content.res.ColorStateList.valueOf(if (cumplida) 0xFF2E7D32.toInt() else Ui007.BLUE)
+            }, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(ctx, 8)).apply { topMargin = dp(ctx, 6) })
+            c.addView(fila)
+        }
+        body.addView(c)
+    }
+
     private fun equipo() {
         val ctx = requireContext()
         body.addView(titulo("Avance y tiempos del equipo"))
@@ -319,7 +358,7 @@ class PanelFragment : Fragment() {
                 setOnClickListener {
                     val ev = num(m, "evaluationId")
                     if (ev > 0) findNavController().navigate(R.id.minutaProposalFragment, bundleOf("evaluationId" to ev.toString(), "minutaId" to num(m, "id")))
-                    else Toast.makeText(ctx, "Se abre desde Notificaciones o el Asistente IA.", Toast.LENGTH_SHORT).show()
+                    else com.upc.asistenteredidbi.presentation.common.HojaMinuta.abrir(this@PanelFragment, api007, num(m, "id").toLong())
                 }
             }
             f.addView(Ui007.text(ctx, "$p %", 13f, if (p < 60) 0xFFC62828.toInt() else 0xFFB45309.toInt(), true), LinearLayout.LayoutParams(dp(ctx, 52), LinearLayout.LayoutParams.WRAP_CONTENT))
@@ -327,6 +366,7 @@ class PanelFragment : Fragment() {
             f.addView(Ui007.text(ctx, "›", 18f, Ui007.GREY))
             c.addView(f)
         }
+        c.addView(Ui007.button(ctx, "Ver todas", false) { findNavController().navigate(R.id.historialFragment, bundleOf("tab" to "general")) })
         body.addView(c)
     }
 
@@ -338,7 +378,24 @@ class PanelFragment : Fragment() {
         val c = Ui007.card(ctx)
         if (l.isEmpty()) c.addView(Ui007.text(ctx, "Todavía no hay movimientos.", 14f, Ui007.GREY))
         l.forEach { a -> c.addView(Ui007.text(ctx, "${a["ts"]} · ${a["usuario"]}\n${a["accion"]}", 12.5f, Ui007.INK).apply { setPadding(0, dp(ctx, 6), 0, dp(ctx, 2)) }) }
+        c.addView(Ui007.button(ctx, "Ver toda la actividad", false) { toda() })
         body.addView(c)
+    }
+
+    /** «Ver toda la actividad»: la bitácora completa de la empresa. */
+    private fun toda() {
+        val ctx = requireContext()
+        viewLifecycleOwner.lifecycleScope.launch {
+            val l = runCatching { api007.bitacora() }.getOrNull()
+            if (l == null) { android.widget.Toast.makeText(ctx, "No se pudo abrir la actividad.", android.widget.Toast.LENGTH_SHORT).show(); return@launch }
+            val sheet = com.google.android.material.bottomsheet.BottomSheetDialog(ctx)
+            val col = LinearLayout(ctx).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(ctx, 18), dp(ctx, 18), dp(ctx, 18), dp(ctx, 24)) }
+            col.addView(Ui007.text(ctx, "Actividad de la empresa", 18f, Ui007.INK, true))
+            if (l.isEmpty()) col.addView(Ui007.text(ctx, "Todavía no hay movimientos.", 14f, Ui007.GREY))
+            l.take(200).forEach { a -> col.addView(Ui007.text(ctx, "${a["ts"] ?: a["fecha"] ?: ""} · ${a["usuario"] ?: a["usuarioNombre"] ?: ""}\n${a["accion"] ?: a["detalle"] ?: ""}", 12.5f, Ui007.INK).apply { setPadding(0, dp(ctx, 8), 0, 0) }) }
+            sheet.setContentView(ScrollView(ctx).apply { addView(col) })
+            sheet.show()
+        }
     }
 
     /** Solo administrador (vienen del resumen de la 0.0.7): por supervisor y plan y usuarios. */
@@ -346,21 +403,17 @@ class PanelFragment : Fragment() {
     private fun adminExtras() {
         val ctx = requireContext()
         val sup = extras["porSupervisor"] as? List<Map<String, Any?>> ?: return
-        body.addView(titulo("Por supervisor"))
+        body.addView(titulo("Supervisores · horas promedio en validar (meta 24 h)"))
         val c = Ui007.card(ctx)
         if (sup.isEmpty()) c.addView(Ui007.text(ctx, "Aún no hay supervisores.", 14f, Ui007.GREY))
         sup.forEach { s ->
             val f = Ui007.row(ctx).apply { setPadding(0, dp(ctx, 6), 0, dp(ctx, 6)) }
+            val h = (s["horasEspera"] as? Number)?.toDouble()
             f.addView(Ui007.text(ctx, s["supervisor"].toString(), 14f, Ui007.INK, true), LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
-            f.addView(Ui007.text(ctx, "${num(s, "tecnicos")} técnicos · ${num(s, "porValidar")} por validar", 13f, Ui007.GREY))
+            f.addView(Ui007.text(ctx, "${num(s, "porValidar")} por validar · " + (h?.let { "$it h" } ?: "—"), 13f, if (h != null && h > 24) 0xFFB45309.toInt() else Ui007.GREY))
             c.addView(f)
         }
         body.addView(c)
-        body.addView(titulo("Equipo y accesos"))
-        val cu = Ui007.card(ctx)
-        cu.addView(Ui007.text(ctx, "${num(extras, "usuarios")} usuarios en la empresa", 14f, Ui007.INK, true))
-        cu.addView(Ui007.button(ctx, "Equipo y accesos", false) { findNavController().navigate(R.id.equipoFragment) })
-        body.addView(cu)
     }
 
     private fun elegirRango() {

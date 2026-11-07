@@ -75,7 +75,8 @@ class ChatRepositoryImpl @Inject constructor(
         photos: List<File>,
         mode: String,
         nota: String?,
-        nodeId: String?
+        nodeId: String?,
+        descripcion: String?
     ): Result<TechnicalChatProgress> = safeCall {
         api.answerTechnicalChatWithPhotos(
             evaluationId = evaluationId,
@@ -83,8 +84,18 @@ class ChatRepositoryImpl @Inject constructor(
             mode = MultipartUtils.textPart(mode),
             files = photos.map { MultipartUtils.filePart(it, partName = "files") },
             nota = nota?.takeIf { it.isNotBlank() }?.let { MultipartUtils.textPart(it) },
-            nodeId = nodeId?.let { MultipartUtils.textPart(it) }
+            nodeId = nodeId?.let { MultipartUtils.textPart(it) },
+            descripcion = descripcion?.takeIf { it.isNotBlank() }?.let { MultipartUtils.textPart(it) }
         ).toDomain()
+    }
+
+    override suspend fun saveEvidenceNote(
+        evaluationId: Long,
+        state: String,
+        nodeId: String,
+        descripcion: String
+    ): Result<TechnicalChatProgress> = safeCall {
+        api.evidenceNote(evaluationId, mapOf("state" to state, "nodeId" to nodeId, "descripcion" to descripcion)).toDomain()
     }
 
     override suspend fun readChatAttachment(

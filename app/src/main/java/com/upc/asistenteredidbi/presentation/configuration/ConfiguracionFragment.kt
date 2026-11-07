@@ -4,6 +4,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.TextView
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
@@ -155,12 +156,11 @@ class ConfiguracionFragment : Fragment() {
         binding.rowCambiarPassword.apply {
             ivRowIcon.setImageResource(R.drawable.ic_lock_outline)
             tvRowTitle.text = "Cambiar Contraseña"
-            root.setOnClickListener { showComingSoon() }
+            root.setOnClickListener { cambiarClave() }
         }
         binding.rowDispositivos.apply {
             ivRowIcon.setImageResource(R.drawable.ic_devices)
             tvRowTitle.text = "Dispositivos Activos"
-            root.setOnClickListener { showComingSoon() }
         }
         binding.rowIdioma.apply {
             ivRowIcon.setImageResource(R.drawable.ic_language)
@@ -181,12 +181,13 @@ class ConfiguracionFragment : Fragment() {
         binding.rowSoporte.apply {
             ivRowIcon.setImageResource(R.drawable.ic_help)
             tvRowTitle.text = "Ayuda"
-            root.setOnClickListener { showComingSoon() }
+            tvRowSubtitle.visibility = View.VISIBLE
+            tvRowSubtitle.text = "Pregúntale al Asistente IA"
+            root.setOnClickListener { findNavController().navigate(R.id.asistenteFragment) }
         }
     }
 
     private fun setupSwitches() {
-        binding.switchTwoFactor.setOnCheckedChangeListener { _, checked -> viewModel.setTwoFactorAuth(checked) }
         binding.switchDarkMode.isChecked = (resources.configuration.uiMode and
             android.content.res.Configuration.UI_MODE_NIGHT_MASK) == android.content.res.Configuration.UI_MODE_NIGHT_YES
         binding.switchDarkMode.setOnCheckedChangeListener { _, checked ->
@@ -196,9 +197,126 @@ class ConfiguracionFragment : Fragment() {
                 else androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_NO
             )
         }
-        binding.switchPush.setOnCheckedChangeListener { _, checked -> viewModel.setPushNotifications(checked) }
-        binding.switchEmail.setOnCheckedChangeListener { _, checked -> viewModel.setEmailNotifications(checked) }
-        binding.switchSystemAlerts.setOnCheckedChangeListener { _, checked -> viewModel.setSystemAlerts(checked) }
+        // QA F5: «Autenticación de 2 factores», «Push», «Email» y «Alertas de sistema» se guardaban en el celular y nada los leía
+        // (el de 2 factores daba una falsa sensación de seguridad). Se quitan; lo que sí funciona es «Avisarme cuando…» (se guarda en la
+        // cuenta y el servidor lo respeta al enviar), con un interruptor general que apaga o enciende todo.
+        (binding.switchTwoFactor.parent as View).visibility = View.GONE
+        (binding.rowCambiarPassword.root.parent as ViewGroup).let { card ->
+            val i = card.indexOfChild(binding.switchTwoFactor.parent as View)
+            card.getChildAt(i - 1)?.visibility = View.GONE   // línea que los separaba
+        }
+        ocultarSwitchesSinEfecto()
+        reordenarSecciones()
+        avisosEnCuenta()
+    }
+
+    /** Deja en la tarjeta de notificaciones solo el Modo noche (los demás interruptores no hacían nada). */
+    private fun ocultarSwitchesSinEfecto() {
+        val tarjeta = binding.switchPush.parent.parent as ViewGroup
+        for (k in 0 until tarjeta.childCount) {
+            val h = tarjeta.getChildAt(k)
+            if (h.findViewById<View>(R.id.switchDarkMode) == null) h.visibility = View.GONE
+        }
+    }
+
+    /** Orden del simulador (QA G11): Notificaciones va antes que Seguridad. */
+    private fun reordenarSecciones() {
+        val padre = binding.rowCambiarPassword.root.parent.parent as? ViewGroup ?: return
+        val segLabel = (0 until padre.childCount).map { padre.getChildAt(it) }
+            .firstOrNull { it is TextView && it.text.toString() == "SEGURIDAD" } ?: return
+        val notLabel = (0 until padre.childCount).map { padre.getChildAt(it) }
+            .firstOrNull { it is TextView && it.text.toString() == "NOTIFICACIONES" } ?: return
+        val notCard = padre.getChildAt(padre.indexOfChild(notLabel) + 1)
+        padre.removeView(notLabel); padre.removeView(notCard)
+        val i = padre.indexOfChild(segLabel)
+        padre.addView(notLabel, i); padre.addView(notCard, i + 1)
+        this.tarjetaNotificaciones = notCard as? ViewGroup
+    }
+
+    private var tarjetaNotificaciones: ViewGroup? = null
+
+    /** «Recibir notificaciones» (apaga o enciende todo) y la lista «Avisarme cuando…» (QA G13), guardadas en la cuenta. */
+    private fun avisosEnCuenta() {
+        val ctx = requireContext()
+        val tarjeta = tarjetaNotificaciones ?: return
+        val dens = resources.displayMetrics.density
+        fun px(v: Int) = (v * dens).toInt()
+        val cont = android.widget.LinearLayout(ctx).apply { orientation = android.widget.LinearLayout.VERTICAL }
+        tarjeta.addView(cont, 0)
+        viewLifecycleOwner.lifecycleScope.launch {
+            val r = runCatching { api007.avisos() }.getOrNull()
+            if (_binding == null) return@launch
+            @Suppress("UNCHECKED_CAST")
+            val ops = (r?.get("opciones") as? List<Map<String, Any?>>).orEmpty()
+            if (ops.isEmpty()) {
+                cont.addView(TextView(ctx).apply { text = "No se pudieron cargar tus avisos."; textSize = 13f; setPadding(px(16), px(12), px(16), px(12)) })
+                return@launch
+            }
+            val switches = mutableListOf<Pair<String, androidx.appcompat.widget.SwitchCompat>>()
+            var masivo = false
+            fun fila(texto: String, activo: Boolean, grueso: Boolean, alCambiar: (Boolean) -> Unit): androidx.appcompat.widget.SwitchCompat {
+                val sw = androidx.appcompat.widget.SwitchCompat(ctx).apply { isChecked = activo }
+                val f = android.widget.LinearLayout(ctx).apply {
+                    orientation = android.widget.LinearLayout.HORIZONTAL; gravity = android.view.Gravity.CENTER_VERTICAL
+                    setPadding(px(16), px(10), px(16), px(10))
+                    addView(TextView(ctx).apply { this.text = texto; textSize = if (grueso) 15f else 13.5f; if (grueso) typeface = android.graphics.Typeface.DEFAULT_BOLD }, android.widget.LinearLayout.LayoutParams(0, -2, 1f))
+                    addView(sw)
+                }
+                cont.addView(f)
+                sw.setOnCheckedChangeListener { _, on -> if (!masivo) alCambiar(on) }
+                return sw
+            }
+            val general = fila("Recibir notificaciones", ops.any { it["activo"] == true }, true) { on ->
+                masivo = true
+                switches.forEach { it.second.isChecked = on }
+                masivo = false
+                viewLifecycleOwner.lifecycleScope.launch {
+                    runCatching { api007.avisosGuardar(switches.associate { it.first to on }) }
+                        .onFailure { Toast.makeText(ctx, "No se pudo guardar.", Toast.LENGTH_SHORT).show() }
+                }
+            }
+            cont.addView(TextView(ctx).apply { text = "Avisarme cuando…"; textSize = 12f; setPadding(px(16), px(4), px(16), px(2)) })
+            ops.forEach { o ->
+                val clave = o["clave"].toString()
+                val sw = fila(o["texto"].toString(), o["activo"] == true, false) { on ->
+                    viewLifecycleOwner.lifecycleScope.launch {
+                        runCatching { api007.avisosGuardar(mapOf(clave to on)) }.onFailure { Toast.makeText(ctx, "No se pudo guardar.", Toast.LENGTH_SHORT).show() }
+                    }
+                    masivo = true; general.isChecked = switches.any { it.second.isChecked } || on; masivo = false
+                }
+                switches += clave to sw
+            }
+        }
+    }
+
+    /** Cambiar contraseña con la sesión iniciada: pide la actual y la nueva (mínimo 8 caracteres). */
+    private fun cambiarClave() {
+        val ctx = requireContext()
+        val dens = resources.displayMetrics.density
+        val col = android.widget.LinearLayout(ctx).apply { orientation = android.widget.LinearLayout.VERTICAL; setPadding((20 * dens).toInt(), (8 * dens).toInt(), (20 * dens).toInt(), 0) }
+        fun campo(pista: String) = android.widget.EditText(ctx).apply {
+            hint = pista; inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD
+        }.also { col.addView(it) }
+        val actual = campo("Contraseña actual"); val nueva = campo("Nueva contraseña (mínimo 8)"); val repite = campo("Repite la nueva contraseña")
+        androidx.appcompat.app.AlertDialog.Builder(ctx).setTitle("Cambiar contraseña").setView(col)
+            .setNegativeButton("Cancelar", null)
+            .setPositiveButton("Guardar") { _, _ ->
+                val a = actual.text.toString(); val n = nueva.text.toString()
+                when {
+                    a.isBlank() -> Toast.makeText(ctx, "Escribe tu contraseña actual.", Toast.LENGTH_SHORT).show()
+                    n.length < 8 -> Toast.makeText(ctx, "La nueva contraseña debe tener al menos 8 caracteres.", Toast.LENGTH_SHORT).show()
+                    n != repite.text.toString() -> Toast.makeText(ctx, "Las contraseñas nuevas no coinciden.", Toast.LENGTH_SHORT).show()
+                    else -> viewLifecycleOwner.lifecycleScope.launch {
+                        runCatching { api007.cambiarClave(mapOf("currentPassword" to a, "newPassword" to n)) }
+                            .onSuccess { Toast.makeText(ctx, "Contraseña actualizada.", Toast.LENGTH_LONG).show() }
+                            .onFailure { e ->
+                                val msg = (e as? retrofit2.HttpException)?.response()?.errorBody()?.string()
+                                    ?.let { Regex(""""message"\s*:\s*"([^"]+)"""").find(it)?.groupValues?.get(1) }
+                                Toast.makeText(ctx, msg ?: "No se pudo cambiar la contraseña.", Toast.LENGTH_LONG).show()
+                            }
+                    }
+                }
+            }.show()
     }
 
     private fun showComingSoon() {

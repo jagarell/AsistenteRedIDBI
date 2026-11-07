@@ -132,8 +132,22 @@ class GestionCuenta(
         chipsFrec()
         cc.addView(Ui007.text(ctx, "Frecuencia de la copia automática", 13f, Ui007.GREY).apply { setPadding(0, 0, 0, dp(ctx, 6)) })
         cc.addView(android.widget.HorizontalScrollView(ctx).apply { isHorizontalScrollBarEnabled = false; addView(chips) })
+        // Hora de la copia automática e «Incluir fotos» (QA G12): el servidor ya los guardaba; faltaba pedirlos.
+        var hora = (copia["hora"] as? Number)?.toInt() ?: 2
+        val horaSel = android.widget.Spinner(ctx).apply {
+            adapter = android.widget.ArrayAdapter(ctx, android.R.layout.simple_spinner_dropdown_item, (0..23).map { "%02d:00".format(it) })
+            setSelection(hora)
+            onItemSelectedListener = object : android.widget.AdapterView.OnItemSelectedListener {
+                override fun onItemSelected(p: android.widget.AdapterView<*>?, v: android.view.View?, pos: Int, id: Long) { hora = pos }
+                override fun onNothingSelected(p: android.widget.AdapterView<*>?) {}
+            }
+        }
+        val fotos = android.widget.CheckBox(ctx).apply { text = "Incluir fotos"; isChecked = copia["incluyeFotos"] == true }
+        cc.addView(Ui007.text(ctx, "Hora de la copia automática", 13f, Ui007.GREY).apply { setPadding(0, dp(ctx, 10), 0, 0) })
+        cc.addView(horaSel)
+        cc.addView(fotos)
         cc.addView(correo)
-        cc.addView(Ui007.button(ctx, "Guardar", true) { accion("No se pudo guardar (revisa el correo).") { api.empresaCopia(mapOf("frecuencia" to frec, "correo" to correo.text.toString())) } })
+        cc.addView(Ui007.button(ctx, "Guardar", true) { accion("No se pudo guardar (revisa el correo).") { api.empresaCopia(mapOf("frecuencia" to frec, "correo" to correo.text.toString(), "hora" to hora, "incluyeFotos" to fotos.isChecked)) } })
         cc.addView(Ui007.button(ctx, "Hacer copia ahora", false) {
             scope.launch { runCatching { api.copiaAhora() }.onSuccess { Toast.makeText(ctx, "Copia generada.", Toast.LENGTH_SHORT).show(); cargar() }.onFailure { Toast.makeText(ctx, "No se pudo generar la copia.", Toast.LENGTH_LONG).show() } }
         })
