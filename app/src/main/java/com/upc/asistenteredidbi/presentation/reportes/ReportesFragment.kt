@@ -288,8 +288,98 @@ class ReportesFragment : Fragment() {
 
     // ---------- Minutas + trazabilidad ----------
 
+    /**
+     * «Lo que falta · por prioridad» (doc 0.0.7 §17): al filtrar por un técnico, primero lo que falta validar (menor % primero),
+     * luego las rechazadas por corregir, las pendientes de solicitar la validación y las que siguen sin terminar.
+     */
+    private fun loQueFalta(s: ReportesUiState) {
+        val ctx = requireContext()
+        val tec = s.filtro.tecnico.singleOrNull() ?: return
+        val lista = s.data?.minutas.orEmpty()
+        val items = buildList {
+            lista.filter { it.estado == "Completa" }.sortedBy { it.puntaje ?: 100 }.forEach { add("Falta validar" to it) }
+            lista.filter { it.estado == "En revisión" }.forEach { add("Rechazada · por corregir" to it) }
+            lista.filter { it.estado == "Pendiente" }.forEach { add("Pendiente de solicitar la validación" to it) }
+        }
+        val sinTerminar = s.data?.borradores.orEmpty().filter { it["tecnico"]?.toString().equals(tec, ignoreCase = true) }
+        if (items.isEmpty() && sinTerminar.isEmpty()) return
+        val c = Ui007.card(ctx)
+        c.addView(Ui007.text(ctx, "Lo que falta · por prioridad", 15f, Ui007.INK, true))
+        var n = 1
+        items.forEach { (quien, m) ->
+            val f = Ui007.row(ctx).apply { setPadding(0, dp(ctx, 8), 0, 0); setOnClickListener { vm.select(m) } }
+            f.addView(Ui007.text(ctx, "${n++}. ${m.local ?: "—"}\n$quien" + (m.puntaje?.let { " · $it %" } ?: ""), 13.5f, Ui007.INK), LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+            f.addView(Ui007.text(ctx, "›", 18f, Ui007.GREY))
+            c.addView(f)
+        }
+        sinTerminar.forEach { b ->
+            val f = Ui007.row(ctx).apply { setPadding(0, dp(ctx, 8), 0, 0); setOnClickListener { fichaBorrador(b) } }
+            f.addView(Ui007.text(ctx, "${n++}. ${b["local"]}\nBorrador · sin minuta · ${(b["avance"] as? Number)?.toInt() ?: 0} %", 13.5f, Ui007.INK), LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+            f.addView(Ui007.text(ctx, "›", 18f, Ui007.GREY))
+            c.addView(f)
+        }
+        body.addView(c)
+    }
+
+    /** Evaluaciones que se quedaron en el levantamiento: Borrador, sin puntaje ni criticidad, con su avance. */
+    private fun borradores(s: ReportesUiState) {
+        val ctx = requireContext()
+        val estados = s.filtro.estado
+        if (estados.isNotEmpty() && "Borrador" !in estados && "Pendiente" !in estados) return
+        val tec = s.filtro.tecnico
+        val bs = s.data?.borradores.orEmpty().filter { tec.isEmpty() || tec.any { t -> t.equals(it["tecnico"]?.toString(), ignoreCase = true) } }
+        if (bs.isEmpty()) return
+        body.addView(Ui007.text(ctx, "Borradores · sin minuta todavía (${bs.size})", 15f, Ui007.INK, true).apply { setPadding(0, dp(ctx, 16), 0, 0) })
+        bs.forEach { b ->
+            val avance = (b["avance"] as? Number)?.toInt() ?: 0
+            val c = Ui007.card(ctx)
+            c.addView(Ui007.text(ctx, b["local"]?.toString() ?: "—", 15f, Ui007.INK, true))
+            c.addView(Ui007.text(ctx, listOfNotNull(b["fecha"]?.toString(), b["tecnico"]?.toString()).joinToString(" · "), 12f, Ui007.GREY))
+            val pills = Ui007.row(ctx).apply { setPadding(0, dp(ctx, 6), 0, 0) }
+            Ui007.estadoColors("Borrador").let { (bg, fg) -> pills.addView(Ui007.pill(ctx, "Borrador", bg, fg)) }
+            c.addView(pills)
+            c.addView(android.widget.ProgressBar(ctx, null, android.R.attr.progressBarStyleHorizontal).apply { max = 100; progress = avance; layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(ctx, 8)).apply { topMargin = dp(ctx, 8) } })
+            c.addView(Ui007.text(ctx, "$avance % · sin minuta todavía", 12f, Ui007.GREY).apply { setPadding(0, dp(ctx, 4), 0, 0) })
+            c.setOnClickListener { fichaBorrador(b) }
+            body.addView(c)
+        }
+    }
+
+    /** Ficha de solo lectura «Borrador · sin terminar»: avance, lo levantado y, según el rol, pedir que la termine o continuar el Chat IA. */
+    private fun fichaBorrador(b: Map<String, Any?>) {
+        val ctx = requireContext()
+        val ev = (b["evaluationId"] as? Number)?.toLong() ?: return
+        viewLifecycleOwner.lifecycleScope.launch {
+            val r = runCatching { apiAcceso.levantamiento(ev) }.getOrNull().orEmpty()
+            val sheet = com.google.android.material.bottomsheet.BottomSheetDialog(ctx)
+            val col = LinearLayout(ctx).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(ctx, 18), dp(ctx, 18), dp(ctx, 18), dp(ctx, 24)) }
+            col.addView(Ui007.text(ctx, "Borrador · sin terminar", 18f, Ui007.INK, true))
+            col.addView(Ui007.text(ctx, "${(r["avance"] as? Number)?.toInt() ?: (b["avance"] as? Number)?.toInt() ?: 0} % del levantamiento", 14f, Ui007.BLUE, true).apply { setPadding(0, dp(ctx, 4), 0, 0) })
+            col.addView(Ui007.text(ctx, "Todavía no es una minuta: no tiene puntaje, no cuenta en «Por validar» y no se puede compartir.", 12.5f, Ui007.GREY).apply { setPadding(0, dp(ctx, 6), 0, dp(ctx, 8)) })
+            col.addView(Ui007.text(ctx, "LO QUE YA SE LEVANTÓ", 11f, Ui007.GREY, true))
+            listOf("Local" to r["local"], "Técnico" to r["tecnico"], "Dirección" to r["direccion"], "Encargado" to r["contacto"], "Celular" to r["telefono"], "Rubro" to r["rubro"])
+                .forEach { (k, v) -> if (v != null && v.toString().isNotBlank()) col.addView(Ui007.text(ctx, "$k: $v", 13.5f, Ui007.INK).apply { setPadding(0, dp(ctx, 3), 0, 0) }) }
+            val gestiona = vm.state.value.tabs.any { it.key == "general" || it.key == "tecnicos" }
+            if (gestiona) {
+                col.addView(Ui007.button(ctx, "Pedir al técnico que la termine", true) {
+                    viewLifecycleOwner.lifecycleScope.launch {
+                        runCatching { notificaciones.recordatorio(mapOf("evaluationId" to ev, "accion" to "terminar")) }
+                            .onSuccess { Toast.makeText(ctx, "✓ Técnico avisado", Toast.LENGTH_SHORT).show(); sheet.dismiss() }
+                            .onFailure { Toast.makeText(ctx, "No se pudo enviar el aviso.", Toast.LENGTH_SHORT).show() }
+                    }
+                })
+            } else {
+                col.addView(Ui007.button(ctx, "Continuar en el Chat IA", true) { sheet.dismiss(); findNavController().navigate(R.id.technicalChatFragment, bundleOf("evaluationId" to ev.toString())) })
+            }
+            sheet.setContentView(ScrollView(ctx).apply { addView(col) })
+            sheet.show()
+        }
+    }
+
     private fun minutas(s: ReportesUiState) {
         val ctx = requireContext()
+        loQueFalta(s)
+        borradores(s)
         val list = s.data?.minutas.orEmpty()
         body.addView(Ui007.text(ctx, "Minutas (${s.data?.total ?: list.size})", 15f, Ui007.INK, true).apply { setPadding(0, dp(ctx, 16), 0, 0) })
         if (list.isEmpty() && !s.loading) {
@@ -299,7 +389,7 @@ class ReportesFragment : Fragment() {
             val c = Ui007.card(ctx)
             if (s.selected?.id == m.id) c.background = Ui007.round(0xFFF3F7FE.toInt(), 14, ctx, 0xFFA9C2EC.toInt())
             c.addView(Ui007.text(ctx, m.local ?: "—", 15f, Ui007.INK, true))
-            c.addView(Ui007.text(ctx, listOfNotNull(m.fecha, m.tecnico, m.rubro, if (m.tipo == "SOPORTE") "Soporte" else null).joinToString(" · "), 12f, Ui007.GREY))
+            c.addView(Ui007.text(ctx, listOfNotNull(m.fecha?.let { fechaCorta(it) }, m.tecnico, m.rubro, if (m.tipo == "SOPORTE") "Soporte" else null).joinToString(" · "), 12f, Ui007.GREY))
             val pills = Ui007.row(ctx).apply { setPadding(0, dp(ctx, 6), 0, 0) }
             Ui007.estadoColors(m.estado).let { (bg, fg) -> pills.addView(Ui007.pill(ctx, m.estado ?: "—", bg, fg)) }
             m.criticidad?.let { cr -> Ui007.critColors(cr).let { (bg, fg) -> pills.addView(Ui007.pill(ctx, cr + (m.puntaje?.let { " · $it%" } ?: ""), bg, fg)) } }
@@ -362,6 +452,9 @@ class ReportesFragment : Fragment() {
             })
         }
     }
+
+    /** «2026-11-07T00:02:47.5» → «07/11/2026». */
+    private fun fechaCorta(s: String): String = runCatching { java.time.LocalDate.parse(s.take(10)).let { "%02d/%02d/%d".format(it.dayOfMonth, it.monthValue, it.year) } }.getOrDefault(s)
 
     private fun fecha(v: Any?): String = when (v) {
         is List<*> -> v.take(3).joinToString("-") { (it as? Number)?.toInt()?.toString()?.padStart(2, '0') ?: "" }

@@ -31,7 +31,9 @@ data class DrawerProfile(
 class SessionViewModel @Inject constructor(
     private val sessionManager: SessionManager,
     private val getProfileUseCase: GetProfileUseCase,
-    private val authApiService: AuthApiService
+    private val authApiService: AuthApiService,
+    private val copiaLocal: com.upc.asistenteredidbi.data.session.OfflineCacheInterceptor,
+    private val fotoPerfil: com.upc.asistenteredidbi.presentation.perfil.FotoPerfilStore
 ) : ViewModel() {
 
     private val _destination =
@@ -95,6 +97,9 @@ class SessionViewModel @Inject constructor(
         viewModelScope.launch {
             val refreshToken = sessionManager.getRefreshToken()
             sessionManager.clearSession()
+            // Lo guardado en el celular (consultas sin conexión, foto de perfil) no se muestra en otra cuenta.
+            copiaLocal.limpiar()
+            fotoPerfil.limpiar()
             _drawerProfile.value = null
             _destination.value = SessionDestination.Login
 

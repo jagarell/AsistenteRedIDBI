@@ -157,6 +157,27 @@ class GestionCuenta(
             tc.addView(Ui007.text(ctx, "${e["ts"]} · ${e["usuario"]}\n${e["accion"]}", 12.5f, Ui007.INK).apply { setPadding(0, dp(ctx, 6), 0, dp(ctx, 2)) })
         }
         raiz.addView(tc)
+
+        // Borradores archivados: nada se borra, el administrador los puede restaurar (doc 0.0.7 §1).
+        val archivadas = runCatching { api.archivadas() }.getOrDefault(emptyList())
+        if (archivadas.isNotEmpty()) {
+            titulo("ARCHIVADAS (${archivadas.size})")
+            val ac = Ui007.card(ctx)
+            ac.addView(Ui007.text(ctx, "Borradores anulados. No se borran: puedes restaurarlos.", 12f, Ui007.GREY))
+            archivadas.forEach { a ->
+                val f = Ui007.row(ctx).apply { setPadding(0, dp(ctx, 8), 0, 0) }
+                f.addView(Ui007.text(ctx, "${a["clientName"]} · ${a["technicianName"] ?: "—"}", 13.5f, Ui007.INK), LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+                f.addView(Ui007.chip(ctx, "Restaurar", true) {
+                    scope.launch {
+                        runCatching { api.restaurar((a["id"] as Number).toLong()) }
+                            .onSuccess { Toast.makeText(ctx, "Borrador restaurado.", Toast.LENGTH_SHORT).show(); cargar() }
+                            .onFailure { Toast.makeText(ctx, "No se pudo restaurar.", Toast.LENGTH_SHORT).show() }
+                    }
+                })
+                ac.addView(f)
+            }
+            raiz.addView(ac)
+        }
     }
 
     private fun descargar(id: Long) {

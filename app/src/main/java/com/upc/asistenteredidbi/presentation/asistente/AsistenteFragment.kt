@@ -455,6 +455,7 @@ class AsistenteFragment : Fragment() {
             }
             is AsistenteEvento.PrefijarTexto -> { input.setText(e.texto); input.setSelection(input.text.length); input.requestFocus() }
             is AsistenteEvento.GuardarXlsx -> guardarXlsx(e)
+            is AsistenteEvento.IrPreguntas -> findNavController().navigate(com.upc.asistenteredidbi.R.id.preguntasReglasFragment)
             is AsistenteEvento.IrReportes -> findNavController().navigate(com.upc.asistenteredidbi.R.id.historialFragment)
             is AsistenteEvento.AbrirMinuta -> verMinuta(e.id)
         }

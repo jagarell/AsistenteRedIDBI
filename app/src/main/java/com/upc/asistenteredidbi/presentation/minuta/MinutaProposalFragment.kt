@@ -10,6 +10,7 @@ import android.graphics.Color
 import androidx.appcompat.widget.Toolbar
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
+import com.upc.asistenteredidbi.data.remote.toFriendlyMessage
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
@@ -405,6 +406,12 @@ class MinutaProposalFragment : Fragment() {
             targetPackage?.let { setPackage(it) }
         }
         runCatching { startActivity(if (targetPackage == null) android.content.Intent.createChooser(intent, "Compartir a") else intent) }
+            .onSuccess {
+                // Queda en la bitácora de la minuta («Compartió …»).
+                if (recordId > 0) viewLifecycleOwner.lifecycleScope.launch {
+                    runCatching { api007.eventoMinuta(recordId, mapOf("tipo" to "compartir", "detalle" to (targetPackage?.let { "por " + it.substringAfterLast('.') } ?: "desde el menú Compartir"))) }
+                }
+            }
             .onFailure { Toast.makeText(requireContext(), "No se encontró una app para compartir", Toast.LENGTH_SHORT).show() }
     }
 
@@ -429,7 +436,7 @@ class MinutaProposalFragment : Fragment() {
     /** ⋮ : mapa, edición, lecturas, cambios por chat, observaciones y la hoja de compartir de Android. */
     private fun showMoreMenu() {
         val items = listOf("Ver mapa de red", "Editar propuesta técnica", "Corregir una lectura de evidencia",
-            "Pedir un cambio en el chat", "Observaciones", "Compartir a…", "Bitácora de la minuta")
+            "Pedir un cambio en el chat", "Observaciones", "Compartir a…", "Bitácora de la minuta", "Topología en la minuta")
         androidx.appcompat.app.AlertDialog.Builder(requireContext())
             .setItems(items.toTypedArray()) { _, which ->
                 when (which) {
@@ -443,6 +450,7 @@ class MinutaProposalFragment : Fragment() {
                     4 -> if (canEdit()) showObservations() else cannotEdit()
                     5 -> sharePdf(null)
                     6 -> if (recordId > 0) com.upc.asistenteredidbi.presentation.minuta.BitacoraMinutaSheet.mostrar(requireContext(), viewLifecycleOwner.lifecycleScope, api007, recordId)
+                    7 -> if (canEdit()) showTopologiaEstado() else cannotEdit()
                 }
             }.show()
     }
@@ -457,7 +465,7 @@ class MinutaProposalFragment : Fragment() {
     /** Lápiz: editar la propuesta, corregir una lectura o pedir un cambio en el chat. */
     private fun showEditMenu() {
         if (!canEdit()) return cannotEdit()
-        val items = arrayOf("Editar propuesta técnica", "Corregir una lectura de evidencia", "Pedir un cambio en el chat")
+        val items = arrayOf("Editar propuesta técnica", "Corregir una lectura de evidencia", "Pedir un cambio en el chat", "Topología en la minuta")
         androidx.appcompat.app.AlertDialog.Builder(requireContext())
             .setTitle("Editar")
             .setItems(items) { _, which ->
@@ -465,8 +473,24 @@ class MinutaProposalFragment : Fragment() {
                     0 -> showProposalEditor()
                     1 -> showReadingPicker()
                     2 -> openChat(null)
+                    3 -> showTopologiaEstado()
                 }
             }.show()
+    }
+
+    /** «Topología en la minuta: Incluida / No se pudo mapear». Si no se pudo mapear, no sale en la minuta y el supervisor lo ve en el aviso. */
+    private fun showTopologiaEstado() {
+        if (recordId <= 0) return
+        val opciones = arrayOf("Incluida en la minuta", "No se pudo mapear (no sale en la minuta)")
+        androidx.appcompat.app.AlertDialog.Builder(requireContext())
+            .setTitle("Topología en la minuta")
+            .setItems(opciones) { _, which ->
+                viewLifecycleOwner.lifecycleScope.launch {
+                    runCatching { api007.topologiaEstado(recordId, mapOf("incluida" to (which == 0))) }
+                        .onSuccess { Toast.makeText(requireContext(), if (which == 0) "La topología sale en la minuta." else "Listo: la topología no saldrá en la minuta.", Toast.LENGTH_LONG).show() }
+                        .onFailure { Toast.makeText(requireContext(), it.toFriendlyMessage(), Toast.LENGTH_LONG).show() }
+                }
+            }.setNegativeButton("Cancelar", null).show()
     }
 
     /** Abre el chat de la evaluación (terminada) para corregir una respuesta o una lectura. */

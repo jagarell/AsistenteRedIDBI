@@ -51,6 +51,7 @@ sealed interface AsistenteEvento {
     data object NuevaImplementacion : AsistenteEvento
     data class AbrirPdf(val base64: String, val nombre: String) : AsistenteEvento
     data class AbrirMinuta(val id: Long) : AsistenteEvento
+    data object IrPreguntas : AsistenteEvento
     data class GuardarXlsx(val bytes: ByteArray, val nombre: String) : AsistenteEvento
     data object IrReportes : AsistenteEvento
     data class PrefijarTexto(val texto: String) : AsistenteEvento
@@ -318,6 +319,12 @@ class AsistenteViewModel @Inject constructor(
                 }
             }
             "ver_reportes" -> _eventos.trySend(AsistenteEvento.IrReportes)
+            "abrir_preguntas" -> _eventos.trySend(AsistenteEvento.IrPreguntas)
+            "sugerir" -> viewModelScope.launch {
+                val t = datos["texto"]?.toString().orEmpty()
+                runCatching { repo.sugerencia(t) }.onSuccess { bot("Listo, le envié tu sugerencia al administrador. Le llega en Notificaciones.") }
+                    .onFailure { bot("No pude enviar la sugerencia. Inténtalo de nuevo.") }
+            }
         }
     }
 
