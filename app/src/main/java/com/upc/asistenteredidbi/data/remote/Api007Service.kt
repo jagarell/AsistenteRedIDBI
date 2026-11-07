@@ -54,6 +54,15 @@ interface Api007Service {
     @POST("api/asistente/mensaje")
     suspend fun mensaje(@Body body: Map<String, @JvmSuppressWildcards Any?>): Map<String, @JvmSuppressWildcards Any?>
 
+    /** «Redactar minuta» del borrador que armó el asistente. */
+    @POST("api/asistente/redactar")
+    suspend fun redactar(@Body body: Map<String, @JvmSuppressWildcards Any?>): Map<String, @JvmSuppressWildcards Any?>
+
+    /** Reporte del periodo en CSV (se abre en Excel). */
+    @retrofit2.http.Streaming
+    @GET("api/asistente/reporte.csv")
+    suspend fun reporteCsv(@Query("desde") desde: String, @Query("hasta") hasta: String): okhttp3.ResponseBody
+
     @GET("api/panel")
     suspend fun panel(@retrofit2.http.Query("dias") dias: Int): Map<String, @JvmSuppressWildcards Any?>
 
