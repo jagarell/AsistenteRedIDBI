@@ -96,6 +96,8 @@ class MinutaProposalFragment : Fragment() {
     /** Motivo con el que el supervisor devolvió la minuta; se muestra al técnico hasta que la complete otra vez. */
     private var rejectionReason: String? = null
     private var rejectedBy: String? = null
+    private var lockedBy: String? = null
+    @javax.inject.Inject lateinit var api007: com.upc.asistenteredidbi.data.remote.Api007Service
     private var editMapButton: android.view.View? = null
     private var isSupervisor = false
     private var recordId = -1L
@@ -156,6 +158,7 @@ class MinutaProposalFragment : Fragment() {
                     validatedBy = record.validatedByName
                     rejectionReason = record.rejectionReason
                     rejectedBy = record.rejectedByName
+                    lockedBy = record.bloqueadaPor
                 }
                 renderStatus()
             }
@@ -192,7 +195,7 @@ class MinutaProposalFragment : Fragment() {
     }
 
     /** Solo el técnico edita, y solo mientras la minuta es Borrador (también si el supervisor la devolvió). */
-    private fun canEdit(): Boolean = !isSupervisor && minutaStatus == "BORRADOR"
+    private fun canEdit(): Boolean = !isSupervisor && minutaStatus == "BORRADOR" && lockedBy == null
 
     private fun renderStatus() {
         if (_binding == null) return
@@ -223,6 +226,7 @@ class MinutaProposalFragment : Fragment() {
         editMapButton?.let { it.isEnabled = canEdit(); it.alpha = if (canEdit()) 1f else 0.4f }
         binding.btnRejectMinuta.isVisible = isSupervisor && minutaStatus == "COMPLETA"
         val note = when {
+            lockedBy != null && !isSupervisor -> "En edición por $lockedBy: no puedes editar esta minuta hasta que aplique o cancele los cambios."
             rejected && !isSupervisor ->
                 "${rejectedBy ?: "El supervisor"} rechazó esta minuta: $rejectionReason\nCorrígela con Editar y vuelve a generar el PDF para completarla."
             (generated || minutaStatus != "BORRADOR") && minutaStatus != "VALIDADA" ->
@@ -425,7 +429,7 @@ class MinutaProposalFragment : Fragment() {
     /** ⋮ : mapa, edición, lecturas, cambios por chat, observaciones y la hoja de compartir de Android. */
     private fun showMoreMenu() {
         val items = listOf("Ver mapa de red", "Editar propuesta técnica", "Corregir una lectura de evidencia",
-            "Pedir un cambio en el chat", "Observaciones", "Compartir a…")
+            "Pedir un cambio en el chat", "Observaciones", "Compartir a…", "Bitácora de la minuta")
         androidx.appcompat.app.AlertDialog.Builder(requireContext())
             .setItems(items.toTypedArray()) { _, which ->
                 when (which) {
@@ -438,12 +442,17 @@ class MinutaProposalFragment : Fragment() {
                     3 -> openChat(null)
                     4 -> if (canEdit()) showObservations() else cannotEdit()
                     5 -> sharePdf(null)
+                    6 -> if (recordId > 0) com.upc.asistenteredidbi.presentation.minuta.BitacoraMinutaSheet.mostrar(requireContext(), viewLifecycleOwner.lifecycleScope, api007, recordId)
                 }
             }.show()
     }
 
     private fun cannotEdit() =
-        Toast.makeText(requireContext(), if (minutaStatus == "VALIDADA") "La minuta ya está validada" else "La minuta está completa: solo el supervisor la edita", Toast.LENGTH_SHORT).show()
+        Toast.makeText(requireContext(), when {
+            lockedBy != null -> "En edición por $lockedBy: no puedes editarla hasta que aplique o cancele"
+            minutaStatus == "VALIDADA" -> "La minuta ya está validada"
+            else -> "La minuta está completa: solo el supervisor la edita"
+        }, Toast.LENGTH_SHORT).show()
 
     /** Lápiz: editar la propuesta, corregir una lectura o pedir un cambio en el chat. */
     private fun showEditMenu() {

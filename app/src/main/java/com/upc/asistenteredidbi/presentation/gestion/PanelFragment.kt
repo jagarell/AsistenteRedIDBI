@@ -18,6 +18,7 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import com.upc.asistenteredidbi.R
+import com.upc.asistenteredidbi.data.remote.toFriendlyMessage
 import com.upc.asistenteredidbi.data.repository.Asistente007Repository
 import com.upc.asistenteredidbi.presentation.reportes.Ui007
 import com.upc.asistenteredidbi.presentation.reportes.Ui007.dp
@@ -178,15 +179,73 @@ class PanelFragment : Fragment() {
     private fun apartadoTiempos(c: LinearLayout) {
         val ctx = requireContext()
         val t = datos["tiempos"] as? Map<String, Any?> ?: return
-        c.addView(Ui007.text(ctx, "Tiempo por minuta por tipo de negocio", 15f, Ui007.INK, true))
+        c.addView(Ui007.text(ctx, "Tiempo por minuta: mes anterior vs mes actual", 15f, Ui007.INK, true))
+        val comp = LinearLayout(ctx).apply { orientation = LinearLayout.VERTICAL }
+        c.addView(comp)
+        comp.addView(Ui007.text(ctx, "Cargando…", 13f, Ui007.GREY))
+        viewLifecycleOwner.lifecycleScope.launch {
+            val r = runCatching { repo.tiempos() }.getOrNull()
+            if (context == null) return@launch
+            comp.removeAllViews()
+            if (r == null) { comp.addView(Ui007.text(ctx, "No se pudo cargar la comparación.", 13f, Ui007.GREY)); return@launch }
+            val manual = r["anteriorOrigen"] == "manual"
+            comp.addView(Ui007.text(ctx, "${r["anteriorNombre"]} (${if (manual) "antes de la app, manual" else "con la app"}) → ${r["mesNombre"]} (con la app, en curso)", 12.5f, Ui007.GREY).apply { setPadding(0, dp(ctx, 2), 0, dp(ctx, 4)) })
+            val filas = r["rubros"] as? List<Map<String, Any?>> ?: emptyList()
+            if (filas.isEmpty()) comp.addView(Ui007.text(ctx, "Aún no hay minutas con tiempo este mes.", 13f, Ui007.GREY))
+            filas.forEach { f ->
+                val a = (f["anteriorMin"] as? Number)?.toLong(); val m = (f["actualMin"] as? Number)?.toLong(); val pct = (f["mejoraPct"] as? Number)?.toInt()
+                val fila = Ui007.row(ctx).apply { setPadding(0, dp(ctx, 6), 0, dp(ctx, 2)) }
+                fila.addView(Ui007.text(ctx, "${f["rubro"]}\n${if (a == null) "—" else Ui007.fmtMin(a)} → ${if (m == null) "—" else Ui007.fmtMin(m)}", 13.5f, Ui007.INK), LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+                if (pct != null) fila.addView(Ui007.pill(ctx, (if (pct >= 0) "−$pct %" else "+${-pct} %"), if (pct >= 0) 0xFFE5F5EA.toInt() else 0xFFFBE4E2.toInt(), if (pct >= 0) 0xFF16663A.toInt() else 0xFF9E2B23.toInt()))
+                comp.addView(fila)
+            }
+            (r["mejoraPromedioPct"] as? Number)?.let { comp.addView(Ui007.text(ctx, "Mejora promedio por minuta: $it %", 14f, 0xFF16663A.toInt(), true).apply { setPadding(0, dp(ctx, 10), 0, 0) }) }
+            comp.addView(Ui007.text(ctx, "Ahorro estimado: ${"%.1f".format((r["horasAhorradas"] as? Number)?.toDouble() ?: 0.0)} h · S/ ${"%.0f".format((r["solesAhorro"] as? Number)?.toDouble() ?: 0.0)} (S/ ${"%.0f".format((r["costoHora"] as? Number)?.toDouble() ?: 25.0)} por hora)", 14f, 0xFF16663A.toInt(), true).apply { setPadding(0, dp(ctx, 4), 0, 0) })
+            if (manual) comp.addView(Ui007.text(ctx, "El mes anterior usa los tiempos manuales de «Editar plazos»: así se trabajaba antes de la app.", 11.5f, Ui007.GREY).apply { setPadding(0, dp(ctx, 6), 0, 0) })
+        }
         val rubros = t["rubros"] as? List<Map<String, Any?>> ?: emptyList()
+        c.addView(Ui007.text(ctx, "En el periodo elegido", 13f, Ui007.INK, true).apply { setPadding(0, dp(ctx, 14), 0, 0) })
         if (rubros.isEmpty()) c.addView(Ui007.text(ctx, "Aún no hay minutas en este periodo.", 13f, Ui007.GREY))
         rubros.forEach { r ->
             val min = (r["minutosPromedio"] as? Number)?.toLong()
-            c.addView(Ui007.text(ctx, "${r["rubro"]} · ${num(r, "minutas")} minutas · ${if (min == null) "sin tiempo registrado" else Ui007.fmtMin(min)}", 13.5f, Ui007.INK).apply { setPadding(0, dp(ctx, 6), 0, 0) })
+            c.addView(Ui007.text(ctx, "${r["rubro"]} · ${num(r, "minutas")} minutas · ${if (min == null) "sin tiempo registrado" else Ui007.fmtMin(min)}", 13f, Ui007.INK).apply { setPadding(0, dp(ctx, 4), 0, 0) })
         }
-        c.addView(Ui007.text(ctx, "Ahorro estimado: ${"%.1f".format((t["horasAhorradas"] as? Number)?.toDouble() ?: 0.0)} h · S/ ${"%.0f".format((t["solesAhorro"] as? Number)?.toDouble() ?: 0.0)} (S/ ${"%.0f".format((t["solesPorHora"] as? Number)?.toDouble() ?: 25.0)} por hora)", 14f, 0xFF16663A.toInt(), true).apply { setPadding(0, dp(ctx, 12), 0, 0) })
-        c.addView(Ui007.text(ctx, "La comparación con el mes anterior usa los tiempos de «Editar plazos» (web), que aún no están en la app.", 11.5f, Ui007.GREY).apply { setPadding(0, dp(ctx, 6), 0, 0) })
+        if (extras["porSupervisor"] != null) c.addView(Ui007.button(ctx, "Editar plazos", false) { editarPlazos() })
+    }
+
+    /** «Editar plazos» (solo administrador): minutos que tomaba cada tipo de local antes de la app y costo por hora del técnico. */
+    @Suppress("UNCHECKED_CAST")
+    private fun editarPlazos() {
+        val ctx = requireContext()
+        viewLifecycleOwner.lifecycleScope.launch {
+            val p = runCatching { repo.plazos() }.getOrNull() ?: return@launch Toast.makeText(ctx, "No se pudieron cargar los plazos.", Toast.LENGTH_LONG).show()
+            val sheet = com.google.android.material.bottomsheet.BottomSheetDialog(ctx)
+            val col = LinearLayout(ctx).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(ctx, 18), dp(ctx, 18), dp(ctx, 18), dp(ctx, 22)) }
+            col.addView(Ui007.text(ctx, "Editar plazos", 18f, Ui007.INK, true))
+            col.addView(Ui007.text(ctx, "Minutos que tomaba una minuta antes de la app, por tipo de local. Alimentan la comparación con el mes anterior.", 12.5f, Ui007.GREY).apply { setPadding(0, dp(ctx, 2), 0, dp(ctx, 8)) })
+            val campos = linkedMapOf<String, android.widget.EditText>()
+            fun campo(valor: String, hint: String) = android.widget.EditText(ctx).apply {
+                setText(valor); this.hint = hint; inputType = android.text.InputType.TYPE_CLASS_NUMBER or android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL
+                background = Ui007.round(Ui007.BG, 12, ctx, Ui007.LINE); setPadding(dp(ctx, 12), dp(ctx, 8), dp(ctx, 12), dp(ctx, 8)); textSize = 14f
+            }
+            (p["rubros"] as? Map<String, Any?>).orEmpty().forEach { (k, v) ->
+                col.addView(Ui007.text(ctx, "$k (minutos)", 12.5f, Ui007.INK, true).apply { setPadding(0, dp(ctx, 8), 0, dp(ctx, 2)) })
+                val e = campo(((v as? Number)?.toInt() ?: 0).toString(), "minutos"); campos[k] = e; col.addView(e)
+            }
+            col.addView(Ui007.text(ctx, "Costo por hora del técnico (S/)", 12.5f, Ui007.INK, true).apply { setPadding(0, dp(ctx, 10), 0, dp(ctx, 2)) })
+            val costo = campo(((p["costoHora"] as? Number)?.toDouble() ?: 25.0).let { if (it % 1.0 == 0.0) it.toInt().toString() else it.toString() }, "S/ por hora")
+            col.addView(costo)
+            col.addView(Ui007.button(ctx, "Guardar plazos", true) {
+                viewLifecycleOwner.lifecycleScope.launch {
+                    val rub = campos.mapValues { it.value.text.toString().trim().toDoubleOrNull()?.toInt() ?: 0 }
+                    val r = runCatching { repo.plazosGuardar(mapOf("rubros" to rub, "costoHora" to (costo.text.toString().trim().toDoubleOrNull() ?: 0.0))) }
+                    r.onSuccess { sheet.dismiss(); Toast.makeText(ctx, "Plazos guardados.", Toast.LENGTH_SHORT).show(); cargar() }
+                        .onFailure { Toast.makeText(ctx, it.toFriendlyMessage(), Toast.LENGTH_LONG).show() }
+                }
+            })
+            sheet.setContentView(ScrollView(ctx).apply { addView(col) })
+            sheet.show()
+        }
     }
 
     @Suppress("UNCHECKED_CAST")

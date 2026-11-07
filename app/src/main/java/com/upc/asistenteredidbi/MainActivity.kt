@@ -38,6 +38,10 @@ class MainActivity : AppCompatActivity() {
     @Inject
     lateinit var api007: com.upc.asistenteredidbi.data.remote.Api007Service
 
+    @javax.inject.Inject
+    lateinit var fotoPerfil: com.upc.asistenteredidbi.presentation.perfil.FotoPerfilStore
+    private var fondoAvatarMenu: android.graphics.drawable.Drawable? = null
+
     @Inject
     lateinit var appPreferences: com.upc.asistenteredidbi.data.session.AppPreferences
 
@@ -148,6 +152,7 @@ class MainActivity : AppCompatActivity() {
         }
         drawer.navLogout.setOnClickListener {
             closeDrawer()
+            fotoPerfil.limpiar()
             sessionViewModel.logout()
         }
 
@@ -170,6 +175,7 @@ class MainActivity : AppCompatActivity() {
         drawer.navConfiguracion.setOnClickListener { navigateFromDrawer(R.id.action_home_to_config) }
         // Mi perfil sale del menú (doc 0.0.7 §13): se abre tocando el avatar o el nombre de la cabecera.
         val openPerfil = View.OnClickListener { navigateFromDrawer(R.id.action_home_to_perfil) }
+        fondoAvatarMenu = drawer.tvDrawerInitials.background
         drawer.tvDrawerInitials.setOnClickListener(openPerfil)
         drawer.tvDrawerName.setOnClickListener(openPerfil)
 
@@ -177,6 +183,7 @@ class MainActivity : AppCompatActivity() {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 sessionViewModel.drawerProfile.collect { profile ->
                     if (profile != null) {
+                        launch { fotoPerfil.sincronizar() }
                         drawer.tvDrawerName.text = profile.fullName
                         drawer.tvDrawerRole.text = profile.roleLabel
                         drawer.tvDrawerCompany.text = profile.company
@@ -185,12 +192,18 @@ class MainActivity : AppCompatActivity() {
                         drawer.navPreguntas.visibility = if (profile.role == com.upc.asistenteredidbi.domain.model.Role.ADMINISTRADOR) View.VISIBLE else View.GONE
                         drawer.navEquipo.visibility = if (profile.role == com.upc.asistenteredidbi.domain.model.Role.ADMINISTRADOR) View.VISIBLE else View.GONE
                         refrescarMenu()
-                        drawer.tvDrawerInitials.text = profile.fullName
-                            .split(" ")
-                            .filter { it.isNotBlank() }
-                            .take(2)
-                            .joinToString("") { it.first().uppercase() }
+                        val ini = profile.fullName.split(" ").filter { it.isNotBlank() }.take(2).joinToString("") { it.first().uppercase() }
+                        fotoPerfil.pintar(drawer.tvDrawerInitials, ini, fondoAvatarMenu, fotoPerfil.foto.value)
                     }
+                }
+            }
+        }
+        // Foto de perfil en la cabecera del menú (doc 0.0.7 §35); sin foto se ven las iniciales.
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                fotoPerfil.foto.collect { f ->
+                    val ini = drawer.tvDrawerName.text.toString().split(" ").filter { it.isNotBlank() }.take(2).joinToString("") { it.first().uppercase() }.ifEmpty { drawer.tvDrawerInitials.text.toString() }
+                    fotoPerfil.pintar(drawer.tvDrawerInitials, ini, fondoAvatarMenu, f)
                 }
             }
         }

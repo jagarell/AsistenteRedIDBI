@@ -22,5 +22,6 @@ fun MinutaRecordResponseDto.toDomain(): MinutaRecord = MinutaRecord(
     validatedByName = validatedByName,
     validatedAt = validatedAt,
     rejectionReason = rejectionReason,
-    rejectedByName = rejectedByName
+    rejectedByName = rejectedByName,
+    bloqueadaPor = bloqueadaPor
 )
