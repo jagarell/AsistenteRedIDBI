@@ -76,6 +76,12 @@
             </LinearLayout>
 
             <!-- SEGURIDAD -->
+            <LinearLayout
+                android:id="@+id/gestionContainer"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical" />
+
             <TextView style="@style/SettingsSectionLabel" android:text="SEGURIDAD" />
 
             <LinearLayout style="@style/SettingsCard">

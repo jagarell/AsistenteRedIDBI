@@ -26,6 +26,20 @@ class ConfiguracionFragment : Fragment() {
     private val viewModel: ConfiguracionViewModel by viewModels()
     private val sessionViewModel: SessionViewModel by activityViewModels()
 
+    @javax.inject.Inject lateinit var api007: com.upc.asistenteredidbi.data.remote.Api007Service
+    @javax.inject.Inject lateinit var sessionManager: com.upc.asistenteredidbi.data.session.SessionManager
+    private var gestion: GestionCuenta? = null
+
+    /** Logo de la empresa: el administrador elige una imagen (PNG o JPG, hasta 2 MB). */
+    private val elegirLogo = registerForActivityResult(androidx.activity.result.contract.ActivityResultContracts.GetContent()) { uri ->
+        if (uri != null) runCatching {
+            val ctx = requireContext()
+            val mime = ctx.contentResolver.getType(uri) ?: "image/png"
+            val bytes = ctx.contentResolver.openInputStream(uri)!!.use { it.readBytes() }
+            gestion?.subirLogo(bytes, if (mime == "image/jpg") "image/jpeg" else mime)
+        }.onFailure { Toast.makeText(requireContext(), "No se pudo leer la imagen.", Toast.LENGTH_SHORT).show() }
+    }
+
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentConfiguracionBinding.inflate(inflater, container, false)
         return binding.root
@@ -59,6 +73,11 @@ class ConfiguracionFragment : Fragment() {
                     binding.switchSystemAlerts.isChecked = state.systemAlerts
                 }
             }
+        }
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            val admin = runCatching { sessionManager.getRole() }.getOrNull() == com.upc.asistenteredidbi.domain.model.Role.ADMINISTRADOR
+            gestion = GestionCuenta(requireContext(), binding.gestionContainer, api007, viewLifecycleOwner.lifecycleScope, admin) { elegirLogo.launch("image/*") }.also { it.cargar() }
         }
 
         viewModel.load()

@@ -63,7 +63,8 @@ sealed interface AsistenteEvento {
 @HiltViewModel
 class AsistenteViewModel @Inject constructor(
     private val repo: Asistente007Repository,
-    private val session: SessionManager
+    private val session: SessionManager,
+    @dagger.hilt.android.qualifiers.ApplicationContext private val appCtx: android.content.Context
 ) : ViewModel() {
 
     private enum class Paso { LIBRE, S_CLIENTE, S_MOTIVO, S_ALCANCE, S_EVID, S_HECHO, S_REGLAS, S_ESTADO, U_ELEGIR, U_TEXTO, U_CONFIRMAR, L_CASOS }
@@ -121,8 +122,12 @@ class AsistenteViewModel @Inject constructor(
     /** Sin botones de opciones: el asistente solo se maneja escribiendo o dictando. */
     private fun inicio(@Suppress("UNUSED_PARAMETER") admin: Boolean): List<Opcion> = emptyList()
 
+    /** Prompts frecuentes de la cuenta: se leen al abrir y se guardan al cambiarlos. */
+    suspend fun cargarPrompts(): List<String>? = runCatching { repo.prompts() }.getOrNull()
+    fun guardarPrompts(l: List<String>) { viewModelScope.launch { runCatching { repo.guardarPrompts(l) } } }
+
     fun reiniciar() {
-        paso = Paso.LIBRE; modo = ""; tipo = ""; contexto.setLength(0); adjuntosAcumulados.clear(); minutaId = null; sop = Soporte(); consultaReporte = null
+        paso = Paso.LIBRE; modo = ""; tipo = ""; contexto.setLength(0); adjuntosAcumulados.clear(); fotosPorSubir.clear(); minutaId = null; sop = Soporte(); consultaReporte = null
         _state.update { it.copy(adjuntos = emptyList(), pista = "Escribe o dicta…", subtitulo = "En línea") }
         bienvenida()
     }
@@ -172,6 +177,7 @@ class AsistenteViewModel @Inject constructor(
         if (paso == Paso.LIBRE && adj.isNotEmpty()) {
             _state.update { it.copy(adjuntos = emptyList(), mensajes = it.mensajes + Mensaje(true, t, adjuntos = adj.map { a -> a.tipo })) }
             adjuntosAcumulados.addAll(adj.map { it.tipo })
+            fotosPorSubir.addAll(adj)
             libre(t)
             return
         }
@@ -196,6 +202,8 @@ class AsistenteViewModel @Inject constructor(
     private val contexto = StringBuilder()
     private val adjuntosAcumulados = linkedSetOf<String>()
     private var nuevaVisita = false
+    /** Fotos adjuntadas a la minuta que se está redactando: se suben a la minuta al tocar «Redactar minuta». */
+    private val fotosPorSubir = mutableListOf<Adjunto>()
     /** Última consulta de reporte: permite ajustarla («solo el mes anterior», «sin octubre», «de María») sin repetir todo. */
     private var consultaReporte: Map<String, Any?>? = null
     var minutaAbierta: Long? = null
@@ -276,6 +284,16 @@ class AsistenteViewModel @Inject constructor(
         }
     }
 
+    private fun reducir(uri: String): ByteArray {
+        val bytes = appCtx.contentResolver.openInputStream(android.net.Uri.parse(uri))!!.use { it.readBytes() }
+        val bmp = android.graphics.BitmapFactory.decodeByteArray(bytes, 0, bytes.size) ?: return bytes
+        val k = 1600f / maxOf(bmp.width, bmp.height).coerceAtLeast(1)
+        val out = if (k < 1f) android.graphics.Bitmap.createScaledBitmap(bmp, (bmp.width * k).toInt(), (bmp.height * k).toInt(), true) else bmp
+        return java.io.ByteArrayOutputStream().also { out.compress(android.graphics.Bitmap.CompressFormat.JPEG, 82, it) }.toByteArray()
+    }
+
+    suspend fun foto(minutaId: Long, archivo: String): ByteArray = repo.foto(minutaId, archivo)
+
     fun abrirMinuta(id: Long) { _eventos.trySend(AsistenteEvento.AbrirMinuta(id)) }
 
     suspend fun cargarMinuta(id: Long): Map<String, Any?> = repo.minuta(id)
@@ -290,7 +308,15 @@ class AsistenteViewModel @Inject constructor(
         val bloques = (r["bloques"] as? List<Map<String, Any?>>).orEmpty()
         modo = ""; tipo = ""; contexto.setLength(0); adjuntosAcumulados.clear()
         _state.update { it.copy(subtitulo = "En línea", mensajes = it.mensajes + Mensaje(false, "", bloques = bloques.filter { b -> b["tipo"] != "accion" })) }
-        bloques.firstOrNull { it["tipo"] == "accion" }?.let { b -> (b["minutaId"] as? Number)?.toLong()?.let { id -> _eventos.trySend(AsistenteEvento.AbrirMinuta(id)) } }
+        val id = bloques.firstOrNull { it["tipo"] == "accion" }?.let { b -> (b["minutaId"] as? Number)?.toLong() }
+        if (id != null) {
+            // Las fotos adjuntas pasan a ser evidencias de la minuta (se reducen a 1600 px para el celular).
+            val fotos = fotosPorSubir.toList(); fotosPorSubir.clear()
+            var fallaron = 0
+            fotos.forEach { f -> runCatching { repo.subirFoto(id, f.tipo, reducir(f.uri)) }.onFailure { fallaron++ } }
+            if (fallaron > 0) bot("No pude subir $fallaron foto${if (fallaron > 1) "s" else ""}. Quedan como «Evidencias por subir» en la minuta.")
+            _eventos.trySend(AsistenteEvento.AbrirMinuta(id))
+        }
     }
 
     private fun aplicarCambiosDeTarjeta(bloque: Map<String, Any?>) = viewModelScope.launch {

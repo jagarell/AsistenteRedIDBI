@@ -2,6 +2,7 @@ package com.upc.asistenteredidbi.data.repository
 
 import com.upc.asistenteredidbi.data.remote.Api007Service
 import com.upc.asistenteredidbi.data.remote.ReportesDto
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -37,7 +38,15 @@ class Asistente007Repository @Inject constructor(private val api: Api007Service)
     suspend fun mensaje(body: Map<String, Any?>) = api.mensaje(body)
     suspend fun redactar(datos: Any?) = api.redactar(mapOf("datos" to datos))
     suspend fun reporteXlsx(consulta: Map<String, Any?>): ByteArray = api.reporteXlsx(consulta).use { it.bytes() }
+    suspend fun prompts(): List<String> = (api.prompts()["prompts"] as? List<*>)?.map { it.toString() }.orEmpty()
+    suspend fun guardarPrompts(l: List<String>) = api.guardarPrompts(mapOf("prompts" to l))
+    suspend fun subirFoto(minutaId: Long, tipo: String, jpeg: ByteArray) = api.subirFoto(
+        minutaId, okhttp3.RequestBody.create("text/plain".toMediaTypeOrNull(), tipo),
+        okhttp3.MultipartBody.Part.createFormData("archivo", "foto.jpg", okhttp3.RequestBody.create("image/jpeg".toMediaTypeOrNull(), jpeg))
+    )
+    suspend fun foto(minutaId: Long, archivo: String): ByteArray = api.foto(minutaId, archivo).use { it.bytes() }
     suspend fun panel(dias: Int) = api.panel(dias)
+    suspend fun panelResumen(periodo: String, desde: String?, hasta: String?) = api.panelResumen(periodo, desde, hasta)
     suspend fun equipo() = api.equipo()
     suspend fun cambiarRol(id: Long, rol: String) = api.equipoRol(id, mapOf("rol" to rol))
     suspend fun asignarSupervisor(id: Long, supervisorId: Long?) = api.equipoSupervisor(id, mapOf("supervisorId" to supervisorId))
