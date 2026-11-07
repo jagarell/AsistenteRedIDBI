@@ -265,6 +265,8 @@ class AsistenteFragment : Fragment() {
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        // Desde «Indicadores que alertan» del Panel: la consulta llega escrita, sin enviarse.
+        arguments?.getString("consulta")?.takeIf { savedInstanceState == null }?.let { input.setText(it); input.setSelection(input.text.length) }
         // Los prompts frecuentes viven en la cuenta: se traen del servidor y se repinta.
         viewLifecycleOwner.lifecycleScope.launch {
             vm.cargarPrompts()?.let { remoto ->
@@ -505,6 +507,24 @@ class AsistenteFragment : Fragment() {
         fila("Observaciones", c.optString("obsTec"))
         c.optJSONArray("recs")?.let { a -> for (i in 0 until a.length()) fila("Recomendación", a.optJSONObject(i)?.optString("t") ?: a.optString(i)) }
         c.optJSONArray("pasos")?.let { a -> for (i in 0 until a.length()) a.optJSONObject(i)?.let { p -> fila("Paso (${p.optString("p")})", p.optString("t")) } }
+        c.optJSONArray("fotos")?.let { a ->
+            if (a.length() > 0) {
+                col.addView(Ui007.text(ctx, "Evidencias (${a.length()})", 14f, Ui007.INK, true).apply { setPadding(0, dp(ctx, 12), 0, dp(ctx, 4)) })
+                val id = (m["id"] as? Number)?.toLong()
+                for (i in 0 until a.length()) {
+                    val f = a.getJSONObject(i)
+                    col.addView(Ui007.text(ctx, f.optString("tipo"), 12f, Ui007.GREY))
+                    val img = android.widget.ImageView(ctx).apply {
+                        adjustViewBounds = true; scaleType = android.widget.ImageView.ScaleType.FIT_CENTER; setBackgroundColor(0xFFEFF2F7.toInt())
+                        layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(ctx, 180)).apply { bottomMargin = dp(ctx, 8) }
+                    }
+                    col.addView(img)
+                    if (id != null) viewLifecycleOwner.lifecycleScope.launch {
+                        runCatching { vm.foto(id, f.optString("archivo")) }.onSuccess { b -> android.graphics.BitmapFactory.decodeByteArray(b, 0, b.size)?.let { img.setImageBitmap(it) } }
+                    }
+                }
+            }
+        }
         c.optJSONArray("evidenciasFaltantes")?.let { a ->
             if (a.length() > 0) col.addView(Ui007.text(ctx, "Evidencias por subir: " + (0 until a.length()).joinToString(", ") { a.optString(it) }, 13f, 0xFFB45309.toInt()).apply { setPadding(0, dp(ctx, 12), 0, 0) })
         }

@@ -106,6 +106,19 @@ interface Api007Service {
     @retrofit2.http.PUT("api/asistente/prompts")
     suspend fun guardarPrompts(@Body body: Map<String, @JvmSuppressWildcards Any?>): Map<String, @JvmSuppressWildcards Any?>
 
+    /** Panel v2: un solo filtro general (hoy, ayer, 7, 14, mes, todo o rango). */
+    @GET("api/panel/resumen")
+    suspend fun panelResumen(@Query("periodo") periodo: String, @Query("desde") desde: String? = null, @Query("hasta") hasta: String? = null): Map<String, @JvmSuppressWildcards Any?>
+
+    /** Foto de una minuta redactada con el Asistente IA (con el tipo de evidencia). */
+    @retrofit2.http.Multipart
+    @POST("api/minutas/{id}/fotos")
+    suspend fun subirFoto(@Path("id") id: Long, @retrofit2.http.Part("tipo") tipo: okhttp3.RequestBody, @retrofit2.http.Part archivo: okhttp3.MultipartBody.Part): Map<String, @JvmSuppressWildcards Any?>
+
+    @retrofit2.http.Streaming
+    @GET("api/minutas/{id}/fotos/{archivo}")
+    suspend fun foto(@Path("id") id: Long, @Path("archivo") archivo: String): okhttp3.ResponseBody
+
     @GET("api/panel")
     suspend fun panel(@retrofit2.http.Query("dias") dias: Int): Map<String, @JvmSuppressWildcards Any?>
 

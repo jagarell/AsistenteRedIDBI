@@ -7,6 +7,8 @@
 - **Copia de seguridad (administrador)**: frecuencia (diaria, semanal, mensual), correo, «Hacer copia ahora» e historial con descarga (ZIP con las minutas en JSON y Excel).
 - **Trazabilidad**: bitácora de solo inserción (crear, editar, solicitar, validar, rechazar, avisos, empresa y copias), visible para el administrador en Perfil y configuración; resumen por minuta para su equipo.
 - **Prompts frecuentes ★ en la cuenta**: se guardan en el servidor y se ven igual desde cualquier teléfono.
+- **Panel v2**: un solo filtro general (Hoy, Ayer, 7 días, 14 días, Mes, Todo y Rango de fechas) para indicadores (total vs periodo anterior, por validar con riesgo, pendientes, en revisión, validadas y horas ahorradas), apartados **Por día · Estados · Tiempos · Alertas · Negocios** (el Panel se queda en el apartado), avance y tiempos del equipo (tocar un técnico abre Reportes filtrado, «Reporte y mora»), **Por validar primero** y **Actividad reciente**. Las alertas abren la consulta en el Asistente IA.
+- **Fotos del Asistente IA**: las evidencias adjuntas se suben a la minuta que se redacta (reducidas a 1600 px), se ven en «Ver minuta» y dejan de figurar como «por subir».
 ### Cambiado
 - Los errores con código propio (por ejemplo 409 al pasar dos veces a producción) ya no se convierten en 500.
 
