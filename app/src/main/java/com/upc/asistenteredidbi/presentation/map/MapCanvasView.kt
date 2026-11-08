@@ -25,6 +25,8 @@ import com.upc.asistenteredidbi.domain.model.MapTextModel
 import com.upc.asistenteredidbi.domain.model.NetworkMap
 import kotlin.math.hypot
 import kotlin.math.max
+import kotlin.math.roundToInt
+import kotlin.math.min
 
 /**
  * Lienzo del mapa de red. Dibuja nodos, enlaces (cable / WiFi / USB / observado),
@@ -67,6 +69,7 @@ class MapCanvasView @JvmOverloads constructor(
         set(value) {
             field = value
             if (selection != null && !exists(selection!!)) selection = null
+            if (dragging == null) crecerLienzo(false)
             invalidate()
         }
 
@@ -95,11 +98,12 @@ class MapCanvasView @JvmOverloads constructor(
     private var ty = 0f
     private val scaleDetector = ScaleGestureDetector(context, object : ScaleGestureDetector.SimpleOnScaleGestureListener() {
         override fun onScale(detector: ScaleGestureDetector): Boolean {
-            val newScale = (scale * detector.scaleFactor).coerceIn(0.5f, 4f)
+            val newScale = (scale * detector.scaleFactor).coerceIn(0.25f, 4f)
             val factor = newScale / scale
             tx = detector.focusX - (detector.focusX - tx) * factor
             ty = detector.focusY - (detector.focusY - ty) * factor
             scale = newScale
+            limitarDesplazamiento()
             invalidate()
             return true
         }
@@ -129,10 +133,59 @@ class MapCanvasView @JvmOverloads constructor(
     private val padBottom get() = 46f * d
 
     // ---- coordenadas -------------------------------------------------------------------------
-    private fun baseX(nx: Float) = padX + nx * (width - 2 * padX)
-    private fun baseY(ny: Float) = padTop + ny * (height - padTop - padBottom)
-    private fun normX(bx: Float) = ((bx - padX) / (width - 2 * padX)).coerceIn(0.02f, 0.98f)
-    private fun normY(by: Float) = ((by - padTop) / (height - padTop - padBottom)).coerceIn(0.02f, 0.98f)
+    // El mapa se dibuja sobre un lienzo «virtual» que puede ser más ancho que la pantalla: así los equipos de una misma fila no se
+    // encimen. Las coordenadas guardadas siguen siendo de 0 a 1, y el PDF ocupa todo el ancho de la hoja con ellas.
+    private var vw = 0f
+    private val virtualW get() = if (vw > 0f) vw else width.toFloat()
+    private fun baseX(nx: Float) = padX + nx * (virtualW - 2 * padX)
+    private val virtualH get() = height.toFloat()
+    private fun baseY(ny: Float) = padTop + ny * (virtualH - padTop - padBottom)
+    private fun normX(bx: Float) = ((bx - padX) / (virtualW - 2 * padX)).coerceIn(0.02f, 0.98f)
+    private fun normY(by: Float) = ((by - padTop) / (virtualH - padTop - padBottom)).coerceIn(0.02f, 0.98f)
+
+    /** Ancho que necesita la fila con más equipos para que ningún nombre se pise con el vecino. */
+    private fun neededWidth(): Float {
+        if (staticPreview || width == 0) return width.toFloat()
+        val porFila = map.nodes.groupBy { (it.y * 14).roundToInt() }.values.maxOfOrNull { it.size } ?: 1
+        return max(width.toFloat(), porFila * 96f * density + 2 * padX)
+    }
+
+    private var ajustado = false
+
+    /** Hace que quepa todo el mapa en la pantalla (o lo centra si ya cabe). */
+    fun fitView() {
+        if (width == 0 || height == 0) return
+        scale = min(1f, width / virtualW)
+        tx = (width - virtualW * scale) / 2f
+        ty = (height - virtualH * scale) / 2f
+        invalidate()
+    }
+
+    /** Si hay más equipos de los que caben, el lienzo crece (nunca se encoge solo mientras se arrastra). */
+    private fun crecerLienzo(ajustar: Boolean) {
+        if (staticPreview || width == 0) return
+        val n = neededWidth()
+        val antes = virtualW
+        if (n > vw) vw = n else if (vw == 0f) vw = width.toFloat()
+        if (ajustar || !ajustado || vw != antes) { fitView(); ajustado = true }
+    }
+
+    override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
+        super.onSizeChanged(w, h, oldw, oldh)
+        if (w > 0 && !staticPreview) { vw = max(vw, w.toFloat()); crecerLienzo(false) }
+    }
+
+    /** Se puede mover el lienzo con libertad, pero sin perder el mapa de vista. */
+    private fun limitarDesplazamiento() {
+        val w = virtualW * scale
+        val h = virtualH * scale
+        val mx = width * 0.35f
+        val my = height * 0.35f
+        val loX = min(mx - w, width - mx); val hiX = max(mx - w, width - mx)
+        val loY = min(my - h, height - my); val hiY = max(my - h, height - my)
+        tx = tx.coerceIn(loX, hiX)
+        ty = ty.coerceIn(loY, hiY)
+    }
     private fun toBaseX(sx: Float) = (sx - tx) / scale
     private fun toBaseY(sy: Float) = (sy - ty) / scale
 
@@ -166,6 +219,24 @@ class MapCanvasView @JvmOverloads constructor(
 
     private fun nodePos(n: MapNodeModel) = baseX(n.x) to baseY(n.y)
 
+    // ---- cuadrícula de puntitos: marca el área de trabajo y a ella se pegan los equipos al soltarlos ----------
+    private val gridPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL; color = 0xFFC3CBD9.toInt() }
+    private val gridStep get() = 24f * density
+    private fun dibujarPuntitos(canvas: Canvas) {
+        val step = gridStep
+        val x0 = max(0f, -tx / scale); val x1 = min(virtualW, (width - tx) / scale)
+        val y0 = max(0f, -ty / scale); val y1 = min(virtualH, (height - ty) / scale)
+        val r = 1.6f * density / min(1f, scale + 0.3f)
+        var gx = kotlin.math.ceil(x0 / step) * step
+        while (gx <= x1) {
+            var gy = kotlin.math.ceil(y0 / step) * step
+            while (gy <= y1) { canvas.drawCircle(gx, gy, r, gridPaint); gy += step }
+            gx += step
+        }
+    }
+
+    private fun pegar(v: Float) = Math.round(v / gridStep) * gridStep
+
     // ---- dibujo ---------------------------------------------------------------------------------
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
@@ -173,6 +244,8 @@ class MapCanvasView @JvmOverloads constructor(
         canvas.save()
         canvas.translate(tx, ty)
         canvas.scale(scale, scale)
+
+        if (!staticPreview && mode != Mode.VIEW) dibujarPuntitos(canvas)
 
         val byId = map.nodes.associateBy { it.id }
 
@@ -317,7 +390,8 @@ class MapCanvasView @JvmOverloads constructor(
         // Nombre, ubicación e IP debajo del ícono.
         var y = cy + nodeRadius + 14f * d
         labelPaint.color = com.upc.asistenteredidbi.presentation.common.NightColors.parse(if (n.isBroken) "#B42318" else "#1F2937")
-        canvas.drawText(n.label.take(if (staticPreview) 16 else 26), cx, y, labelPaint)
+        val anchoMax = (if (staticPreview) 70f else 104f) * d
+        canvas.drawText(android.text.TextUtils.ellipsize(n.label, labelPaint, anchoMax, android.text.TextUtils.TruncateAt.END).toString(), cx, y, labelPaint)
         val small = TextPaint(labelPaint).apply { typeface = Typeface.DEFAULT; textSize = labelPaint.textSize * 0.82f }
         small.color = com.upc.asistenteredidbi.presentation.common.NightColors.parse("#4B5563")
         val lines = buildList {
@@ -328,7 +402,7 @@ class MapCanvasView @JvmOverloads constructor(
         for ((text, bad) in lines) {
             y += small.textSize * 1.15f
             small.color = com.upc.asistenteredidbi.presentation.common.NightColors.parse(if (bad) "#B42318" else "#4B5563")
-            canvas.drawText(text.take(if (staticPreview) 18 else 30), cx, y, small)
+            canvas.drawText(android.text.TextUtils.ellipsize(text, small, anchoMax, android.text.TextUtils.TruncateAt.END).toString(), cx, y, small)
         }
     }
 
@@ -484,7 +558,7 @@ class MapCanvasView @JvmOverloads constructor(
                 lastX = event.x; lastY = event.y
                 val sel = dragging
                 if (sel != null) dragItem(sel, toBaseX(event.x), toBaseY(event.y))
-                else if (panning) { tx += dx; ty += dy; invalidate() }
+                else if (panning) { tx += dx; ty += dy; limitarDesplazamiento(); invalidate() }
                 return true
             }
             MotionEvent.ACTION_UP -> {
@@ -509,8 +583,8 @@ class MapCanvasView @JvmOverloads constructor(
             dragSnapshotTaken = true
             if (selection != sel) { selection = sel; listener?.onSelectionChanged(sel) }
         }
-        val nx = normX(bx)
-        val ny = normY(by)
+        val nx = normX(pegar(bx))
+        val ny = normY(pegar(by))
         map = when (sel.kind) {
             "node" -> map.copy(nodes = map.nodes.map { if (it.id == sel.id) it.copy(x = nx, y = ny) else it })
             "text" -> map.copy(texts = map.texts.map { if (it.id == sel.id) it.copy(x = nx, y = ny) else it })
@@ -549,8 +623,8 @@ class MapCanvasView @JvmOverloads constructor(
 
     /** Vuelve el zoom y el desplazamiento al estado inicial. */
     fun resetView() {
-        scale = 1f; tx = 0f; ty = 0f
-        invalidate()
+        crecerLienzo(true)
+        fitView()
     }
 
     /** Foto reducida para dibujar (evita decodificar la original en cada frame). */

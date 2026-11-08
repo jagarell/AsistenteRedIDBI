@@ -970,7 +970,7 @@ class TechnicalChatFragment : Fragment() {
                 return@ubicar
             }
             viewLifecycleOwner.lifecycleScope.launch {
-                val nombre = viewModel.uiState.value.answers["P01c"].orEmpty()
+                val nombre = viewModel.uiState.value.answers["establishment_name"].orEmpty()
                 val geo = runCatching {
                     api007.geoReverse(mapOf("lat" to fix.lat, "lng" to fix.lng, "precision_m" to fix.acc, "nombre_local" to nombre))
                 }.getOrNull()
