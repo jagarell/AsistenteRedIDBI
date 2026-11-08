@@ -2978,7 +2978,7 @@ function critEquip(X,R){
   C.push({k:'Estado de las impresoras',w:15,r:ratio(se,pr.length),d:pr.length?pr.map(p=>est.includes(p)?`${p.name}: ${String(p.estadoL||'').toLowerCase()}`:`${p.name}: ${!p.con||p.con==='NO'?'por implementar':'sin dato'}`).join(' · '):'sin impresoras'});
   /* 5 · Acceso remoto AnyDesk (10) */
   const ad=cj.filter(c=>A['E7#'+c.i]!==undefined); const adOk=ad.filter(c=>c.anydesk&&c.anydesk.codigo).length;
-  C.push({k:'Acceso remoto (AnyDesk)',w:10,r:ratio(adOk,ad.length),d:ad.length?`${adOk} de ${ad.length} equipos de caja con código de AnyDesk`:'no se pidió'});
+  C.push({k:'Acceso remoto (AnyDesk)',w:10,r:ad.length?ratio(adOk,cj.length):null,d:ad.length?`${adOk} de ${cj.length} equipos de caja con código de AnyDesk (el resto, por implementar o sin evidencia)`:'no se pidió'}); /* se reparte entre todas las cajas */
   return C;
 }
 function critWifi(X,R){
@@ -2988,7 +2988,8 @@ function critWifi(X,R){
   C.push({k:'Zonas con buena señal',w:65,r:ratio(Z.length-bad.length,Z.length),d:`${Z.length-bad.length} de ${Z.length} zonas y lugares de preparación${bad.length?' (sin buena señal: '+bad.join(', ')+')':''}`});
   /* 2 · Calidad medida (20): promedio de la medición por zona */
   const Q={Excelente:1,Buena:0.85,Regular:0.5,Mala:0};
-  C.push({k:'Calidad medida',w:20,r:X.wz&&X.wz.length?X.wz.reduce((s,z)=>s+Q[z.cal],0)/X.wz.length:null,d:X.wz&&X.wz.length?X.wz.map(z=>`${z.z} ${z.cal.toLowerCase()}`).join(' · '):'no se midió por zona'});
+  const nz=Math.max((X.allZ||[]).length,(X.wz||[]).length); /* cada zona registrada vale lo mismo: las no medidas no suman */
+  C.push({k:'Calidad medida',w:20,r:X.wz&&X.wz.length?X.wz.reduce((s,z)=>s+Q[z.cal],0)/nz:null,d:X.wz&&X.wz.length?X.wz.map(z=>`${z.z} ${z.cal.toLowerCase()}`).join(' · ')+` · ${X.wz.length} de ${nz} zonas medidas`:'no se midió por zona'});
   /* 4 · Solución definida (10): las zonas sin señal ya tienen repetidor o access point */
   C.push({k:'Solución definida',w:15,r:bad.length?(X.solWifi?1:0):1,d:bad.length?(X.solWifi?`se instalará ${X.solWifi.toLowerCase()}`:'falta definir la solución'):'no hace falta'});
   return C;
