@@ -2970,11 +2970,12 @@ function critEquip(X,R){
   C.push({k:'Impresoras existentes',w:25,r:ratio(exist,pr.length),d:pr.length?`${exist} de ${pr.length} impresoras necesarias ya existen`:'sin impresoras'});
   /* 3 · Impresora adecuada (20): preparación de red; USB solo con PC o laptop */
   const ex=pr.filter(p=>p.con&&p.con!=='NO'&&p.con!=='NONE'); const ok=ex.filter(p=>p.prep?p.con==='RED':(p.con!=='USB'||p.usbTo==='PC'));
-  C.push({k:'Impresora adecuada',w:20,r:ratio(ok.length,ex.length),d:ex.length?`${ok.length} de ${ex.length} impresoras del tipo correcto (preparación de red; USB solo con PC o laptop)`:'sin impresoras conectadas'});
+  /* el puntaje se reparte entre TODAS las impresoras registradas (peso ÷ N): las que están por implementar o sin evidencia no suman */
+  C.push({k:'Impresora adecuada',w:20,r:ratio(ok.length,pr.length),d:pr.length?`${ok.length} de ${pr.length} impresoras del tipo correcto (preparación de red; USB solo con PC o laptop); ${pr.length-ex.length} por implementar o sin conexión`:'sin impresoras'});
   /* 4 · Estado de las impresoras (15) */
   const EV={NUEVA:1,VIABLE:1,MANT:0.5,FALLAS:0}; const est=ex.filter(p=>p.estado);
   const se=est.reduce((s,p)=>s+(EV[p.estado]??0.5),0);
-  C.push({k:'Estado de las impresoras',w:15,r:ratio(se,est.length),d:est.length?est.map(p=>`${p.name}: ${String(p.estadoL||'').toLowerCase()}`).join(' · '):'sin dato'});
+  C.push({k:'Estado de las impresoras',w:15,r:ratio(se,pr.length),d:pr.length?pr.map(p=>est.includes(p)?`${p.name}: ${String(p.estadoL||'').toLowerCase()}`:`${p.name}: ${!p.con||p.con==='NO'?'por implementar':'sin dato'}`).join(' · '):'sin impresoras'});
   /* 5 · Acceso remoto AnyDesk (10) */
   const ad=cj.filter(c=>A['E7#'+c.i]!==undefined); const adOk=ad.filter(c=>c.anydesk&&c.anydesk.codigo).length;
   C.push({k:'Acceso remoto (AnyDesk)',w:10,r:ratio(adOk,ad.length),d:ad.length?`${adOk} de ${ad.length} equipos de caja con código de AnyDesk`:'no se pidió'});
