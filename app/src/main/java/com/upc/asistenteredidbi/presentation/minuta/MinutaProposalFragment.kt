@@ -56,6 +56,14 @@ class MinutaProposalFragment : Fragment() {
     @Inject
     lateinit var moshi: Moshi
 
+    /** «Usar GPS» dentro de «Datos del local»: pide el permiso y, al concederlo, vuelve a tomar la ubicación. */
+    private var tras_permiso: (() -> Unit)? = null
+    private val pedirUbicacion =
+        registerForActivityResult(androidx.activity.result.contract.ActivityResultContracts.RequestMultiplePermissions()) { r ->
+            if (r.values.any { it }) tras_permiso?.invoke()
+            else Toast.makeText(requireContext(), "Activa la ubicación para usar el GPS. Mientras tanto escribe la dirección a mano.", Toast.LENGTH_LONG).show()
+        }
+
     @Inject
     lateinit var sessionManager: SessionManager
 
@@ -593,6 +601,26 @@ class MinutaProposalFragment : Fragment() {
                 if (k == "ruc" || k == "celular") inputType = android.text.InputType.TYPE_CLASS_NUMBER
             }.also { form.addView(it) }
         }
+        // 📍 Usar GPS: llena la dirección con la que devuelve el mapa y guarda las coordenadas (enlace en la minuta)
+        form.addView(com.upc.asistenteredidbi.presentation.reportes.Ui007.button(ctx, "📍 Usar GPS (Google Maps)", false) {
+            val ubicar = {
+                Toast.makeText(ctx, "Ubicando… puede tardar unos segundos.", Toast.LENGTH_SHORT).show()
+                com.upc.asistenteredidbi.presentation.chat.GpsLocal.ubicar(ctx) { fix ->
+                    if (_binding == null) return@ubicar
+                    if (fix == null) { Toast.makeText(ctx, "No pude obtener tu ubicación. Activa el GPS o escribe la dirección.", Toast.LENGTH_LONG).show(); return@ubicar }
+                    viewLifecycleOwner.lifecycleScope.launch {
+                        val nombre = inputs[2].text.toString().ifBlank { binding.tvEstablishmentName.text.toString() }
+                        val geo = runCatching { api007.geoReverse(mapOf("lat" to fix.lat, "lng" to fix.lng, "precision_m" to fix.acc, "nombre_local" to nombre)) }.getOrNull()
+                        editions["gps"] = mapOf("lat" to fix.lat, "lng" to fix.lng, "acc" to fix.acc, "t" to fix.t, "geo" to (geo ?: emptyMap<String, Any?>()))
+                        com.upc.asistenteredidbi.presentation.chat.GpsLocal.hoja(this@MinutaProposalFragment, fix, geo, nombre,
+                            onUsar = { dir -> inputs[3].setText(dir); Toast.makeText(ctx, "Dirección puesta. Toca Guardar para aplicarla.", Toast.LENGTH_SHORT).show() },
+                            onActualizar = { })
+                    }
+                }
+            }
+            if (com.upc.asistenteredidbi.presentation.chat.GpsLocal.tienePermiso(ctx)) ubicar()
+            else { tras_permiso = ubicar; pedirUbicacion.launch(arrayOf(android.Manifest.permission.ACCESS_FINE_LOCATION, android.Manifest.permission.ACCESS_COARSE_LOCATION)) }
+        }.apply { setPadding(0, (14 * dp).toInt(), 0, (6 * dp).toInt()) })
         androidx.appcompat.app.AlertDialog.Builder(ctx)
             .setTitle("Datos del local")
             .setView(android.widget.ScrollView(ctx).apply { addView(form) })
