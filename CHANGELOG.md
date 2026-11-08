@@ -1,6 +1,6 @@
 # Changelog
 
-## [Sin publicar]
+## [0.0.17] - 2026-11-08
 ### Agregado
 - **Ubicación GPS del local con Google Maps** (vuelve la opción de las entregas anteriores): en «¿Cuál es la dirección del local?» aparece **📍 Usar GPS**. Muestra coordenadas, precisión, dirección, distrito/departamento y si el lugar coincide con el nombre del local; **Usar esta dirección** la responde y **Ver en Google Maps** abre el mapa. La minuta lleva «Distrito / Departamento» y «Ubicación GPS» como enlace al mapa.
 ### Corregido
