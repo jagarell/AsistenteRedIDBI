@@ -1,7 +1,13 @@
 # Changelog
 
-## [Sin publicar]
+## [0.0.18] - 2026-11-08
+### Agregado
+- **Tomas de energía «Aún por confirmar»** («No lo sé ahora» y «Otro (escribir)»): queda como Por confirmar en la minuta y en los pasos del cliente, sin darlo por faltante.
+- **Análisis IA**: «Conexión por cable» mide todos los equipos (PC, laptop, impresoras) con puerto o cable de red; «Segmento de red» solo se calcula con evidencia del ipconfig, el speedtest o el escáner de IP (sin ella, N/A); en Equipamiento, «Impresora adecuada» y «Estado de las impresoras» se reparten entre todas las impresoras registradas (las que están por implementar no suman).
+### Cambiado
+- La apreciación larga del técnico sobre la energía sale de las tablas y va en Observaciones.
 ### Corregido
+- **GPS**: la coincidencia con el nombre del local no funcionaba en la 0.0.17.
 - **Editar topología**: el lienzo ya no se corta ni se queda sin moverse a los lados. Es más ancho cuando hay muchos equipos en una fila (para que los nombres no se pisen), se puede desplazar libremente y pellizcar para acercar hasta 4 veces y alejar hasta 25 %.
 - **Puntitos de cuadrícula** en el editor: marcan el área de trabajo y los equipos se pegan a ellos al soltarlos, para que queden alineados y no se amontonen.
 - Botón **Ajustar** en la barra del editor: hace que quepa todo el mapa en la pantalla.
