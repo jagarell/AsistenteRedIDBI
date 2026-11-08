@@ -12,6 +12,10 @@ import retrofit2.http.Query
  */
 interface Api007Service {
 
+    /** Ubicación GPS del local: dirección, distrito, departamento y coincidencia con el nombre (Google Maps). */
+    @POST("api/geo/reverse")
+    suspend fun geoReverse(@Body body: Map<String, @JvmSuppressWildcards Any?>): Map<String, @JvmSuppressWildcards Any?>
+
     @GET("api/roles")
     suspend fun roles(): List<Map<String, @JvmSuppressWildcards Any?>>
 

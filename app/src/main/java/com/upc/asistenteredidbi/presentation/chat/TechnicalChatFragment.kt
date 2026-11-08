@@ -72,6 +72,18 @@ class TechnicalChatFragment : Fragment() {
     @Inject
     lateinit var moshi: Moshi
 
+    @Inject
+    lateinit var api007: com.upc.asistenteredidbi.data.remote.Api007Service
+
+    @Inject
+    lateinit var editionsUseCase: com.upc.asistenteredidbi.domain.usecase.MinutaEditionsUseCase
+
+    private val pedirUbicacion =
+        registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { r ->
+            if (r.values.any { it }) ubicarLocal()
+            else Toast.makeText(requireContext(), "Activa la ubicación para usar el GPS. Mientras tanto escribe la dirección a mano.", Toast.LENGTH_LONG).show()
+        }
+
     // --- Captura de foto para las evidencias — mismo patrón de EvidenceFragment.kt
     // (cámara/galería/compresión reusados). ---
 
@@ -746,6 +758,7 @@ class TechnicalChatFragment : Fragment() {
                     if (node.required == false) addQuickReplyChip("Sin fecha") { viewModel.sendAnswer("", "Sin fecha") }
                 } else {
                     node?.suggestions?.forEach { s -> addQuickReplyChip(s) { viewModel.sendAnswer(s, s) } }
+                    if (node?.nodeId == "P03") addQuickReplyChip("📍 Usar GPS (Google Maps)", filled = true) { usarGps() }
                     if (node?.required == false) addQuickReplyChip("Omitir") { viewModel.sendAnswer("", "Omitir") }
                     addAttachShortcut(node)
                 }
@@ -936,6 +949,45 @@ class TechnicalChatFragment : Fragment() {
             }
             setOnClickListener { onClick() }
         }
+    }
+
+    // ---- ubicación GPS del local (docs/0.0.7/03-gps-direccion.md) ---------------------------
+    private fun usarGps() {
+        if (viewModel.uiState.value.isSending) return
+        if (!GpsLocal.tienePermiso(requireContext())) {
+            pedirUbicacion.launch(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION))
+            return
+        }
+        ubicarLocal()
+    }
+
+    private fun ubicarLocal() {
+        Toast.makeText(requireContext(), "Ubicando… puede tardar unos segundos al aire libre.", Toast.LENGTH_SHORT).show()
+        GpsLocal.ubicar(requireContext()) { fix ->
+            if (_binding == null) return@ubicar
+            if (fix == null) {
+                Toast.makeText(requireContext(), "No pude obtener tu ubicación. Activa el GPS del teléfono o escribe la dirección.", Toast.LENGTH_LONG).show()
+                return@ubicar
+            }
+            viewLifecycleOwner.lifecycleScope.launch {
+                val nombre = viewModel.uiState.value.answers["P01c"].orEmpty()
+                val geo = runCatching {
+                    api007.geoReverse(mapOf("lat" to fix.lat, "lng" to fix.lng, "precision_m" to fix.acc, "nombre_local" to nombre))
+                }.getOrNull()
+                guardarGps(fix, geo)
+                if (_binding == null) return@launch
+                GpsLocal.hoja(this@TechnicalChatFragment, fix, geo, nombre,
+                    onUsar = { dir -> viewModel.sendAnswer(dir, dir) }, onActualizar = { ubicarLocal() })
+            }
+        }
+    }
+
+    /** Las coordenadas quedan en la minuta (Ubicación GPS con enlace al mapa) aunque la dirección se escriba a mano. */
+    private suspend fun guardarGps(fix: GpsLocal.Fix, geo: Map<String, Any?>?) {
+        val id = viewModel.evaluationId.takeIf { it > 0 } ?: return
+        val cur = editionsUseCase.load(id).getOrNull()?.toMutableMap() ?: mutableMapOf()
+        cur["gps"] = mapOf("lat" to fix.lat, "lng" to fix.lng, "acc" to fix.acc, "t" to fix.t, "geo" to (geo ?: emptyMap<String, Any?>()))
+        editionsUseCase.save(id, cur)
     }
 
     // ---- adjuntos del cliente --------------------------------------------------------------
