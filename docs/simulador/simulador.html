@@ -2945,13 +2945,14 @@ function critInfra(X,R){
   /* 2 · Energía (25): equipos con toma cerca */
   const dev=X.devices||[]; const sin=X.tomas==='NO'?X.sinEnergia.length:0;
   C.push({k:'Tomas de energía',w:25,r:X.simple||!X.tomas||X.tomas==='PC'||!dev.length?null:ratio(dev.length-sin,dev.length),d:X.simple?'no aplica al rubro':(!X.tomas||X.tomas==='PC')?'sin dato':`${dev.length-sin} de ${dev.length} equipos con toma cerca`});
-  /* 3 · Medio de conexión correcto (20): lo que debe ir por cable va por cable */
+  /* 3 · Conexión por cable (20): de todos los equipos (PC, laptop, impresoras), cuántos tienen puerto o cable de red */
   const deb=[]; (X.cajasInfo||[]).forEach(c=>{ if(c.eq==='SI'&&c.sysImp!==false) deb.push(!!c.pcCable); if(c.rasp) deb.push(!!c.raspCable); });
-  (X.printers||[]).forEach(p=>{ if(p.prep&&p.con&&p.con!=='NO'&&p.con!=='NONE') deb.push(p.con==='RED'&&p.via!=='WIFI'); });
-  C.push({k:'Conexión por cable',w:20,r:ratio(deb.filter(Boolean).length,deb.length),d:deb.length?`${deb.filter(Boolean).length} de ${deb.length} equipos que deben ir por cable lo están`:'sin equipos que deban ir por cable'});
+  (X.printers||[]).forEach(p=>{ if(p.con&&p.con!=='NO'&&p.con!=='NONE') deb.push(p.con==='RED'&&p.via!=='WIFI'); });
+  C.push({k:'Conexión por cable',w:20,r:ratio(deb.filter(Boolean).length,deb.length),d:deb.length?`${deb.filter(Boolean).length} de ${deb.length} equipos (PC, laptop, impresoras) con puerto o cable de red`:'sin equipos que medir'});
   /* 4 · Segmento de red (10): impresoras de red en el segmento del router */
   const ipP=(X.printers||[]).filter(p=>(p.con==='RED'||p.con==='WIFI')&&p.ip); const inSeg=ipP.filter(p=>p.ip.startsWith(X.seg+'.')).length;
-  C.push({k:'Segmento de red',w:10,r:ratio(inSeg,ipP.length),d:ipP.length?`${inSeg} de ${ipP.length} impresoras de red en ${X.seg}.x`:'sin impresoras de red con IP'});
+  const hayEv=!!(X.ipconfig||X.scanner||R.sp); /* el segmento sale de la evidencia del ipconfig, el speedtest o el escáner de IP; sin ella: N/A */
+  C.push({k:'Segmento de red',w:10,r:hayEv?ratio(inSeg,ipP.length):null,d:!hayEv?'sin evidencia de red (ipconfig, speedtest o escáner de IP)':ipP.length?`${inSeg} de ${ipP.length} impresoras de red en ${X.seg}.x`:'sin impresoras de red con IP'});
   /* 5 · Calidad del enlace (10): sin tope de 100 Mbps en la prueba por cable */
   C.push({k:'Calidad del cableado',w:10,r:R.sp?(has('R65')?0:1):null,d:R.sp?(has('R65')?'velocidad limitada a ~100 Mbps (cable, puerto o switch de 10/100)':'sin tope de 100 Mbps en la prueba por cable'):'sin prueba por cable'});
   /* 6 · Protección del cableado (5): lejos de electrodomésticos */
