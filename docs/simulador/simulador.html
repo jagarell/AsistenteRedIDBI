@@ -884,7 +884,7 @@ function build(a){
     push(ch('P33','F',X.obra?'¿Ya hay tomas de energía (instaladas o por instalar) donde irán el router, el equipo de caja y las impresoras?':'¿Hay tomas de energía cerca del router, el equipo de caja y las impresoras?',YN,{def:'SI'}));
     if(v('P33')==='NO') push({id:'P33a',b:'F',kind:'multi',text:'¿Qué equipos no tienen tomas de energía cerca? Puedes marcar varios.',opts:X.devices,sel:[],none:'Ninguno: ningún equipo tiene tomas cerca',def:X.devices.slice(0,1),min:1});
     if(a.P33a) push({id:'P33b',b:'F',kind:'longtext',text:'¿Recomendarías un supresor de picos? ¿El cliente va a implementar tomas cerca? Dame tus apreciaciones para tenerlas en cuenta.',ph:'Escribe tus apreciaciones (por ejemplo: recomiendo supresor de picos para la caja; el cliente instalará las tomas la próxima semana)',def:'Recomiendo un supresor de picos para la caja. El cliente instalará las tomas antes del inicio.'});
-    const f0=v('P33')==='SI'||(v('P33')==='NO'&&a.P33b);
+    const f0=v('P33')==='SI'||v('P33')==='PC'||(v('P33')==='NO'&&a.P33b);
     if(f0) push(ch('P34c','F','¿Algún cable de red pasa cerca o por detrás de electrodomésticos (licuadoras, congeladoras, refrigeradoras, microondas u otros)?',YN,{def:'NO'}));
     fReady=f0&&!!a.P34c;
   }
@@ -895,7 +895,7 @@ function build(a){
   X.cableElec=v('P34c')==='SI';
   if(X.cableElec) push({id:'A_ELEC',kind:'alert',tone:'warn',tag:'ESTÁTICA',text:'Aísla el cable de red de la estática y la interferencia de los electrodomésticos: pásalo por canaleta o tubo, sepáralo del equipo y del cable de energía, y usa cable apantallado (FTP) si no se puede desviar.'});
   /* en las fotos se pide la toma solo si el equipo la tiene cerca (y nunca en obra, Retail u Otro) */
-  const toma=name=>!X.obra&&!X.simple&&X.tomas!=null&&!X.sinEnergia.includes(name);
+  const toma=name=>!X.obra&&!X.simple&&(X.tomas==='SI'||X.tomas==='NO')&&!X.sinEnergia.includes(name);
   const conToma=(name,txt)=>toma(name)?txt+' Toma la foto mostrando también la toma de energía cercana a la que está conectado.':txt;
   X.tomaOk=toma;
 
@@ -1233,7 +1233,7 @@ function evaluate(X,a){
   const pend=X.simple?[]:Object.keys(a).filter(k=>/^E/.test(k)&&a[k]&&a[k].v==='SKIP'); if(pend.length) add({id:'EVID',tipo:'AVISO',t:`Evidencias pendientes (${pend.length})`,d:'Sin lectura: '+pend.map(k=>k.replace('#',' · ')).join(', ')+'. Se completan en la vista previa o desde el chat.'});
   if(X.switchN) add({id:'SWITCH',tipo:'OBS',t:'Faltan puertos en el router',d:`${X.eqCable} equipos por cable y ${X.libres} puertos libres: Switch x${X.switchN} y puntos de red.`,eq:`switch de ${X.switchN} puertos`,trabajo:'switch y puntos de red'});
   if(X.tomas==='NO'&&/supresor|picos/i.test(X.apreciacion)) add({id:'SUPRESOR',tipo:'REC',t:'Supresor de picos',d:'Instalar un supresor de picos (recomendado por el técnico).',eq:'supresor de picos'});
-  if(X.tomas==='NO') add({id:'ENERGIA',tipo:'OBS',t:'Faltan tomas de energía',d:X.energiaTxt+(X.apreciacion?' Apreciación del técnico: '+X.apreciacion:''),trabajo:'tomas de energía'+(X.sinEnergia.length?' para '+X.sinEnergia.join(', '):'')});
+  if(X.tomas==='NO') add({id:'ENERGIA',tipo:'OBS',t:'Faltan tomas de energía',d:X.energiaTxt,trabajo:'tomas de energía'+(X.sinEnergia.length?' para '+X.sinEnergia.join(', '):'')});
   if(X.cableElec) add({id:'R_ELEC',tipo:'REC',t:'Cable cerca de electrodomésticos',d:'Un cable de red pasa cerca de electrodomésticos (licuadoras, congeladoras u otros). Aislarlo de la estática y la interferencia: canaleta o tubo, separación del equipo y del cable de energía, o cable apantallado (FTP).',eq:'canaleta o cable FTP',trabajo:'aislar el cableado de red'});
   if(X.rub==='PARRILLA'||X.rub==='POLLERIA') add({id:'R10',tipo:'REC',t:'Calor y grasa',d:`Router, Raspberry e impresoras lejos del calor y la grasa de ${X.rub==='PARRILLA'?'la parrilla':'las brasas'}. También se pueden cubrir los equipos para evitar que se llenen de grasa o tengan sobretemperatura.`});
   if(X.rub==='RETAIL'&&X.printersDone) add({id:'R63',tipo:'REC',t:'Periféricos por caja',d:'Probar los periféricos conectados a cada equipo de caja (balanza, escáner, gaveta, POS de pago); impresora USB con PC (R42).'});
@@ -1744,7 +1744,7 @@ function pdfBody(X,R){
   <h5>Topología de red</h5>${(()=>{const m=getMap(X);const H=mapH(m);return `<div class="pdfmap" style="height:${Math.round(H*.86)}px"><div class="inner">${mapHTML(m,null)}</div></div><p class="muted" style="font-size:10px">Azul: conexión existente · plomo: por implementar · rojo: con falla / observado · flecha: USB</p>`;})()}
   <h5>Análisis</h5><p>Global ${sc.g} % · ${sc.cards.map(c=>`${c.k} ${c.v==null?'no aplica':c.v+' %'}`).join(' · ')} · Estado: ${R.estado}</p>
   <h5>Recomendaciones</h5><ul>${R.it.filter(i=>i.tipo!=='AVISO').map(i=>`<li><b>${esc(i.t)}.</b> ${esc(i.d)}</li>`).join('')||'<li>Sin recomendaciones.</li>'}</ul>
-  ${(o.tec||o.serie||o.viab||pago.length||o.otroT||MIN.cambios.length)?`<h5>Observaciones</h5>${o.tec?`<p>${esc(o.tec)}</p>`:''}${o.serie?`<p>Serie de facturación: ${esc(o.serie)}</p>`:''}${o.viab?`<p>¿El cliente acepta la recomendación? ${esc(o.viab==='Otro'?o.viabOtro:o.viab)}</p>`:''}${pago.length?`<p>El método de pago que utilizan en el local es el siguiente: ${esc(pago.join(', '))}.</p>`:''}${o.otroT?`<p><b>${esc(o.otroT)}:</b> ${esc(o.otroC)}</p>`:''}${MIN.cambios.map(c=>`<p>Cambio pedido en el chat: ${esc(c)}</p>`).join('')}`:''}
+  ${(o.tec||o.serie||o.viab||pago.length||o.otroT||MIN.cambios.length||(X.tomas==='NO'&&X.apreciacion))?`<h5>Observaciones</h5>${X.tomas==='NO'&&X.apreciacion?`<p><b>Apreciaciones del técnico sobre la energía:</b> ${esc(X.apreciacion)}</p>`:''}${o.tec?`<p>${esc(o.tec)}</p>`:''}${o.serie?`<p>Serie de facturación: ${esc(o.serie)}</p>`:''}${o.viab?`<p>¿El cliente acepta la recomendación? ${esc(o.viab==='Otro'?o.viabOtro:o.viab)}</p>`:''}${pago.length?`<p>El método de pago que utilizan en el local es el siguiente: ${esc(pago.join(', '))}.</p>`:''}${o.otroT?`<p><b>${esc(o.otroT)}:</b> ${esc(o.otroC)}</p>`:''}${MIN.cambios.map(c=>`<p>Cambio pedido en el chat: ${esc(c)}</p>`).join('')}`:''}
   <h5>Aviso de viabilidad</h5><p>El inicio de operaciones con el punto de venta depende de que se atiendan los puntos observados en esta minuta.</p>
   <h5>Pasos a seguir</h5><p><b>Por parte del cliente</b></p><ul>${pasos.filter(p=>p.p==='Cliente').map(p=>`<li>${esc(p.t)}</li>`).join('')}</ul><p style="margin-top:4px"><b>Por parte de ID</b></p><ul>${pasos.filter(p=>p.p!=='Cliente').map(p=>`<li>${esc(p.t)}</li>`).join('')}</ul>
   ${A.P49a&&A.P49a.v?`<h5>Anexos</h5><p>Video del local: ${esc(A.P49a.v)}</p>`:''}`;
@@ -2440,7 +2440,7 @@ function minutaSections(X,R){
   });
   const wifi=[...(A.WZ&&A.WZ.v==='REVISAR'?[mRow('Revisión de WiFi por zona',X.wz.map(z=>`${z.z}: ${z.dbm} dBm, ${z.ping} ms (${z.cal})`).join(' · ')),...(X.sinSenal.length?[mRow('Zonas sin buena señal',X.sinSenal.join(', '),{bad:true})]:[]),...(X.solWifi?[mRow('Solución WiFi',X.solWifi)]:[])]:[]),
     mRow('Cámaras en la red',X.camaras?`Sí, ${X.nCam||'—'} cámaras`:(a.P47?'No':''))];
-  const ene=[mRow('Tomas cerca de los equipos',a.P33?a.P33.label:'',{bad:X.tomas==='NO'}),...(X.tomas==='NO'?[mRow('Equipos sin tomas cerca',X.ningunaToma?'Ninguno tiene tomas cerca':X.sinEnergia.join(', '),{bad:true}),mRow('Apreciaciones del técnico',X.apreciacion)]:[])];
+  const ene=[mRow('Tomas cerca de los equipos',a.P33?a.P33.label:'',{bad:X.tomas==='NO'}),...(X.tomas==='NO'?[mRow('Equipos sin tomas cerca',X.ningunaToma?'Ninguno tiene tomas cerca':X.sinEnergia.join(', '),{bad:true})]:[])];
   return {sec1,neg,net,caj,wifi,ene};
 }
 function mRules(X,R){
@@ -2454,7 +2454,7 @@ function mRules(X,R){
     if((p.con==='RED'||p.con==='WIFI')&&p.ip) L.push([`IMP. ${p.name} en el segmento del router`,`IP ${p.ip} · router ${X.seg}.x`,p.ip.startsWith(X.seg+'.')?st(1,'Verificado'):st(0,'Observado')]);
     if(['FALLAS','MANT'].includes(p.estado)) L.push([`IMP. ${p.name} en buen estado`,p.estadoL,st(0,p.estado==='FALLAS'?'Observado':'Revisar')]);});
   if(X.libres!=null) L.push(['Puertos libres para los equipos por cable',`${X.libres} libres · ${X.eqCable||0} equipos`,X.switchN?st(0,'Observado'):st(1,'Cumple')]);
-  if(X.tomas) L.push(['Tomas de energía cerca',X.tomas==='SI'?'Sí':'No',X.tomas==='SI'?st(1,'Cumple'):st(0,'Observado')]);
+  if(X.tomas==='PC') L.push(['Tomas de energía cerca','Por confirmar',st(0,'Por confirmar')]); else if(X.tomas) L.push(['Tomas de energía cerca',X.tomas==='SI'?'Sí':'No',X.tomas==='SI'?st(1,'Cumple'):st(0,'Observado')]);
   if(A.WZ&&A.WZ.v==='REVISAR') L.push(['Buena señal WiFi en las zonas revisadas',X.sinSenal.length?'Sin buena señal: '+X.sinSenal.join(', '):'Todas con buena señal',X.sinSenal.length?st(0,'Observado'):st(1,'Cumple')]);
   if(X.bw&&X.plan) L.push(['Plan cubre el mínimo por equipo',`${X.plan} Mbps / mínimo ${X.bw.min} Mbps`,X.con==='CHIP'||X.plan>=X.bw.min?st(1,'Cumple'):st(0,'Observado')]);
   const pend=X.simple?[]:Object.keys(A).filter(k=>/^E/.test(k)&&A[k]&&A[k].v==='SKIP');
@@ -2944,7 +2944,7 @@ function critInfra(X,R){
   C.push({k:'Puntos de red',w:30,r:nP?okP/nP:null,d:nP?`${okP} de ${nP} equipos por cable con puerto libre o punto de red`:(sinDato?'sin dato de puertos':'sin equipos por cable que medir')});
   /* 2 · Energía (25): equipos con toma cerca */
   const dev=X.devices||[]; const sin=X.tomas==='NO'?X.sinEnergia.length:0;
-  C.push({k:'Tomas de energía',w:25,r:X.simple||!X.tomas||!dev.length?null:ratio(dev.length-sin,dev.length),d:X.simple?'no aplica al rubro':!X.tomas?'sin dato':`${dev.length-sin} de ${dev.length} equipos con toma cerca`});
+  C.push({k:'Tomas de energía',w:25,r:X.simple||!X.tomas||X.tomas==='PC'||!dev.length?null:ratio(dev.length-sin,dev.length),d:X.simple?'no aplica al rubro':(!X.tomas||X.tomas==='PC')?'sin dato':`${dev.length-sin} de ${dev.length} equipos con toma cerca`});
   /* 3 · Medio de conexión correcto (20): lo que debe ir por cable va por cable */
   const deb=[]; (X.cajasInfo||[]).forEach(c=>{ if(c.eq==='SI'&&c.sysImp!==false) deb.push(!!c.pcCable); if(c.rasp) deb.push(!!c.raspCable); });
   (X.printers||[]).forEach(p=>{ if(p.prep&&p.con&&p.con!=='NO'&&p.con!=='NONE') deb.push(p.con==='RED'&&p.via!=='WIFI'); });
@@ -9633,7 +9633,8 @@ const PC52={
   P22g:{n:'SI',tema:'si el equipo de caja se queda en el local'},
   P22a:{n:'NO',tema:'si ya cuenta con un Raspberry'},
   P22b:{n:'PEND',ns:'Aún no lo decide',tema:'qué equipo adquirirá para el sistema de impresiones'},
-  P28h:{n:'NO',tema:'si ya tiene la impresora'}
+  P28h:{n:'NO',tema:'si ya tiene la impresora'},
+  P33:{n:'PC',tema:'si hay tomas de energía cerca de los equipos'}
 };
 const SI52=/^(s[ií]\b|claro|tiene\b|hay\b|a veces|algun|de vez|ocasional|frecuent|seguido|todos|siempre)/i, NO52=/^(no\b|nunca|ningun|jam[aá]s)/i;
 const __bb_build=build;
