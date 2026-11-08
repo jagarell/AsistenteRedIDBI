@@ -1,5 +1,12 @@
 # Changelog
 
+## [Sin publicar]
+### Corregido
+- **Editar topología**: el lienzo ya no se corta ni se queda sin moverse a los lados. Es más ancho cuando hay muchos equipos en una fila (para que los nombres no se pisen), se puede desplazar libremente y pellizcar para acercar hasta 4 veces y alejar hasta 25 %.
+- **Puntitos de cuadrícula** en el editor: marcan el área de trabajo y los equipos se pegan a ellos al soltarlos, para que queden alineados y no se amontonen.
+- Botón **Ajustar** en la barra del editor: hace que quepa todo el mapa en la pantalla.
+- Los nombres largos de los equipos se recortan con «…» en lugar de pisar al vecino.
+
 ## [0.0.17] - 2026-11-08
 ### Agregado
 - **Ubicación GPS del local con Google Maps** (vuelve la opción de las entregas anteriores): en «¿Cuál es la dirección del local?» aparece **📍 Usar GPS**. Muestra coordenadas, precisión, dirección, distrito/departamento y si el lugar coincide con el nombre del local; **Usar esta dirección** la responde y **Ver en Google Maps** abre el mapa. La minuta lleva «Distrito / Departamento» y «Ubicación GPS» como enlace al mapa.
