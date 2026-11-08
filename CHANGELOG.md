@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.0.17] - 2026-11-08
+### Agregado
+- **Ubicación GPS del local con Google Maps** (vuelve la opción de las entregas anteriores): en «¿Cuál es la dirección del local?» aparece **📍 Usar GPS**. Muestra coordenadas, precisión, dirección, distrito/departamento y si el lugar coincide con el nombre del local; **Usar esta dirección** la responde y **Ver en Google Maps** abre el mapa. La minuta lleva «Distrito / Departamento» y «Ubicación GPS» como enlace al mapa.
+### Corregido
+- **Supervisor**: el rol Supervisor conserva siempre «Validar minutas» y «Devolver minutas» (y el Técnico «Crear minutas») aunque la base de la empresa viniera de una versión anterior.
+
 ## [0.0.16] - 2026-11-07
 ### Agregado
 - **Parte 6 · actualizar la minuta desde el Asistente IA** (caso AMAT ROOFTOP): impresoras, equipos, fotos, tomas, router, recomendaciones y pasos; lo actualizado llega al PDF.
