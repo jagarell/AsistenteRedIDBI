@@ -131,8 +131,9 @@ class MainActivity : AppCompatActivity() {
             personas.take(30).forEach { p ->
                 val rol = p["rol"].toString().lowercase().replaceFirstChar { c -> c.uppercase() }
                 val sup = (p["supervisorNombre"] as? String)?.let { " · supervisor: $it" }.orEmpty()
-                val estado = if (p["pidioCodigo"] == true) "  — Pidió código" else ""
-                col.addView(t("• ${p["nombre"]} · $rol$sup$estado", 13.5f, false, if (p["pidioCodigo"] == true) 0xFF8A5A00.toInt() else 0xFF1F2937.toInt()).apply { setPadding(0, (3 * dp).toInt(), 0, 0) })
+                val sinAcceso = p["conAcceso"] == false
+                val estado = if (sinAcceso) "  — Sin acceso" else if (p["pidioCodigo"] == true) "  — Pidió código" else ""
+                col.addView(t("• ${p["nombre"]} · $rol$sup$estado", 13.5f, false, if (sinAcceso) 0xFFB91C1C.toInt() else if (p["pidioCodigo"] == true) 0xFF8A5A00.toInt() else 0xFF1F2937.toInt()).apply { setPadding(0, (3 * dp).toInt(), 0, 0) })
             }
             // «Pedir más usuarios» y «Cambiar a un plan superior» no tenían acción: se quitan hasta que existan los planes.
             col.addView(t("Para agregar personas, entra a Equipo y accesos.", 12f, false, 0xFF6B7280.toInt()).apply { setPadding(0, (12 * dp).toInt(), 0, 0) })
