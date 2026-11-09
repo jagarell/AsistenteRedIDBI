@@ -784,6 +784,9 @@ const EV_KINDS=['ev','check','rcard','links','summary'];
 /* Punto de red de una impresora por cable que no va directo al router (0.0.19). «Otro» y «No lo sé ahora» los agrega PC52. */
 const PUNTO_OPTS=[{v:'HAB',l:'Habilitado (con cable y jack, listo para conectar)'},{v:'SINJACK',l:'Hay cable pero sin jack'},{v:'SINCABLE',l:'No hay cable hasta ese lugar'},{v:'AVERIADO',l:'Averiado (no da red)'}];
 const PUNTO_ALERT={SINJACK:'el punto de red tiene cable pero no jack: colocar el jack antes del inicio.',SINCABLE:'no hay cable de red hasta la impresora: tender el cable y colocar el punto de red.',AVERIADO:'el punto de red está averiado: repararlo o cambiarlo.'};
+/* Descripción de la foto de una impresora (0.0.19 · C1/C2): la IA deduce sin preguntar si es de otro lugar o si aún no existe. */
+const AJENA_RE=/otro local|otro negocio|ajen[ao]|no es del local|no pertenece|del t[eé]cnico|de la competencia/i;
+const IMPL_RE=/por implementar|a[uú]n no (hay|tiene|existe|est[aá]|se instal)|todav[ií]a no (hay|tiene|existe|est[aá]|se instal)|no existe|falta instalar|no hay impresora/i;
 const PUNTO_TXT={SINJACK:'sin jack',SINCABLE:'sin cable',AVERIADO:'averiado'};
 const PUNTO_TRABAJO={SINJACK:'colocar el jack del punto de red',SINCABLE:'tender el cable y colocar el punto de red',AVERIADO:'reparar el punto de red'};
 const PUNTO_PESO={HAB:1,SINJACK:0.5,SINCABLE:0,AVERIADO:0};
@@ -1046,7 +1049,11 @@ function build(a){
     const nm=`IMP. ${pr.name}`, K='#'+pr.name;
     let tiene=true;
     push({id:'E5a'+K,b:'E',kind:'ev',read:'label',name:`la etiqueta de ${nm}`,text:`${nm}: sube la foto de la etiqueta de la impresora donde se vean el número de serie (SN) y el modelo.`,def:{data:{marca:'Epson',modelo:'TM-T20III',sn:'X5RF0'+(12345+ix)}}});
-    if(X.obra){
+    const dtxt=['E5a','E5b','E5'].map(k=>String((a[k+K]||{}).desc||'')).join(' ');
+    if(AJENA_RE.test(dtxt)){ pr.ajena=true; prevDone=true; return; }
+    const implDesc=IMPL_RE.test(dtxt);
+    if(implDesc) tiene=false;
+    if(X.obra&&!implDesc){
       /* En obra la impresora empieza «Por implementar» y pasa a «Existente» si la foto o su descripción lo muestran (0.0.19 · C3); solo si no hay ninguna de las dos se pregunta si el cliente ya la tiene. */
       const e0=a['E5a'+K];
       if(!e0){prevDone=false;return;}
@@ -1101,6 +1108,7 @@ function build(a){
     if((pr.con==='RED'||pr.con==='WIFI')&&pr.ip&&!pr.ip.startsWith(X.seg+'.')) push({id:'A_R55'+pr.name,kind:'alert',tone:'warn',tag:'R55',text:`${nm} está en ${pr.ip.split('.').slice(0,3).join('.')}.x y el router en ${X.seg}.x. ${X.anterior?'Configúrala en la misma red y segmento que las otras impresoras antes de iniciar con el punto de venta.':'Cambia su IP a una del segmento del router y vuelve a subir el selftest.'}`});
     prevDone=!!pr.con&&(pr.con!=='USB'||!!pr.usbTo)&&(!hasEst||!!pr.estado)&&(!viaQ||!!pr.via)&&(!ptoQ||!!pr.punto);
   });
+  for(let i=printers.length-1;i>=0;i--) if(printers[i].ajena) printers.splice(i,1);
   const printersDone=cajasDone&&printers.every(p=>p.con!=null&&(p.con!=='USB'||p.usbTo)&&(!['RED','WIFI','USB'].includes(p.con)||p.estado)&&(!['RED','WIFI'].includes(p.con)||p.via)&&(!p.ptoQ||p.punto));
   X.printersDone=printersDone;
 
