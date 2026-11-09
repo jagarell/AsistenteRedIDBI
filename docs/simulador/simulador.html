@@ -876,13 +876,16 @@ function build(a){
   X.comparte=prepPrn.includes(v('P12e'))?v('P12e'):null;
   const p12eReady=cajas!=null&&(!(cajas>0&&prepPrn.length)||a.P12e);
   if(p12eReady&&!X.simple) push(ch('P12b','B','¿En caja saldrán comandas?',YN,{def:'NO'}));
+  /* 0.0.19 · C5: una sola lista de impresoras. Además de las de cada área y la caja, se anotan las de otros lugares. */
+  if(p12eReady&&!X.simple&&a.P12b) push({id:'P12x',b:'B',kind:'multi',text:'¿Hay otras impresoras en el local además de las de las áreas de preparación y la caja? Márcalas o escribe su lugar con Otro.',opts:['Administración','Oficina','Bodega','Recepción'],sel:[],def:[],min:0,none:'No, no hay otras impresoras'});
   X.sunmi=!!rub&&!X.simple&&!prep.length&&v('P12b')==='SI';
   if(X.sunmi) push({id:'A_SUNMI',kind:'alert',tone:'info',tag:'A_SUNMI',text:'La comanda sale solo en caja. Recomienda un Sunmi con chip (comprobantes, pre-cuentas y comandas). Se cotiza con Desarrollo de Negocios.'});
-  const bReady=p12eReady&&(X.simple||a.P12b);
+  const bReady=p12eReady&&(X.simple||(a.P12b&&a.P12x));
 
   /* impresoras previstas (se conocen desde aquí: sirven para la pregunta de energía) */
   const printers=prepPrn.map(p=>({name:p,prep:true,shared:p===X.comparte}));
   for(let i=1;i<=X.cajas;i++){ if(i===1&&X.comparte) continue; printers.push({name:X.cajas>1?`Caja ${i}`:'Caja',prep:false}); }
+  { const nombres=new Set(printers.map(p=>p.name)); (X.simple?[]:(v('P12x')||[])).forEach(z=>{ if(z&&!nombres.has(z)){ nombres.add(z); printers.push({name:z,prep:false,extra:true}); } }); }
   X.printers=printers; X.seg='192.168.1';
   const eqCajaName=i=>X.cajas>1?`Equipo de caja ${i}`:'Equipo de caja';
 
@@ -1115,7 +1118,7 @@ function build(a){
   if(printersDone&&!X.simple&&X.cajas>0&&!X.sunmi){
     X.hasPC=X.cajasInfo.some(c=>(c.eq==='SI'&&!c.temporal)||c.adq==='LAPTOP'||c.adq==='PC'); X.hasRasp=X.cajasInfo.some(c=>c.rasp);
     const comandas=prep.length>0||v('P12b')==='SI';
-    const cajaUSB=printers.some(p=>(!p.prep||p.shared)&&p.con==='USB');
+    const cajaUSB=printers.some(p=>((!p.prep&&!p.extra)||p.shared)&&p.con==='USB');
     X.posPropio=X.cajasInfo.length>0&&X.cajasInfo.every(c=>c.posPropio);
     let d=null; if(!X.hasPC&&!X.hasRasp&&!X.posPropio) d=!comandas?'PC_BASICA':cajaUSB?'PC_CONTROLADOR':'RASPBERRY';
     X.decision=d;
@@ -1254,7 +1257,7 @@ function evaluate(X,a){
     if(p.con==='USB'&&p.usbTo==='PC'&&!p.prep) add({id:'R16',tipo:'REC',t:`IMP. ${p.name}: USB conectada a la PC o laptop`,d:'Mantener la impresora USB conectada a la PC o laptop de caja con el controlador de impresiones: así imprime comprobantes y comandas sin cambiarla por una de red.'});
     if(p.con==='USB'&&p.usbTo&&p.usbTo!=='PC') add({id:'USB',tipo:'OBS',t:`IMP. ${p.name}: USB ${p.usbTo==='NINGUNO'?'sin conectar':'conectada a '+p.usbToL}`,d:'Una impresora USB solo se conecta a una PC o laptop; no a tablet, Raspberry, Sunmi, iMin, router ni repetidor. '+(((X.cajasInfo||[]).some(c=>(c.eq==='SI'&&!c.temporal)||c.adq==='LAPTOP'||c.adq==='PC')||X.decision==='PC_BASICA'||X.decision==='PC_CONTROLADOR')?'Conectarla a la PC o laptop.':'Cambiar a impresora de red o adquirir una PC o laptop.'),eq:'impresora de red',trabajo:'impresora de red'});
     if(p.prep&&p.con&&p.con!=='RED'&&p.con!=='NONE') add({id:'R51',tipo:'OBS',t:`IMP. ${p.name}: debe ser de red por cable`,d:p.con==='NO'?'Aún no tiene impresora.':`Hoy es ${p.con==='USB'?'USB':'WiFi'}.`,eq:'impresora de red',trabajo:'impresora de red'});
-    if(!p.prep&&p.con==='NO') add({id:'IMP',tipo:'OBS',t:`IMP. ${p.name}: falta impresora`,d:'Adquirir la impresora de caja.',eq:'impresora de caja',trabajo:'impresora de caja'});
+    if(!p.prep&&p.con==='NO'){ const lugar=p.extra?`de ${p.name}`:'de caja'; add({id:'IMP',tipo:'OBS',t:`IMP. ${p.name}: falta impresora`,d:`Adquirir la impresora ${lugar}.`,eq:`impresora ${lugar}`,trabajo:`impresora ${lugar}`}); }
     if((p.con==='RED'||p.con==='WIFI')&&p.ip&&!p.ip.startsWith(X.seg+'.')) add({id:'R55 · V04',tipo:'OBS',t:`IMP. ${p.name}: fuera del segmento del router`,d:X.anterior?`IP ${p.ip}; el router y las otras impresoras están en ${X.seg}.x. Configurar la impresora en la misma red y segmento que las otras impresoras antes de iniciar con el punto de venta.`:`IP ${p.ip}; el router está en ${X.seg}.x. Cambiar la IP de la impresora.`});
   });
   const sinImp=new Set((X.printers||[]).filter(p=>X.obra&&p.con==='NO').map(p=>'E5a#'+p.name));
@@ -1469,7 +1472,7 @@ function buildMap(X){
     const wrong=p.prep&&(p.con==='USB'||p.con==='WIFI');           // se pide de red y no lo es
     const ipBad=(p.con==='RED'||p.con==='WIFI')&&p.ip&&!p.ip.startsWith(X.seg+'.');
     const usbOk=p.con==='USB'&&p.usbTo==='PC'&&usbHost, usbNone=p.con==='USB'&&(p.usbTo==='NINGUNO'||(p.usbTo==='PC'&&!usbHost));
-    const n=N({type:'printer',label:'IMP. '+p.name,ubic:p.prep?p.name:'Caja',ip:p.ip,usb:p.con==='USB',ipBad,sub:p.con==='NONE'?'Sin conexión':usbNone?'USB sin conectar':(p.con==='USB'&&p.usbTo&&p.usbTo!=='PC')?`USB a ${(p.usbToL||'otro equipo').toLowerCase()}: no válido`:null,tier:3,status:p.con==='NO'?'pending':(wrong||p.estado==='FALLAS'||p.estado==='AVERIADA')?'broken':'ok',power:pw('IMP. '+p.name)});
+    const n=N({type:'printer',label:'IMP. '+p.name,ubic:(p.prep||p.extra)?p.name:'Caja',ip:p.ip,usb:p.con==='USB',ipBad,sub:p.con==='NONE'?'Sin conexión':usbNone?'USB sin conectar':(p.con==='USB'&&p.usbTo&&p.usbTo!=='PC')?`USB a ${(p.usbToL||'otro equipo').toLowerCase()}: no válido`:null,tier:3,status:p.con==='NO'?'pending':(wrong||p.estado==='FALLAS'||p.estado==='AVERIADA')?'broken':'ok',power:pw('IMP. '+p.name)});
     /* a qué se conecta (P28c): router, switch o repetidor existentes, WiFi o socket de pared */
     let par=ph;
     if(p.via==='SWITCH'&&!sw){ if(!swEx){swEx=N({type:'switch',label:'Switch',sub:'Existente',ubic:ru,tier:2});L(router||tp,swEx,'main');} par=swEx; }
@@ -2544,7 +2547,7 @@ pdfBody=function(X,R){
   <h3 class="mh3">Negocio</h3>${mTable(S.neg,false)}
   <h3 class="mh3">Internet</h3>${mTable(S.net,false)}
   ${S.caj.length?`<h3 class="mh3">Equipos de caja</h3>${mTable(S.caj,false)}`:''}
-  ${pr.length?`<h3 class="mh3">Impresoras</h3><table class="mt"><tr><th>Nombre</th><th>Ubicación</th><th>Marca y modelo · SN</th><th>IP · MAC</th><th>Conexión</th><th>Estado</th></tr>${pr.map(p=>{const bad=['FALLAS','MANT'].includes(p.estado)||(p.prep&&p.con!=='RED');return `<tr><td class="k">IMP. ${esc(p.name)}</td><td>${esc(p.prep?p.name:'Caja')}</td><td>${esc(((p.marca+' '+p.modelo).trim()||'Sin dato')+(p.sn?' · SN '+p.sn:''))}</td><td>${esc(p.con==='USB'?'No aplica (USB)':(p.ip?p.ip+(p.mac?' · '+p.mac:''):'Sin dato'))}</td><td>${esc(CONN_L[p.con]+(p.viaL?' · '+p.viaL.toLowerCase():'')+(p.punto?(p.punto==='PC'?' · punto de red por confirmar':' · punto de red: '+(p.puntoL||'').toLowerCase()):''))}</td><td class="${bad?'bad-text':'ok-text'}">${esc(p.con==='NO'?'Por implementar':(p.prep&&p.con!=='RED')?'Debe ser de red'+(p.estadoL?' · '+p.estadoL.toLowerCase():''):(p.estadoL||'Sin dato'))}</td></tr>`;}).join('')}</table>`:''}
+  ${pr.length?`<h3 class="mh3">Impresoras</h3><table class="mt"><tr><th>Nombre</th><th>Ubicación</th><th>Marca y modelo · SN</th><th>IP · MAC</th><th>Conexión</th><th>Estado</th></tr>${pr.map(p=>{const bad=['FALLAS','MANT'].includes(p.estado)||(p.prep&&p.con!=='RED');return `<tr><td class="k">IMP. ${esc(p.name)}</td><td>${esc((p.prep||p.extra)?p.name:'Caja')}</td><td>${esc(((p.marca+' '+p.modelo).trim()||'Sin dato')+(p.sn?' · SN '+p.sn:''))}</td><td>${esc(p.con==='USB'?'No aplica (USB)':(p.ip?p.ip+(p.mac?' · '+p.mac:''):'Sin dato'))}</td><td>${esc(CONN_L[p.con]+(p.viaL?' · '+p.viaL.toLowerCase():'')+(p.punto?(p.punto==='PC'?' · punto de red por confirmar':' · punto de red: '+(p.puntoL||'').toLowerCase()):''))}</td><td class="${bad?'bad-text':'ok-text'}">${esc(p.con==='NO'?'Por implementar':(p.prep&&p.con!=='RED')?'Debe ser de red'+(p.estadoL?' · '+p.estadoL.toLowerCase():''):(p.estadoL||'Sin dato'))}</td></tr>`;}).join('')}</table>`:''}
   ${otros.length?`<h3 class="mh3">Equipos varios</h3><table class="mt"><tr><th>Equipo</th><th>Tipo</th><th>Ubicación</th><th>Detalle</th><th>Estado</th></tr>${otros.map(e=>`<tr><td class="k">${esc(e.eq)}</td><td>${esc(e.tipo)}</td><td>${esc(e.ubic)}</td><td>${esc(e.det)}</td><td class="${e.st==='Existente'?'ok-text':e.st==='Por implementar'?'':'bad-text'}">${esc(e.st)}</td></tr>`).join('')}</table>`:''}
   <h3 class="mh3">WiFi y cámaras</h3>${mTable(S.wifi,false)}
   <h3 class="mh3">Energía eléctrica</h3>${mTable(S.ene,false)}
@@ -2691,7 +2694,7 @@ annexHTML=function(X){
   const prn=(X.printers||[]).map(p=>{const K='#'+p.name;const cs=['E5a','E5b','E5'].filter(c=>ok(c+K)).map(c=>{const dd=D(c+K);
       const d=c==='E5a'?[`${dd.marca||''} ${dd.modelo||''}`.trim(),dd.sn?`SN ${dd.sn}`:'']:c==='E5b'?[`Se ve ${CONN_TXT[dd.ver]||'—'}.`]:dd.ip?[`${dd.marca||''} ${dd.modelo||''}`.trim(),`IP ${dd.ip} · MAC ${dd.mac||'—'}`,`Puerta de enlace ${dd.gw||'—'}`]:[`${dd.marca||''} ${dd.modelo||''}`.trim(),'USB: sin IP ni MAC'];
       return cell(`IMP. ${p.name} · ${LBL[c]}`,LBL[c],d);});
-    return cs.length?block(`IMP. ${esc(p.name)} · Ubic.: ${esc(p.prep?p.name:'Caja')}`,cs):'';}).join('');
+    return cs.length?block(`IMP. ${esc(p.name)} · Ubic.: ${esc((p.prep||p.extra)?p.name:'Caja')}`,cs):'';}).join('');
   /* anexo B */
   const vids=A.P49a&&Array.isArray(A.P49a.v)?A.P49a.v:(A.P49a&&A.P49a.v?[{d:'Video del local',u:A.P49a.v}]:[]);
   const annexA=gen.length||otros||prn?mH2('Anexo A.','Evidencias utilizadas','annex')+(gen.length?grid(gen,2,'mgrid g2'):'')+(otros?`<h3 class="mh3">Otros equipos</h3>${otros}`:'')+(prn?`<h3 class="mh3">Impresoras</h3>${prn}`:''):'';
@@ -5337,7 +5340,7 @@ annexHTML=function(X){
     if(!cs.length) return ''; const cells=cs.map(c=>{const dd=D(c+K);
       const d=c==='E5a'?[`${dd.marca||''} ${dd.modelo||''}`.trim(),dd.sn?`SN ${dd.sn}`:'']:c==='E5b'?[`Se ve ${CONN_TXT[dd.ver]||'—'}.`]:dd.ip?[`IP ${dd.ip} · MAC ${dd.mac||'—'}`,`Puerta de enlace ${dd.gw||'—'}`]:['USB: sin IP ni MAC'];
       return cell(c==='E5'?'Selftest (recorte: marca a puerta de enlace)':`IMP. ${p.name} · ${LBL[c]}`,LBL[c],d,c==='E5'?'sel':'');});
-    return `<tr><td class="nm">IMP. ${esc(p.name)}<span>Ubic.: ${esc(p.prep?p.name:'Caja')}</span></td>${cells.join('')}${'<td></td>'.repeat(3-cells.length)}</tr>`;}).filter(Boolean);
+    return `<tr><td class="nm">IMP. ${esc(p.name)}<span>Ubic.: ${esc((p.prep||p.extra)?p.name:'Caja')}</span></td>${cells.join('')}${'<td></td>'.repeat(3-cells.length)}</tr>`;}).filter(Boolean);
   const vids=A.P49a&&Array.isArray(A.P49a.v)?A.P49a.v:(A.P49a&&A.P49a.v?[{d:'Video del local',u:A.P49a.v}]:[]);
   const any=net.length||ad.length||amb.length||equipos.length||prRows.length;
   const annexA=any?mH2('Anexo A.','Evidencias utilizadas','annex')
