@@ -2,6 +2,7 @@
 
 ## [0.0.19] - sin publicar
 ### Agregado
+- **La descripción de la foto de una impresora decide sin preguntar** (Parte 7 · C1/C2): si dice que es de otro local (ajena, del técnico, de la competencia…), la impresora no se cuenta; si dice que aún no existe (por implementar, todavía no hay…), queda «Por implementar» sin preguntar. Se lee la descripción de la etiqueta, las conexiones y el selftest.
 - **Impresoras en obra · «Existente» o «Por implementar»** (Parte 7 · C3): el chat pide primero la foto de la etiqueta de cada impresora. Si la foto se leyó o tiene descripción, queda «Existente» sin preguntar; solo si se saltó y no tiene descripción pregunta «¿el cliente ya la tiene?» (Sí · No · No lo sé ahora). La foto saltada de una impresora que aún no existe no queda como evidencia pendiente.
 - **Punto de red de cada impresora por cable** (Parte 7 · C6): si la impresora no va directo al router ni por WiFi, el chat pregunta «¿cómo está el punto de red?» (Habilitado · Hay cable pero sin jack · No hay cable · Averiado · Otro · No lo sé ahora). «Puntos de red» del Análisis IA lo mide por impresora (Habilitado 1, sin jack 0.5, sin cable o averiado 0); lo no habilitado sale en la minuta y como trabajo del cliente en los pasos; «Por confirmar» no puntúa y pasa a «Confirmar con ID».
 
