@@ -142,13 +142,30 @@ class PdfPreviewFragment : Fragment() {
         fila.addView(boton("Editar") { findNavController().navigateUp() })
         if (minutaId > 0) {
             fila.addView(boton("Bitácora") { BitacoraMinutaSheet.mostrar(ctx, viewLifecycleOwner.lifecycleScope, api007, minutaId) })
-            fila.addView(boton("Solicitar validación") {
+            val solicitar = boton("Solicitar validación") {}
+            solicitar.setOnClickListener {
                 viewLifecycleOwner.lifecycleScope.launch {
                     runCatching { minutaApi.completeMinuta(minutaId) }
-                        .onSuccess { Toast.makeText(ctx, "Pediste la validación al supervisor.", Toast.LENGTH_LONG).show() }
+                        .onSuccess {
+                            solicitar.text = "Solicitada"; solicitar.isEnabled = false
+                            Toast.makeText(ctx, "Pediste la validación al supervisor.", Toast.LENGTH_LONG).show()
+                        }
                         .onFailure { Toast.makeText(ctx, "No se pudo solicitar la validación.", Toast.LENGTH_LONG).show() }
                 }
-            })
+            }
+            fila.addView(solicitar)
+            // Estado real de la minuta: «Solicitada» si ya está completa; sin botón si ya fue validada; el PDF se comparte «Sin validar» hasta entonces.
+            viewLifecycleOwner.lifecycleScope.launch {
+                val estado = runCatching { minutaApi.getMinuta(minutaId).status }.getOrNull() ?: return@launch
+                when (estado) {
+                    "COMPLETA" -> { solicitar.text = "Solicitada"; solicitar.isEnabled = false }
+                    "VALIDADA" -> solicitar.isVisible = false
+                }
+                if (estado != "VALIDADA") {
+                    binding.btnWhatsapp.text = "Compartir · WhatsApp (Sin validar)"
+                    binding.btnEmail.text = "Compartir · Email (Sin validar)"
+                }
+            }
         }
         caja.addView(fila, 2)
     }

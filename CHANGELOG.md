@@ -1,6 +1,9 @@
 # Changelog
 
 ## [0.0.19] - sin publicar
+### Cambiado
+- **Propuesta PDF**: «Solicitar validación» pasa a «Solicitada» (sin botón activo) cuando la minuta ya está completa y se oculta si ya fue validada; mientras no esté validada, los botones de compartir dicen «(Sin validar)».
+- **Plan de la empresa**: las personas sin acceso salen marcadas «Sin acceso».
 ### Agregado
 - **Una sola lista de impresoras** (Parte 7 · C5): después de «¿En caja saldrán comandas?» el chat pregunta «¿Hay otras impresoras en el local además de las de las áreas y la caja?» (Administración, Oficina, Bodega, Recepción u Otro, o ninguna). Cada una entra a la misma lista, con su lugar, y pasa por las mismas preguntas de conexión y estado, y sale en la misma tabla de la minuta.
 - **La descripción de la foto de una impresora decide sin preguntar** (Parte 7 · C1/C2): si dice que es de otro local (ajena, del técnico, de la competencia…), la impresora no se cuenta; si dice que aún no existe (por implementar, todavía no hay…), queda «Por implementar» sin preguntar. Se lee la descripción de la etiqueta, las conexiones y el selftest.
