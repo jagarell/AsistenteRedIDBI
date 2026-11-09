@@ -603,6 +603,7 @@ flowchart TD
   USB --> ES
   P28 --> ES
   ES --> VIA["P28c ¿Conectada al router, a un switch,<br/>a un repetidor, por WiFi o a un socket de pared? + Otro"]
+  VIA --> PTO["P28p ¿Cómo está el punto de red? (si no va directo al router ni es WiFi)<br/>Habilitado · Hay cable sin jack · No hay cable · Averiado · Otro · No lo sé ahora"]
 </pre></div></div>
 
   <div class="fsec"><h3>6 · Puertos, WiFi y cámaras</h3><p>No aplica en Retail ni en Otro. En obra no se mide el WiFi.</p><div class="scroll">
@@ -669,7 +670,7 @@ flowchart TD
       <tr><td>R56</td><td>Caídas, sin proveedor o patio grande</td><td>TP-Link con entrada de chip + chip del proveedor con buena señal; plan básico, o superior si hay cámaras</td><td class="s-conf">Confirmada</td></tr>
       <tr><td>R57</td><td>Hay o se recomienda Raspberry</td><td>Raspberry junto al router o switch, ventilado, lejos del calor</td><td class="s-conf">Confirmada</td></tr>
       <tr><td>Tablet</td><td>P22 = Tablet</td><td>"El dispositivo que usan en caja es una tablet": Raspberry obligatorio</td><td class="s-conf">Confirmada</td></tr>
-      <tr><td>Impresoras</td><td>Por cada impresora</td><td>Etiqueta (SN y modelo), conexiones (con la toma si tiene) y selftest. La conexión se completa sola: con IP y cable de red → red; sin IP y cable USB → USB; P28 solo si no se lee. P28b estado: Nueva · Viable · Necesita mantenimiento · Con fallas · Otro. P28c: conectada al router, a un switch, a un repetidor, por WiFi, a un socket de pared u otro</td><td class="s-conf">Confirmada (2026-10-11)</td></tr>
+      <tr><td>Impresoras</td><td>Por cada impresora</td><td>Etiqueta (SN y modelo), conexiones (con la toma si tiene) y selftest. La conexión se completa sola: con IP y cable de red → red; sin IP y cable USB → USB; P28 solo si no se lee. P28b estado: Nueva · Viable · Necesita mantenimiento · Con fallas · Otro. P28c: conectada al router, a un switch, a un repetidor, por WiFi, a un socket de pared u otro. P28p (0.0.19): punto de red de la impresora si no va directo al router ni por WiFi</td><td class="s-conf">Confirmada (2026-10-11)</td></tr>
       <tr><td>R55 · V04</td><td>IP del selftest fuera del segmento del router</td><td>OBSERVADO: cambiar la IP y volver a subir el selftest</td><td class="s-conf">Confirmada</td></tr>
       <tr><td>Lectura</td><td>Cada evidencia leída</td><td>Datos editables · Correcto · No es correcto (volver a tomar o subir, o continuar sin la lectura)</td><td class="s-conf">Confirmada</td></tr>
       <tr><td>Energía</td><td>Antes del router y las impresoras</td><td>P33 tomas cerca; si No: P33a equipos sin toma (o Ninguno) y P33b apreciaciones del técnico (supresor de picos). Rayo rojo solo donde falta toma (45 % del ícono). En las fotos se pide mostrar la toma solo en los equipos que la tienen; no aplica en Retail, Otro ni obra</td><td class="s-conf">Confirmada (2026-10-11)</td></tr>
@@ -780,7 +781,13 @@ const tv=x=>typeof x==='string'?{r:x,m:x==='il'?'tomar':'subir'}:x;
 
 /* conteo del chat: las evidencias y lo que se pregunta sobre ellas no cuentan como preguntas */
 const EV_KINDS=['ev','check','rcard','links','summary'];
-function isEvStep(n){return EV_KINDS.includes(n.kind)||n.id==='EVO'||/^P28[bcu]?#/.test(n.id);}
+/* Punto de red de una impresora por cable que no va directo al router (0.0.19). «Otro» y «No lo sé ahora» los agrega PC52. */
+const PUNTO_OPTS=[{v:'HAB',l:'Habilitado (con cable y jack, listo para conectar)'},{v:'SINJACK',l:'Hay cable pero sin jack'},{v:'SINCABLE',l:'No hay cable hasta ese lugar'},{v:'AVERIADO',l:'Averiado (no da red)'}];
+const PUNTO_ALERT={SINJACK:'el punto de red tiene cable pero no jack: colocar el jack antes del inicio.',SINCABLE:'no hay cable de red hasta la impresora: tender el cable y colocar el punto de red.',AVERIADO:'el punto de red está averiado: repararlo o cambiarlo.'};
+const PUNTO_TXT={SINJACK:'sin jack',SINCABLE:'sin cable',AVERIADO:'averiado'};
+const PUNTO_TRABAJO={SINJACK:'colocar el jack del punto de red',SINCABLE:'tender el cable y colocar el punto de red',AVERIADO:'reparar el punto de red'};
+const PUNTO_PESO={HAB:1,SINJACK:0.5,SINCABLE:0,AVERIADO:0};
+function isEvStep(n){return EV_KINDS.includes(n.kind)||n.id==='EVO'||/^P28[bcup]?#/.test(n.id);}
 /* total estimado: completa en una copia lo que falta con las respuestas sugeridas y cuenta hasta el final */
 let _qEst={k:null,v:null};
 function qEstimate(){
@@ -1075,15 +1082,19 @@ function build(a){
     const viaQ=(pr.con==='RED'||pr.con==='WIFI')&&!!pr.estado;
     if(viaQ) push(ch('P28c'+K,'E',`${nm}: ¿La impresora está conectada directamente al router, a un switch, a un repetidor, por WiFi o a un socket de pared?`,[{v:'ROUTER',l:'Directo al router'},{v:'SWITCH',l:'A un switch'},{v:'REPETIDOR',l:'A un repetidor'},{v:'WIFI',l:'Por WiFi'},{v:'SOCKET',l:'A un socket de pared'},{v:'OTRO',l:'Otro (escribir)',otro:true}],{def:pr.con==='WIFI'?'WIFI':'ROUTER'}));
     pr.via=v('P28c'+K); pr.viaL=a['P28c'+K]?a['P28c'+K].label:null;
+    const ptoQ=pr.con==='RED'&&!!pr.via&&pr.via!=='ROUTER'&&pr.via!=='WIFI';
+    if(ptoQ) push(ch('P28p'+K,'E',`${nm}: ¿cómo está el punto de red donde se conecta la impresora?`,PUNTO_OPTS,{def:'HAB'}));
+    pr.ptoQ=ptoQ; pr.punto=ptoQ?v('P28p'+K):null; pr.puntoL=ptoQ&&a['P28p'+K]?a['P28p'+K].label:null;
+    if(PUNTO_ALERT[pr.punto]) push({id:'A_PTO'+pr.name,kind:'alert',tone:'warn',tag:'PUNTO DE RED',text:`${nm}: ${PUNTO_ALERT[pr.punto]}`});
     if(pr.estado==='FALLAS') push({id:'A_AV'+pr.name,kind:'alert',tone:'warn',tag:'CON FALLAS',text:`${nm} tiene fallas: reparar o reemplazar la impresora.`});
     if(pr.estado==='MANT') push({id:'A_MT'+pr.name,kind:'alert',tone:'info',tag:'MANTENIMIENTO',text:`${nm}: darle mantenimiento antes del inicio.`});
     if(pr.con==='NONE') push({id:'A_NC'+pr.name,kind:'alert',tone:'warn',tag:'SIN CONEXIÓN',text:`${nm}: no se indicó cómo se conecta ni aparece en el escáner. En el mapa queda sola, sin conexión.`});
     if(pr.usbTo&&pr.usbTo!=='PC') push({id:'A_USB'+pr.name,kind:'alert',tone:'warn',tag:'USB',text:pr.usbTo==='NINGUNO'?`${nm} es USB y no está conectada a ningún equipo. Una impresora USB solo se conecta a una PC o laptop${usbHostOk()?'':'; en el local no hay PC ni laptop fija: cambiar a impresora de red o adquirir una PC o laptop'}.`:`${nm} está conectada por USB a: ${pr.usbToL}. Una impresora USB solo se conecta a una PC o laptop (nunca a tablet, Raspberry, Sunmi, iMin, router ni repetidor). En el mapa la impresora queda sin flecha USB. ${usbHostOk()?'Conéctala a la PC o laptop.':'Cambiar a impresora de red o adquirir una PC o laptop.'}`});
     if(pr.prep&&pr.con&&pr.con!=='RED'&&pr.con!=='NONE') push({id:'A_R51'+pr.name,kind:'alert',tone:'warn',tag:'R51',text:`${nm}: las impresoras de preparación deben ser de red por cable. ${pr.con==='NO'?'Debe adquirir una impresora de red.':'Cambiar a una impresora de red por cable.'}`});
     if((pr.con==='RED'||pr.con==='WIFI')&&pr.ip&&!pr.ip.startsWith(X.seg+'.')) push({id:'A_R55'+pr.name,kind:'alert',tone:'warn',tag:'R55',text:`${nm} está en ${pr.ip.split('.').slice(0,3).join('.')}.x y el router en ${X.seg}.x. ${X.anterior?'Configúrala en la misma red y segmento que las otras impresoras antes de iniciar con el punto de venta.':'Cambia su IP a una del segmento del router y vuelve a subir el selftest.'}`});
-    prevDone=!!pr.con&&(pr.con!=='USB'||!!pr.usbTo)&&(!hasEst||!!pr.estado)&&(!viaQ||!!pr.via);
+    prevDone=!!pr.con&&(pr.con!=='USB'||!!pr.usbTo)&&(!hasEst||!!pr.estado)&&(!viaQ||!!pr.via)&&(!ptoQ||!!pr.punto);
   });
-  const printersDone=cajasDone&&printers.every(p=>p.con!=null&&(p.con!=='USB'||p.usbTo)&&(!['RED','WIFI','USB'].includes(p.con)||p.estado)&&(!['RED','WIFI'].includes(p.con)||p.via));
+  const printersDone=cajasDone&&printers.every(p=>p.con!=null&&(p.con!=='USB'||p.usbTo)&&(!['RED','WIFI','USB'].includes(p.con)||p.estado)&&(!['RED','WIFI'].includes(p.con)||p.via)&&(!p.ptoQ||p.punto));
   X.printersDone=printersDone;
 
   if(printersDone&&!X.simple&&X.cajas>0&&!X.sunmi){
@@ -1223,6 +1234,7 @@ function evaluate(X,a){
   (X.printers||[]).forEach(p=>{
     if(p.estado==='FALLAS') add({id:'IMP-AV',tipo:'OBS',t:`IMP. ${p.name} con fallas`,d:'Reparar o reemplazar la impresora.',eq:'impresora de red',trabajo:`reparar o reemplazar IMP. ${p.name}`});
     if(p.estado==='MANT') add({id:'IMP-MT',tipo:'REC',t:`IMP. ${p.name}: mantenimiento`,d:'Darle mantenimiento a la impresora antes del inicio.',trabajo:`mantenimiento de IMP. ${p.name}`});
+    if(PUNTO_TRABAJO[p.punto]) add({id:'IMP-PTO',tipo:'OBS',t:`IMP. ${p.name}: punto de red ${PUNTO_TXT[p.punto]}`,d:PUNTO_ALERT[p.punto][0].toUpperCase()+PUNTO_ALERT[p.punto].slice(1),trabajo:`${PUNTO_TRABAJO[p.punto]} para IMP. ${p.name}`});
     if(p.con==='NONE') add({id:'IMP-NC',tipo:'OBS',t:`IMP. ${p.name} sin conexión`,d:'No se indicó cómo se conecta ni aparece en el escáner de IP. Verificar la conexión.'});
     if(p.con==='USB'&&p.usbTo==='PC'&&!p.prep) add({id:'R16',tipo:'REC',t:`IMP. ${p.name}: USB conectada a la PC o laptop`,d:'Mantener la impresora USB conectada a la PC o laptop de caja con el controlador de impresiones: así imprime comprobantes y comandas sin cambiarla por una de red.'});
     if(p.con==='USB'&&p.usbTo&&p.usbTo!=='PC') add({id:'USB',tipo:'OBS',t:`IMP. ${p.name}: USB ${p.usbTo==='NINGUNO'?'sin conectar':'conectada a '+p.usbToL}`,d:'Una impresora USB solo se conecta a una PC o laptop; no a tablet, Raspberry, Sunmi, iMin, router ni repetidor. '+(((X.cajasInfo||[]).some(c=>(c.eq==='SI'&&!c.temporal)||c.adq==='LAPTOP'||c.adq==='PC')||X.decision==='PC_BASICA'||X.decision==='PC_CONTROLADOR')?'Conectarla a la PC o laptop.':'Cambiar a impresora de red o adquirir una PC o laptop.'),eq:'impresora de red',trabajo:'impresora de red'});
@@ -2516,7 +2528,7 @@ pdfBody=function(X,R){
   <h3 class="mh3">Negocio</h3>${mTable(S.neg,false)}
   <h3 class="mh3">Internet</h3>${mTable(S.net,false)}
   ${S.caj.length?`<h3 class="mh3">Equipos de caja</h3>${mTable(S.caj,false)}`:''}
-  ${pr.length?`<h3 class="mh3">Impresoras</h3><table class="mt"><tr><th>Nombre</th><th>Ubicación</th><th>Marca y modelo · SN</th><th>IP · MAC</th><th>Conexión</th><th>Estado</th></tr>${pr.map(p=>{const bad=['FALLAS','MANT'].includes(p.estado)||(p.prep&&p.con!=='RED');return `<tr><td class="k">IMP. ${esc(p.name)}</td><td>${esc(p.prep?p.name:'Caja')}</td><td>${esc(((p.marca+' '+p.modelo).trim()||'Sin dato')+(p.sn?' · SN '+p.sn:''))}</td><td>${esc(p.con==='USB'?'No aplica (USB)':(p.ip?p.ip+(p.mac?' · '+p.mac:''):'Sin dato'))}</td><td>${esc(CONN_L[p.con]+(p.viaL?' · '+p.viaL.toLowerCase():''))}</td><td class="${bad?'bad-text':'ok-text'}">${esc(p.con==='NO'?'Por implementar':(p.prep&&p.con!=='RED')?'Debe ser de red'+(p.estadoL?' · '+p.estadoL.toLowerCase():''):(p.estadoL||'Sin dato'))}</td></tr>`;}).join('')}</table>`:''}
+  ${pr.length?`<h3 class="mh3">Impresoras</h3><table class="mt"><tr><th>Nombre</th><th>Ubicación</th><th>Marca y modelo · SN</th><th>IP · MAC</th><th>Conexión</th><th>Estado</th></tr>${pr.map(p=>{const bad=['FALLAS','MANT'].includes(p.estado)||(p.prep&&p.con!=='RED');return `<tr><td class="k">IMP. ${esc(p.name)}</td><td>${esc(p.prep?p.name:'Caja')}</td><td>${esc(((p.marca+' '+p.modelo).trim()||'Sin dato')+(p.sn?' · SN '+p.sn:''))}</td><td>${esc(p.con==='USB'?'No aplica (USB)':(p.ip?p.ip+(p.mac?' · '+p.mac:''):'Sin dato'))}</td><td>${esc(CONN_L[p.con]+(p.viaL?' · '+p.viaL.toLowerCase():'')+(p.punto?(p.punto==='PC'?' · punto de red por confirmar':' · punto de red: '+(p.puntoL||'').toLowerCase()):''))}</td><td class="${bad?'bad-text':'ok-text'}">${esc(p.con==='NO'?'Por implementar':(p.prep&&p.con!=='RED')?'Debe ser de red'+(p.estadoL?' · '+p.estadoL.toLowerCase():''):(p.estadoL||'Sin dato'))}</td></tr>`;}).join('')}</table>`:''}
   ${otros.length?`<h3 class="mh3">Equipos varios</h3><table class="mt"><tr><th>Equipo</th><th>Tipo</th><th>Ubicación</th><th>Detalle</th><th>Estado</th></tr>${otros.map(e=>`<tr><td class="k">${esc(e.eq)}</td><td>${esc(e.tipo)}</td><td>${esc(e.ubic)}</td><td>${esc(e.det)}</td><td class="${e.st==='Existente'?'ok-text':e.st==='Por implementar'?'':'bad-text'}">${esc(e.st)}</td></tr>`).join('')}</table>`:''}
   <h3 class="mh3">WiFi y cámaras</h3>${mTable(S.wifi,false)}
   <h3 class="mh3">Energía eléctrica</h3>${mTable(S.ene,false)}
@@ -2939,7 +2951,10 @@ function critInfra(X,R){
   const has=id=>R.it.some(i=>i.id===id); const C=[];
   /* 1 · Puntos de red (30): equipos por cable con puerto libre en el router o punto de red disponible */
   let nP=0,okP=0,sinDato=false;
-  if(X.eqCable!=null&&X.libres!=null){ nP+=X.eqCable; okP+=Math.min(X.libres,X.eqCable); } else if(X.hasInt&&!X.obra&&!X.simple) sinDato=true;
+  /* Impresoras con punto de red preguntado (0.0.19): se miden por su punto (Habilitado 1, Cable sin jack 0.5, Sin cable o Averiado 0) y ya no compiten por los puertos libres del router. «Por confirmar» no entra al cálculo. */
+  const pto=(X.printers||[]).filter(p=>p.punto in PUNTO_PESO), enRouter=pto.filter(p=>p.via==='ROUTER'||p.via==='SOCKET').length;
+  if(X.eqCable!=null&&X.libres!=null){ nP+=X.eqCable-enRouter; okP+=Math.min(X.libres,X.eqCable-enRouter); } else if(X.hasInt&&!X.obra&&!X.simple) sinDato=true;
+  pto.forEach(p=>{ nP++; okP+=PUNTO_PESO[p.punto]; });
   (X.cajasInfo||[]).forEach(c=>{ if((c.rasp||c.adq==='RASPBERRY')&&c.raspPunto!=null&&c.raspVia&&c.raspVia!=='ROUTER'){ nP++; if(c.raspPunto) okP++; } });
   C.push({k:'Puntos de red',w:30,r:nP?okP/nP:null,d:nP?`${okP} de ${nP} equipos por cable con puerto libre o punto de red`:(sinDato?'sin dato de puertos':'sin equipos por cable que medir')});
   /* 2 · Energía (25): equipos con toma cerca */
@@ -8767,7 +8782,7 @@ build=function(a){ const r=__v7aw_build(a); const {N,X}=r; X.sw46=null;
     if(prev&&S.map.some(r=>r.port)){ push(ch('PSWr','E','¿Se rotularon los puntos de red en el switch?',[{v:'SI',l:'Sí'},{v:'PARCIAL',l:'Parcial'},{v:'NO',l:'No'}],{def:'SI'})); const rr=a.PSWr; S.rot=rr?rr.label:null; }
     X.sw46=S; }
   /* va justo después de las preguntas de impresoras */
-  let at=-1; N.forEach((x,i)=>{ if(/^(P28|A_(AV|MT|NC|USB|R51|R55))/.test(x.id||'')) at=i; });
+  let at=-1; N.forEach((x,i)=>{ if(/^(P28|A_(AV|MT|NC|USB|R51|R55|PTO))/.test(x.id||'')) at=i; });
   N.splice(at<0?N.findIndex(x=>x.kind==='fin')>=0?N.findIndex(x=>x.kind==='fin'):N.length:at+1,0,...nodes);
   return r; };
 /* dibujo del switch mientras se ubica un puerto */
@@ -9637,7 +9652,8 @@ const PC52={
   P22a:{n:'NO',tema:'si ya cuenta con un Raspberry'},
   P22b:{n:'PEND',ns:'Aún no lo decide',tema:'qué equipo adquirirá para el sistema de impresiones'},
   P28h:{n:'NO',tema:'si ya tiene la impresora'},
-  P33:{n:'PC',tema:'si hay tomas de energía cerca de los equipos'}
+  P33:{n:'PC',tema:'si hay tomas de energía cerca de los equipos'},
+  P28p:{n:'PC',tema:'el estado del punto de red de la impresora'}
 };
 const SI52=/^(s[ií]\b|claro|tiene\b|hay\b|a veces|algun|de vez|ocasional|frecuent|seguido|todos|siempre)/i, NO52=/^(no\b|nunca|ningun|jam[aá]s)/i;
 const __bb_build=build;

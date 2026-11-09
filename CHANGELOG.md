@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.0.19] - sin publicar
+### Agregado
+- **Punto de red de cada impresora por cable** (Parte 7 · C6): si la impresora no va directo al router ni por WiFi, el chat pregunta «¿cómo está el punto de red?» (Habilitado · Hay cable pero sin jack · No hay cable · Averiado · Otro · No lo sé ahora). «Puntos de red» del Análisis IA lo mide por impresora (Habilitado 1, sin jack 0.5, sin cable o averiado 0); lo no habilitado sale en la minuta y como trabajo del cliente en los pasos; «Por confirmar» no puntúa y pasa a «Confirmar con ID».
+
 ## [0.0.18] - 2026-11-08
 ### Agregado
 - **Tomas de energía «Aún por confirmar»** («No lo sé ahora» y «Otro (escribir)»): queda como Por confirmar en la minuta y en los pasos del cliente, sin darlo por faltante.
