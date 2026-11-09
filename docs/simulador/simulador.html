@@ -592,7 +592,7 @@ flowchart TD
   PH --> AD["E7 Foto de AnyDesk abierto en el equipo de caja<br/>la IA lee el código y el equipo · no en obra"]
   AD --> IMP["Por cada impresora · Retail y Otro: solo las de caja"]
   IMP --> OB{"¿En obra?"}
-  OB -->|Sí| TI["P28h ¿El cliente ya tiene la impresora?<br/>No: por adquirir"]
+  OB -->|Sí| TI["P28h ¿El cliente ya tiene la impresora?<br/>Solo si la foto de la etiqueta se saltó y no tiene descripción. No: por implementar"]
   OB -->|No| EV
   TI -->|Sí| EV["E5a etiqueta · E5b conexiones con la toma · E5 selftest"]
   EV --> AU{"¿Se lee la conexión?"}
@@ -1045,9 +1045,16 @@ function build(a){
     if(!prevDone){pr.skip=true;return;}
     const nm=`IMP. ${pr.name}`, K='#'+pr.name;
     let tiene=true;
-    if(X.obra){ push(ch('P28h'+K,'E',`¿El cliente ya tiene la impresora de ${pr.name}?`,YN,{def:'NO'})); tiene=v('P28h'+K)==='SI'; if(!a['P28h'+K]){prevDone=false;return;} }
-    if(!tiene){ pr.con='NO'; pr.estado=null; pr.marca=''; pr.modelo=''; pr.sn=''; prevDone=true; return; }
     push({id:'E5a'+K,b:'E',kind:'ev',read:'label',name:`la etiqueta de ${nm}`,text:`${nm}: sube la foto de la etiqueta de la impresora donde se vean el número de serie (SN) y el modelo.`,def:{data:{marca:'Epson',modelo:'TM-T20III',sn:'X5RF0'+(12345+ix)}}});
+    if(X.obra){
+      /* En obra la impresora empieza «Por implementar» y pasa a «Existente» si la foto o su descripción lo muestran (0.0.19 · C3); solo si no hay ninguna de las dos se pregunta si el cliente ya la tiene. */
+      const e0=a['E5a'+K];
+      if(!e0){prevDone=false;return;}
+      if(!(e0.v==='OK'||String(e0.desc||'').trim())){
+        push(ch('P28h'+K,'E',`¿El cliente ya tiene la impresora de ${pr.name}?`,YN,{def:'NO'})); tiene=v('P28h'+K)==='SI'; if(!a['P28h'+K]){prevDone=false;return;}
+      }
+    }
+    if(!tiene){ pr.con='NO'; pr.estado=null; pr.marca=''; pr.modelo=''; pr.sn=''; prevDone=true; return; }
     const lab=a['E5a'+K]&&a['E5a'+K].v==='OK'?a['E5a'+K].data:null;
     if(a['E5a'+K]) push({id:'E5b'+K,b:'E',kind:'ev',read:'conn',name:`las conexiones de ${nm}`,text:conToma(nm,`${nm}: sube la foto de la parte de atrás de la impresora donde se vean sus conexiones.`),def:{data:{ver:'RED'}}});
     const conn=a['E5b'+K]&&a['E5b'+K].v==='OK'?a['E5b'+K].data.ver:null;
@@ -1242,7 +1249,8 @@ function evaluate(X,a){
     if(!p.prep&&p.con==='NO') add({id:'IMP',tipo:'OBS',t:`IMP. ${p.name}: falta impresora`,d:'Adquirir la impresora de caja.',eq:'impresora de caja',trabajo:'impresora de caja'});
     if((p.con==='RED'||p.con==='WIFI')&&p.ip&&!p.ip.startsWith(X.seg+'.')) add({id:'R55 · V04',tipo:'OBS',t:`IMP. ${p.name}: fuera del segmento del router`,d:X.anterior?`IP ${p.ip}; el router y las otras impresoras están en ${X.seg}.x. Configurar la impresora en la misma red y segmento que las otras impresoras antes de iniciar con el punto de venta.`:`IP ${p.ip}; el router está en ${X.seg}.x. Cambiar la IP de la impresora.`});
   });
-  const pend=X.simple?[]:Object.keys(a).filter(k=>/^E/.test(k)&&a[k]&&a[k].v==='SKIP'); if(pend.length) add({id:'EVID',tipo:'AVISO',t:`Evidencias pendientes (${pend.length})`,d:'Sin lectura: '+pend.map(k=>k.replace('#',' · ')).join(', ')+'. Se completan en la vista previa o desde el chat.'});
+  const sinImp=new Set((X.printers||[]).filter(p=>X.obra&&p.con==='NO').map(p=>'E5a#'+p.name));
+  const pend=X.simple?[]:Object.keys(a).filter(k=>/^E/.test(k)&&a[k]&&a[k].v==='SKIP'&&!sinImp.has(k)); if(pend.length) add({id:'EVID',tipo:'AVISO',t:`Evidencias pendientes (${pend.length})`,d:'Sin lectura: '+pend.map(k=>k.replace('#',' · ')).join(', ')+'. Se completan en la vista previa o desde el chat.'});
   if(X.switchN) add({id:'SWITCH',tipo:'OBS',t:'Faltan puertos en el router',d:`${X.eqCable} equipos por cable y ${X.libres} puertos libres: Switch x${X.switchN} y puntos de red.`,eq:`switch de ${X.switchN} puertos`,trabajo:'switch y puntos de red'});
   if(X.tomas==='NO'&&/supresor|picos/i.test(X.apreciacion)) add({id:'SUPRESOR',tipo:'REC',t:'Supresor de picos',d:'Instalar un supresor de picos (recomendado por el técnico).',eq:'supresor de picos'});
   if(X.tomas==='NO') add({id:'ENERGIA',tipo:'OBS',t:'Faltan tomas de energía',d:X.energiaTxt,trabajo:'tomas de energía'+(X.sinEnergia.length?' para '+X.sinEnergia.join(', '):'')});
