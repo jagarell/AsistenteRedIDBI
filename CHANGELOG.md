@@ -1,7 +1,9 @@
 # Changelog
 
-## [0.0.19] - sin publicar
+## [0.0.19] - 2026-11-10
 ### Cambiado
+- **Administrador**: con la minuta en Borrador puede editar y generar el PDF (antes solo veía «Validar minuta»); con la minuta completa valida o rechaza.
+- **Botones de compartir** de la Propuesta PDF caben en una línea («WhatsApp · sin validar», «Email · sin validar»).
 - **Propuesta PDF**: «Solicitar validación» pasa a «Solicitada» (sin botón activo) cuando la minuta ya está completa y se oculta si ya fue validada; mientras no esté validada, los botones de compartir dicen «(Sin validar)».
 - **Plan de la empresa**: las personas sin acceso salen marcadas «Sin acceso».
 ### Agregado
