@@ -29,6 +29,7 @@ data class AssistantHomeUiState(
     /** Las mismas evaluaciones del Historial, de la más nueva a la más vieja. */
     val evaluations: List<EvaluationSummaryItem> = emptyList(),
     val isSupervisor: Boolean = false,
+    val isAdmin: Boolean = false,
     val errorMessage: String? = null,
 
     val isStartingEvaluation: Boolean = false,
@@ -68,7 +69,7 @@ class AssistantHomeViewModel @Inject constructor(
                 }
             }
 
-            _uiState.update { it.copy(isSupervisor = sessionManager.isSupervisor()) }
+            _uiState.update { it.copy(isSupervisor = sessionManager.isSupervisor(), isAdmin = sessionManager.getRole() == com.upc.asistenteredidbi.domain.model.Role.ADMINISTRADOR) }
 
             listEvaluationsUseCase()
                 .onSuccess { evaluations ->

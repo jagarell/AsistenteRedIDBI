@@ -70,7 +70,7 @@ class AssistantHomeFragment : Fragment() {
                             .take(2).joinToString("") { it.first().uppercase() }
                     }
                     if (binding.tvUserRole.text.isNullOrBlank() || binding.tvUserRole.text.startsWith("TechNet")) {
-                        val roleLabel = if (state.isSupervisor) "Supervisor" else "Técnico"
+                        val roleLabel = if (state.isAdmin) "Administrador" else if (state.isSupervisor) "Supervisor" else "Técnico"
                         binding.tvUserRole.text = "$roleLabel · ${state.userCompany.ifBlank { "Asistente de Red" }}"
                     }
 
