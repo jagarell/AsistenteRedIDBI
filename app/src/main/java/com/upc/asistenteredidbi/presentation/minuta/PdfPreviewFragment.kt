@@ -162,8 +162,8 @@ class PdfPreviewFragment : Fragment() {
                     "VALIDADA" -> solicitar.isVisible = false
                 }
                 if (estado != "VALIDADA") {
-                    binding.btnWhatsapp.text = "Compartir · WhatsApp (Sin validar)"
-                    binding.btnEmail.text = "Compartir · Email (Sin validar)"
+                    binding.btnWhatsapp.text = "WhatsApp · sin validar"
+                    binding.btnEmail.text = "Email · sin validar"
                 }
             }
         }
