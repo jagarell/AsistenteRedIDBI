@@ -109,6 +109,8 @@ class MinutaProposalFragment : Fragment() {
     @javax.inject.Inject lateinit var api007: com.upc.asistenteredidbi.data.remote.Api007Service
     private var editMapButton: android.view.View? = null
     private var isSupervisor = false
+    /** El administrador también valida, pero con una minuta en Borrador actúa como técnico: puede editarla y generar el PDF. */
+    private var isAdmin = false
     private var recordId = -1L
     private var editions: MutableMap<String, Any?> = mutableMapOf()
     private var analysis: com.upc.asistenteredidbi.data.remote.dto.AnalysisResponseDto? = null
@@ -160,8 +162,9 @@ class MinutaProposalFragment : Fragment() {
     private fun observeRole() {
         viewLifecycleOwner.lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
-                sessionManager.isSupervisorFlow.collect { supervisor ->
-                    isSupervisor = supervisor
+                sessionManager.roleFlow.collect { role ->
+                    isSupervisor = role == com.upc.asistenteredidbi.domain.model.Role.SUPERVISOR || role == com.upc.asistenteredidbi.domain.model.Role.ADMINISTRADOR
+                    isAdmin = role == com.upc.asistenteredidbi.domain.model.Role.ADMINISTRADOR
                     renderStatus()
                 }
             }
@@ -215,8 +218,11 @@ class MinutaProposalFragment : Fragment() {
         }
     }
 
-    /** Solo el técnico edita, y solo mientras la minuta es Borrador (también si el supervisor la devolvió). */
-    private fun canEdit(): Boolean = !isSupervisor && minutaStatus == "BORRADOR" && lockedBy == null
+    /** Quien revisa (supervisor, o administrador con la minuta ya completa) valida o rechaza; no edita ni genera. */
+    private fun esRevisor(): Boolean = isSupervisor && !(isAdmin && minutaStatus == "BORRADOR")
+
+    /** Solo quien no revisa edita, y solo mientras la minuta es Borrador (también si el supervisor la devolvió). */
+    private fun canEdit(): Boolean = !esRevisor() && minutaStatus == "BORRADOR" && lockedBy == null
 
     private fun renderStatus() {
         if (_binding == null) return
@@ -233,7 +239,7 @@ class MinutaProposalFragment : Fragment() {
         }
         binding.tvValidatedBy.text = validatedBy ?: "—"
         val generated = generatedPdfFile != null
-        if (isSupervisor) {
+        if (esRevisor()) {
             binding.btnGeneratePdf.text = if (minutaStatus == "VALIDADA") "Minuta validada" else "Validar minuta"
             binding.btnGeneratePdf.isEnabled = minutaStatus == "COMPLETA"
         } else {
@@ -247,8 +253,8 @@ class MinutaProposalFragment : Fragment() {
         editMapButton?.let { it.isEnabled = canEdit(); it.alpha = if (canEdit()) 1f else 0.4f }
         binding.btnRejectMinuta.isVisible = isSupervisor && minutaStatus == "COMPLETA"
         val note = when {
-            lockedBy != null && !isSupervisor -> "En edición por $lockedBy: no puedes editar esta minuta hasta que aplique o cancele los cambios."
-            rejected && !isSupervisor ->
+            lockedBy != null && !esRevisor() -> "En edición por $lockedBy: no puedes editar esta minuta hasta que aplique o cancele los cambios."
+            rejected && !esRevisor() ->
                 "${rejectedBy ?: "El supervisor"} rechazó esta minuta: $rejectionReason\nCorrígela con Editar y vuelve a generar el PDF para completarla."
             (generated || minutaStatus != "BORRADOR") && minutaStatus != "VALIDADA" ->
                 "Aún no está validada: se comparte por WhatsApp o correo como no verificada, con la marca de agua SIN VALIDAR."
@@ -367,7 +373,7 @@ class MinutaProposalFragment : Fragment() {
         }
 
         binding.btnGeneratePdf.setOnClickListener {
-            if (isSupervisor) validate() else openPdf(preview = false)
+            if (esRevisor()) validate() else openPdf(preview = false)
         }
 
         binding.btnWhatsapp.setOnClickListener { sharePdf("com.whatsapp") }
