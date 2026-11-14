@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.0.21] - 2026-11-14
+### Cambiado
+- **Dictado por voz más preciso** (Chat IA, Asistente IA y Ayuda): ya no usa el reconocimiento de voz del teléfono. Un toque en el micrófono graba (se pone en rojo), otro toque termina, y el servidor transcribe el audio con IA conociendo los términos del oficio (AnyDesk, switch, IP, nombres de áreas). El texto queda en la caja para revisarlo antes de enviar. Graba hasta 2 minutos. Pide el permiso del micrófono la primera vez; sin señal avisa que no se pudo transcribir.
+
 ## [0.0.20] - 2026-11-14
 ### Corregido
 - **Foto tomada con la cámara en el Chat IA**: si Android cerraba la app mientras estaba abierta la cámara, al volver la foto se perdía y el chat quedaba como si nada. Ahora la app recupera la foto y la envía cuando el chat termina de cargar; si la foto quedó vacía avisa «No se guardó la foto. Vuelve a tomarla.».

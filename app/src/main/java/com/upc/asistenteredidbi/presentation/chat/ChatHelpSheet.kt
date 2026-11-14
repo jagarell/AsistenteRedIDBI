@@ -37,11 +37,12 @@ class ChatHelpSheet : BottomSheetDialogFragment() {
     private val binding get() = _binding!!
     private var busy = false
 
-    private val dictate = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { r ->
-        if (r.resultCode == Activity.RESULT_OK) {
-            r.data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)?.firstOrNull()?.let { binding.etHelp.setText(it) }
-        }
-    }
+    private val voz = com.upc.asistenteredidbi.presentation.common.VoiceDictation(
+        this,
+        transcribir = { repo.transcribir(it) },
+        onText = { t -> _binding?.etHelp?.let { et -> et.setText(if (et.text.isNullOrBlank()) t else et.text.toString().trimEnd() + " " + t); et.setSelection(et.text.length) } },
+        onState = { grabando, ocupado -> com.upc.asistenteredidbi.presentation.common.VoiceDictation.pintar(_binding?.btnHelpMic, grabando, ocupado) }
+    )
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = SheetChatHelpBinding.inflate(inflater, container, false)
@@ -61,15 +62,7 @@ class ChatHelpSheet : BottomSheetDialogFragment() {
         binding.etHelp.setOnEditorActionListener { _, id, _ ->
             if (id == EditorInfo.IME_ACTION_SEND) { send(question); true } else false
         }
-        binding.btnHelpMic.setOnClickListener {
-            val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
-                putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-                putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale("es", "PE"))
-            }
-            try { dictate.launch(intent) } catch (_: ActivityNotFoundException) {
-                Toast.makeText(requireContext(), "Este celular no tiene dictado por voz.", Toast.LENGTH_SHORT).show()
-            }
-        }
+        binding.btnHelpMic.setOnClickListener { voz.toggle() }
         binding.btnHelpCamera.setOnClickListener {
             Toast.makeText(requireContext(), "Enviar fotos a la Ayuda llegará en una próxima versión. Por ahora descríbelo con texto.", Toast.LENGTH_LONG).show()
         }

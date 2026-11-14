@@ -274,29 +274,24 @@ class TechnicalChatFragment : Fragment() {
         binding.tvQuestionCounter.text = "Preparando evaluación"
     }
 
-    /** Dictar la respuesta por voz (QA D3/G16): se transcribe en el campo de texto y se revisa antes de enviar. */
-    private val dictar = registerForActivityResult(androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult()) { r ->
-        if (r.resultCode == android.app.Activity.RESULT_OK && _binding != null) {
-            val t = r.data?.getStringArrayListExtra(android.speech.RecognizerIntent.EXTRA_RESULTS)?.firstOrNull().orEmpty()
-            if (t.isNotBlank()) {
-                val et = binding.etTextInput
+    @Inject
+    lateinit var asistenteRepo: com.upc.asistenteredidbi.data.repository.Asistente007Repository
+
+    /** Dictar la respuesta por voz: se graba, el servidor transcribe y el texto queda en el campo para revisarlo antes de enviar. */
+    private val voz = com.upc.asistenteredidbi.presentation.common.VoiceDictation(
+        this,
+        transcribir = { asistenteRepo.transcribir(it) },
+        onText = { t ->
+            _binding?.etTextInput?.let { et ->
                 et.setText(if (et.text.isBlank()) t else et.text.toString().trimEnd() + " " + t)
                 et.setSelection(et.text.length)
             }
-        }
-    }
-
-    private fun dictarRespuesta() {
-        val i = Intent(android.speech.RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
-            putExtra(android.speech.RecognizerIntent.EXTRA_LANGUAGE_MODEL, android.speech.RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-            putExtra(android.speech.RecognizerIntent.EXTRA_LANGUAGE, "es-PE")
-            putExtra(android.speech.RecognizerIntent.EXTRA_PROMPT, "Di tu respuesta…")
-        }
-        runCatching { dictar.launch(i) }.onFailure { Toast.makeText(requireContext(), "Este teléfono no tiene dictado por voz. Escribe la respuesta.", Toast.LENGTH_LONG).show() }
-    }
+        },
+        onState = { grabando, ocupado -> com.upc.asistenteredidbi.presentation.common.VoiceDictation.pintar(_binding?.btnDictate, grabando, ocupado) }
+    )
 
     private fun setupClicks() {
-        binding.btnDictate.setOnClickListener { dictarRespuesta() }
+        binding.btnDictate.setOnClickListener { voz.toggle() }
         binding.btnBack.setOnClickListener { findNavController().navigateUp() }
 
         binding.btnSubmit.setOnClickListener { submitAnswer() }

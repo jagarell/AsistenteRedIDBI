@@ -66,16 +66,22 @@ class AsistenteFragment : Fragment() {
         if (uri != null && tipo != null) vm.agregarAdjunto(tipo, uri.toString())
     }
 
-    private val dictar = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { r ->
-        if (r.resultCode == Activity.RESULT_OK) {
-            val t = r.data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)?.firstOrNull().orEmpty()
-            if (t.isNotBlank()) {
+    @javax.inject.Inject
+    lateinit var asistenteRepo: com.upc.asistenteredidbi.data.repository.Asistente007Repository
+
+    private var botonMic: View? = null
+    private val voz = com.upc.asistenteredidbi.presentation.common.VoiceDictation(
+        this,
+        transcribir = { asistenteRepo.transcribir(it) },
+        onText = { t ->
+            if (::input.isInitialized) {
                 input.setText(if (input.text.isBlank()) t else input.text.toString().trimEnd() + " " + t)
                 input.setSelection(input.text.length)
                 Toast.makeText(requireContext(), "Audio transcrito. Revísalo y envíalo.", Toast.LENGTH_SHORT).show()
             }
-        }
-    }
+        },
+        onState = { grabando, ocupado -> com.upc.asistenteredidbi.presentation.common.VoiceDictation.pintar(botonMic, grabando, ocupado) }
+    )
 
     // ---------------- Prompts frecuentes ★ (doc 0.0.7 §52) ----------------
     private val prefs by lazy { requireContext().getSharedPreferences("asistente_prompts", android.content.Context.MODE_PRIVATE) }
@@ -187,7 +193,7 @@ class AsistenteFragment : Fragment() {
 
         val bar = Ui007.row(ctx).apply { setPadding(dp(ctx, 10), dp(ctx, 8), dp(ctx, 10), dp(ctx, 12)); setBackgroundColor(Color.WHITE) }
         bar.addView(circulo(ctx, com.upc.asistenteredidbi.R.drawable.ic_ln_clip, "Adjuntar evidencias") { adjuntar() })
-        bar.addView(circulo(ctx, com.upc.asistenteredidbi.R.drawable.ic_ln_mic, "Dictar un audio") { dictarAudio() }.apply { (layoutParams as LinearLayout.LayoutParams).marginStart = dp(ctx, 8) })
+        bar.addView(circulo(ctx, com.upc.asistenteredidbi.R.drawable.ic_ln_mic, "Dictar un audio") { voz.toggle() }.apply { botonMic = this; (layoutParams as LinearLayout.LayoutParams).marginStart = dp(ctx, 8) })
         input = EditText(ctx).apply {
             layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply { marginStart = dp(ctx, 8) }
             background = Ui007.round(Ui007.BG, 22, ctx, Ui007.LINE); setPadding(dp(ctx, 14), dp(ctx, 10), dp(ctx, 14), dp(ctx, 10))
@@ -222,15 +228,6 @@ class AsistenteFragment : Fragment() {
     private fun reiniciar() {
         lista.removeAllViews(); pintados = 0
         vm.reiniciar()
-    }
-
-    private fun dictarAudio() {
-        val i = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
-            putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-            putExtra(RecognizerIntent.EXTRA_LANGUAGE, "es-PE")
-            putExtra(RecognizerIntent.EXTRA_PROMPT, "Cuéntame…")
-        }
-        runCatching { dictar.launch(i) }.onFailure { Toast.makeText(requireContext(), "Este teléfono no tiene dictado por voz. Escribe el mensaje.", Toast.LENGTH_LONG).show() }
     }
 
     // ---------------- Adjuntar evidencias ----------------
