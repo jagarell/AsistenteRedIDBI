@@ -46,6 +46,7 @@ import com.upc.asistenteredidbi.domain.model.TechnicalChatInputType
 import com.upc.asistenteredidbi.domain.model.TechnicalEquipmentRecommendation
 import com.upc.asistenteredidbi.presentation.common.toHierarchicalText
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.io.File
 import javax.inject.Inject
@@ -102,16 +103,57 @@ class TechnicalChatFragment : Fragment() {
 
     private val takePicture =
         registerForActivityResult(ActivityResultContracts.TakePicture()) { success ->
-            if (success && photoUri != null) {
-                if (cameraForAttach) viewModel.leerAdjunto(listOf(photoUri!!), attachTipo)
-                else {
-                    val target = pendingTarget
-                    pendingTarget = null
-                    if (target != null) viewModel.sendPendingPhoto(target, listOf(photoUri!!), "tomar")
-                    else viewModel.sendPhotos(listOf(photoUri!!), "tomar")
+            val uri = photoUri
+            val vacia = currentPhotoFile?.let { !it.exists() || it.length() == 0L } ?: true
+            if (success && uri != null && !vacia) {
+                val paraAdjunto = cameraForAttach
+                val tipo = attachTipo
+                val target = pendingTarget
+                pendingTarget = null
+                // Si Android cerró la app mientras estaba la cámara, el chat se recarga: se espera a que esté
+                // listo antes de enviar la foto, en vez de ignorarla.
+                cuandoElChatEstaListo {
+                    if (paraAdjunto) viewModel.leerAdjunto(listOf(uri), tipo)
+                    else if (target != null) viewModel.sendPendingPhoto(target, listOf(uri), "tomar")
+                    else viewModel.sendPhotos(listOf(uri), "tomar")
                 }
+            } else if (success) {
+                Toast.makeText(requireContext(), "No se guardó la foto. Vuelve a tomarla.", Toast.LENGTH_LONG).show()
             }
         }
+
+    /** Ejecuta [accion] cuando el chat ya cargó su pregunta actual (al instante si ya estaba listo). */
+    private fun cuandoElChatEstaListo(accion: () -> Unit) {
+        val s = viewModel.uiState.value
+        if (s.node != null && !s.isLoading) { accion(); return }
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewModel.uiState.first { it.node != null && !it.isLoading }
+            accion()
+        }
+    }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        // La cámara saca a la app de primer plano: si Android la cierra, lo que estaba en curso se recupera aquí.
+        savedInstanceState?.let { b ->
+            b.getString(KEY_PHOTO_PATH)?.let { path ->
+                val f = File(path)
+                currentPhotoFile = f
+                photoUri = FileProvider.getUriForFile(requireContext(), "${requireContext().packageName}.provider", f)
+            }
+            pendingTarget = b.getString(KEY_PENDING_TARGET)
+            cameraForAttach = b.getBoolean(KEY_CAMERA_ATTACH)
+            attachTipo = b.getString(KEY_ATTACH_TIPO)
+        }
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putString(KEY_PHOTO_PATH, currentPhotoFile?.absolutePath)
+        outState.putString(KEY_PENDING_TARGET, pendingTarget)
+        outState.putBoolean(KEY_CAMERA_ATTACH, cameraForAttach)
+        outState.putString(KEY_ATTACH_TIPO, attachTipo)
+    }
 
     private val pickAttachment =
         registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
@@ -134,6 +176,13 @@ class TechnicalChatFragment : Fragment() {
 
     /** Foto pendiente de «Subir después» que se está tomando o eligiendo (null = la evidencia actual del chat). */
     private var pendingTarget: String? = null
+
+    private companion object {
+        const val KEY_PHOTO_PATH = "chat_photo_path"
+        const val KEY_PENDING_TARGET = "chat_pending_target"
+        const val KEY_CAMERA_ATTACH = "chat_camera_attach"
+        const val KEY_ATTACH_TIPO = "chat_attach_tipo"
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -1338,6 +1387,7 @@ class TechnicalChatFragment : Fragment() {
             binding.btnAttach.alpha = if (inputEnabled) 1f else 0.45f
         }
         renderAttachment(state)
+        renderAvisoFoto(state)
 
         binding.etTextInput.hint = when {
             state.isLoading -> "Iniciando evaluación..."
@@ -1492,7 +1542,29 @@ class TechnicalChatFragment : Fragment() {
         viewModel.clearError()
     }
 
+    /** Aviso con «Cancelar» si la foto sigue analizándose pasados unos segundos (mala señal): evita quedar bloqueado. */
+    private var avisoFoto: com.google.android.material.snackbar.Snackbar? = null
+    private var avisoFotoJob: kotlinx.coroutines.Job? = null
+
+    private fun renderAvisoFoto(state: TechnicalChatUiState) {
+        val enviandoFoto = state.isSending && !state.completed && state.node?.inputType == TechnicalChatInputType.EVIDENCE
+        if (!enviandoFoto) {
+            avisoFotoJob?.cancel(); avisoFotoJob = null
+            avisoFoto?.dismiss(); avisoFoto = null
+            return
+        }
+        if (avisoFotoJob != null || avisoFoto != null) return
+        avisoFotoJob = viewLifecycleOwner.lifecycleScope.launch {
+            kotlinx.coroutines.delay(8_000)
+            avisoFoto = com.google.android.material.snackbar.Snackbar
+                .make(binding.root, "La foto está tardando. ¿Sigues con señal?", com.google.android.material.snackbar.Snackbar.LENGTH_INDEFINITE)
+                .setAction("Cancelar") { viewModel.cancelPhoto() }
+                .also { it.show() }
+        }
+    }
+
     override fun onDestroyView() {
+        avisoFotoJob?.cancel(); avisoFoto?.dismiss(); avisoFoto = null; avisoFotoJob = null
         pingJob?.cancel(); pingNodo = null
         binding.rvMessages.adapter = null
         _binding = null

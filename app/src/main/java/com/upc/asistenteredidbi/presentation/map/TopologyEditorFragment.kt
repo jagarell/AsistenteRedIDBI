@@ -375,7 +375,7 @@ class TopologyEditorFragment : Fragment() {
             Tool.MULTI -> Triple("Seleccionar varios · toca los elementos que quieres borrar y luego Borrar", "#FDECEA", "#B42318")
             Tool.TEXT -> Triple("Caja de texto · arrástrala a su lugar", "#FFF3E0", "#B26A00")
             Tool.IMAGE -> Triple("Imagen · arrastra para mover · elige el tamaño abajo", "#E8F5E9", "#2E7D32")
-            Tool.NONE -> Triple("Arrastra los equipos (se pegan a los puntitos) · pellizca para acercar · mantén presionado para más opciones", "#F3F5F9", "#6B7280")
+            Tool.NONE -> Triple("Arrastra los equipos (se pegan a los puntitos y el lienzo crece al llegar al borde) · pellizca para acercar · mantén presionado para más opciones", "#F3F5F9", "#6B7280")
         }
         banner.text = text
         banner.setBackgroundColor(com.upc.asistenteredidbi.presentation.common.NightColors.parse(bg))

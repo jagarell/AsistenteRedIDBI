@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.0.20] - 2026-11-14
+### Corregido
+- **Foto tomada con la cámara en el Chat IA**: si Android cerraba la app mientras estaba abierta la cámara, al volver la foto se perdía y el chat quedaba como si nada. Ahora la app recupera la foto y la envía cuando el chat termina de cargar; si la foto quedó vacía avisa «No se guardó la foto. Vuelve a tomarla.».
+### Agregado
+- **Cancelar una foto lenta**: si el análisis de la foto tarda más de 8 segundos aparece «La foto está tardando. ¿Sigues con señal?» con «Cancelar». La pregunta sigue igual para tomar la foto otra vez.
+- **Editar topología, lienzo que crece (como draw.io)**: al acercar un equipo, nota o imagen a cualquier borde, el lienzo se agranda y se llena de puntitos; con el dedo en el borde el mapa se desplaza solo. Al volver a abrir el mapa el lienzo se abre lo necesario para que los equipos no se pisen. Máximo 6 veces el tamaño de la pantalla.
+### Cambiado
+- El registro de red (cuerpo de las peticiones, con fotos y datos del cliente) solo se guarda en las compilaciones de prueba.
+
 ## [0.0.19] - 2026-11-10
 ### Cambiado
 - **Administrador**: con la minuta en Borrador puede editar y generar el PDF (antes solo veía «Validar minuta»); con la minuta completa valida o rechaza.

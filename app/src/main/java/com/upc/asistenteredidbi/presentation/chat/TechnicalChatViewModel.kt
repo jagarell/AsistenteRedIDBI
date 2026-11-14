@@ -573,6 +573,21 @@ class TechnicalChatViewModel @Inject constructor(
         }
     }
 
+    private var photoJob: kotlinx.coroutines.Job? = null
+    private var photoRollback: List<ChatMessage>? = null
+
+    /** Cancela el envío de la foto que se está analizando. El estado del flujo lo guarda la app, así que la pregunta sigue igual. */
+    fun cancelPhoto() {
+        val job = photoJob ?: return
+        if (!job.isActive) return
+        job.cancel()
+        photoJob = null
+        _uiState.update {
+            it.copy(isSending = false, messages = photoRollback ?: it.messages,
+                errorMessage = "Se canceló el envío. Toma la foto otra vez o elígela de la galería.")
+        }
+    }
+
     /** Sube 1..N fotos para el nodo EVIDENCE actual. `mode`: tomar (cámara), subir (galería) o forzar («Guardar como correcta»). */
     fun sendPhotos(uris: List<Uri>, mode: String = "subir", nota: String? = null) {
         val state = _uiState.value
@@ -589,8 +604,9 @@ class TechnicalChatViewModel @Inject constructor(
         if (mode != "forzar") lastEvidenceUris = uris
 
         _uiState.update { it.copy(isSending = true, errorMessage = null) }
+        photoRollback = state.messages
 
-        viewModelScope.launch {
+        photoJob = viewModelScope.launch {
             val files: List<File> = try {
                 localFiles.savePhotos(evaluationId, uris.take(node.maxFiles))
             } catch (e: PhotoProcessingException) {
