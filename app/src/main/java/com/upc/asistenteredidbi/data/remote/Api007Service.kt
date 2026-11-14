@@ -1,8 +1,11 @@
 package com.upc.asistenteredidbi.data.remote
 
+import okhttp3.MultipartBody
 import retrofit2.http.Body
 import retrofit2.http.GET
+import retrofit2.http.Multipart
 import retrofit2.http.POST
+import retrofit2.http.Part
 import retrofit2.http.Path
 import retrofit2.http.Query
 
@@ -11,6 +14,11 @@ import retrofit2.http.Query
  * versiones), minuta de soporte, mensaje al Asistente IA, «¿Qué aprendiste hoy?» y fichas de aprendizaje.
  */
 interface Api007Service {
+
+    /** Dictado por voz: el audio grabado se transcribe en el servidor. Devuelve {text, error}. */
+    @Multipart
+    @POST("api/transcribir")
+    suspend fun transcribir(@Part audio: MultipartBody.Part): Map<String, Any?>
 
     /** Ubicación GPS del local: dirección, distrito, departamento y coincidencia con el nombre (Google Maps). */
     @POST("api/geo/reverse")

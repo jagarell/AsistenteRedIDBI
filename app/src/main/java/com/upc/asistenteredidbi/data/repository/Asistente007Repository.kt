@@ -3,6 +3,9 @@ package com.upc.asistenteredidbi.data.repository
 import com.upc.asistenteredidbi.data.remote.Api007Service
 import com.upc.asistenteredidbi.data.remote.ReportesDto
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.MultipartBody
+import okhttp3.RequestBody.Companion.asRequestBody
+import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -17,6 +20,15 @@ class Asistente007Repository @Inject constructor(private val api: Api007Service)
         val plazo: Set<String> = emptySet()
     ) {
         fun count(): Int = listOf(tecnico, supervisor, rubro, estado, criticidad, esfuerzo, plazo).sumOf { it.size } + if (desde != null || hasta != null) 1 else 0
+    }
+
+    /** Transcribe un audio grabado (m4a). Devuelve el texto o, si no se pudo, el mensaje del servidor. */
+    suspend fun transcribir(audio: File): Pair<String, String?> {
+        val parte = MultipartBody.Part.createFormData("audio", audio.name, audio.asRequestBody("audio/mp4".toMediaTypeOrNull()))
+        val r = api.transcribir(parte)
+        val texto = (r["text"] as? String).orEmpty().trim()
+        val error = (r["error"] as? String)?.takeIf { it.isNotBlank() }
+        return texto to error
     }
 
     suspend fun perfil() = api.miPerfilReportes()
