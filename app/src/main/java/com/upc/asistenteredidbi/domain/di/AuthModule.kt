@@ -95,7 +95,8 @@ object AuthModule {
         return HttpLoggingInterceptor { message ->
             android.util.Log.d("OkHttp", message)
         }.apply {
-            level = HttpLoggingInterceptor.Level.BODY
+            // En la versión que usan los técnicos no se registra el cuerpo (fotos en base64, tokens, datos del cliente).
+            level = if (com.upc.asistenteredidbi.BuildConfig.DEBUG) HttpLoggingInterceptor.Level.BODY else HttpLoggingInterceptor.Level.NONE
             redactHeader("Authorization")
         }
     }

@@ -138,7 +138,8 @@ class MapCanvasView @JvmOverloads constructor(
     private var vw = 0f
     private val virtualW get() = if (vw > 0f) vw else width.toFloat()
     private fun baseX(nx: Float) = padX + nx * (virtualW - 2 * padX)
-    private val virtualH get() = height.toFloat()
+    private var vh = 0f
+    private val virtualH get() = if (vh > 0f) vh else height.toFloat()
     private fun baseY(ny: Float) = padTop + ny * (virtualH - padTop - padBottom)
     private fun normX(bx: Float) = ((bx - padX) / (virtualW - 2 * padX)).coerceIn(0.02f, 0.98f)
     private fun normY(by: Float) = ((by - padTop) / (virtualH - padTop - padBottom)).coerceIn(0.02f, 0.98f)
@@ -147,7 +148,23 @@ class MapCanvasView @JvmOverloads constructor(
     private fun neededWidth(): Float {
         if (staticPreview || width == 0) return width.toFloat()
         val porFila = map.nodes.groupBy { (it.y * 14).roundToInt() }.values.maxOfOrNull { it.size } ?: 1
-        return max(width.toFloat(), porFila * 96f * density + 2 * padX)
+        // Si el técnico juntó equipos en una fila, el lienzo se vuelve a abrir lo necesario para que no se pisen.
+        val hueco = map.nodes.groupBy { (it.y * 14).roundToInt() }.values.mapNotNull { fila ->
+            val xs = fila.map { it.x }.sorted()
+            xs.zipWithNext { a, b -> b - a }.filter { it > 0.001f }.minOrNull()
+        }.minOrNull()
+        val porHueco = if (hueco != null) 96f * density / hueco + 2 * padX else 0f
+        return min(max(width.toFloat(), max(porFila * 96f * density + 2 * padX, porHueco)), width * MAX_LIENZO)
+    }
+
+    /** Alto que necesitan los equipos de una misma columna para que el nombre de uno no tape al de abajo. */
+    private fun neededHeight(): Float {
+        if (staticPreview || height == 0) return height.toFloat()
+        val hueco = map.nodes.groupBy { (it.x * 14).roundToInt() }.values.mapNotNull { col ->
+            val ys = col.map { it.y }.sorted()
+            ys.zipWithNext { a, b -> b - a }.filter { it > 0.001f }.minOrNull()
+        }.minOrNull() ?: return height.toFloat()
+        return min(max(height.toFloat(), 92f * density / hueco + padTop + padBottom), height * MAX_LIENZO)
     }
 
     private var ajustado = false
@@ -165,14 +182,17 @@ class MapCanvasView @JvmOverloads constructor(
     private fun crecerLienzo(ajustar: Boolean) {
         if (staticPreview || width == 0) return
         val n = neededWidth()
+        val nh = neededHeight()
         val antes = virtualW
+        val antesH = virtualH
         if (n > vw) vw = n else if (vw == 0f) vw = width.toFloat()
-        if (ajustar || !ajustado || vw != antes) { fitView(); ajustado = true }
+        if (nh > vh) vh = nh else if (vh == 0f) vh = height.toFloat()
+        if (ajustar || !ajustado || vw != antes || vh != antesH) { fitView(); ajustado = true }
     }
 
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
         super.onSizeChanged(w, h, oldw, oldh)
-        if (w > 0 && !staticPreview) { vw = max(vw, w.toFloat()); crecerLienzo(false) }
+        if (w > 0 && !staticPreview) { vw = max(vw, w.toFloat()); vh = max(vh, h.toFloat()); crecerLienzo(false) }
     }
 
     /** Se puede mover el lienzo con libertad, pero sin perder el mapa de vista. */
@@ -557,24 +577,55 @@ class MapCanvasView @JvmOverloads constructor(
                 val dy = event.y - lastY
                 lastX = event.x; lastY = event.y
                 val sel = dragging
-                if (sel != null) dragItem(sel, toBaseX(event.x), toBaseY(event.y))
+                if (sel != null) { dragItem(sel, toBaseX(event.x), toBaseY(event.y)); removeCallbacks(autoDesplazar); postOnAnimation(autoDesplazar) }
                 else if (panning) { tx += dx; ty += dy; limitarDesplazamiento(); invalidate() }
                 return true
             }
             MotionEvent.ACTION_UP -> {
-                removeCallbacks(longPressRunnable)
+                removeCallbacks(longPressRunnable); removeCallbacks(autoDesplazar)
                 if (!moved && !longPressed) handleTap(toBaseX(event.x), toBaseY(event.y))
                 if (dragSnapshotTaken) listener?.onMapChanged(map)
                 dragging = null; panning = false
                 return true
             }
             MotionEvent.ACTION_CANCEL -> {
-                removeCallbacks(longPressRunnable)
+                removeCallbacks(longPressRunnable); removeCallbacks(autoDesplazar)
                 dragging = null; panning = false
                 return true
             }
         }
         return true
+    }
+
+    /** Agranda el lienzo conservando donde está cada elemento en pantalla (las coordenadas guardadas se recalculan de 0 a 1). */
+    private fun reencuadrar(nuevoW: Float, nuevoH: Float, sx: Float, sy: Float) {
+        fun nx(x: Float) = (((baseX(x) + sx) - padX) / (nuevoW - 2 * padX)).coerceIn(0.02f, 0.98f)
+        fun ny(y: Float) = (((baseY(y) + sy) - padTop) / (nuevoH - padTop - padBottom)).coerceIn(0.02f, 0.98f)
+        val m = map
+        val nodes = m.nodes.map { it.copy(x = nx(it.x), y = ny(it.y)) }
+        val texts = m.texts.map { it.copy(x = nx(it.x), y = ny(it.y)) }
+        val images = m.images.map { it.copy(x = nx(it.x), y = ny(it.y)) }
+        vw = nuevoW; vh = nuevoH
+        tx -= sx * scale; ty -= sy * scale
+        map = m.copy(nodes = nodes, texts = texts, images = images)
+    }
+
+    /** Mientras se arrastra un equipo con el dedo en el borde de la pantalla, el mapa se desplaza solo. */
+    private val autoDesplazar = object : Runnable {
+        override fun run() {
+            val sel = dragging ?: return
+            if (!moved || longPressed) { postOnAnimation(this); return }
+            val borde = 48f * density; val paso = 5f * density
+            val dx = if (lastX > width - borde) -paso else if (lastX < borde) paso else 0f
+            val dy = if (lastY > height - borde) -paso else if (lastY < borde) paso else 0f
+            if (dx != 0f || dy != 0f) {
+                tx += dx; ty += dy
+                limitarDesplazamiento()
+                dragItem(sel, toBaseX(lastX), toBaseY(lastY))
+                invalidate()
+            }
+            postOnAnimation(this)
+        }
     }
 
     private fun dragItem(sel: Selection, bx: Float, by: Float) {
@@ -583,8 +634,26 @@ class MapCanvasView @JvmOverloads constructor(
             dragSnapshotTaken = true
             if (selection != sel) { selection = sel; listener?.onSelectionChanged(sel) }
         }
-        val nx = normX(pegar(bx))
-        val ny = normY(pegar(by))
+        var cx = bx
+        var cy = by
+        // Estilo draw.io: al acercar un equipo al borde, el lienzo se agranda y se llena de puntitos.
+        if (!staticPreview) {
+            val paso = gridStep
+            val margen = 2 * paso
+            var nuevoW = virtualW; var nuevoH = virtualH
+            var sx = 0f; var sy = 0f
+            val maxW = width * MAX_LIENZO; val maxH = height * MAX_LIENZO
+            if (cx > virtualW - padX - margen && virtualW < maxW) nuevoW = min(maxW, pegar(cx) + padX + 4 * paso)
+            else if (cx < padX + margen && virtualW < maxW) { sx = (kotlin.math.ceil((padX + margen - cx) / paso) + 2) * paso; nuevoW = min(maxW, virtualW + sx) }
+            if (cy > virtualH - padBottom - margen && virtualH < maxH) nuevoH = min(maxH, pegar(cy) + padBottom + 4 * paso)
+            else if (cy < padTop + margen && virtualH < maxH) { sy = (kotlin.math.ceil((padTop + margen - cy) / paso) + 2) * paso; nuevoH = min(maxH, virtualH + sy) }
+            if (nuevoW != virtualW || nuevoH != virtualH) {
+                reencuadrar(nuevoW, nuevoH, sx, sy)
+                cx += sx; cy += sy
+            }
+        }
+        val nx = normX(pegar(cx))
+        val ny = normY(pegar(cy))
         map = when (sel.kind) {
             "node" -> map.copy(nodes = map.nodes.map { if (it.id == sel.id) it.copy(x = nx, y = ny) else it })
             "text" -> map.copy(texts = map.texts.map { if (it.id == sel.id) it.copy(x = nx, y = ny) else it })
@@ -636,6 +705,9 @@ class MapCanvasView @JvmOverloads constructor(
             while (max(bounds.outWidth, bounds.outHeight) / (sample * 2) >= maxPx) sample *= 2
             android.graphics.BitmapFactory.decodeFile(path, android.graphics.BitmapFactory.Options().apply { inSampleSize = sample })
         }.getOrNull()
+
+        /** Cuántas veces el tamaño de la pantalla puede llegar a medir el lienzo al arrastrar hacia los bordes. */
+        private const val MAX_LIENZO = 6f
 
         fun clampSize(size: String, delta: Int): String {
             val order = listOf("S", "M", "L")
