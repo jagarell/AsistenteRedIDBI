@@ -884,7 +884,7 @@ function build(a){
 
   /* impresoras previstas (se conocen desde aquí: sirven para la pregunta de energía) */
   const printers=prepPrn.map(p=>({name:p,prep:true,shared:p===X.comparte}));
-  for(let i=1;i<=X.cajas;i++){ if(i===1&&X.comparte) continue; printers.push({name:X.cajas>1?`Caja ${i}`:'Caja',prep:false}); }
+  for(let i=1;i<=X.cajas;i++){ if(i===1&&X.comparte) continue; printers.push({name:X.cajas>1?`Caja ${i}`:'Caja',prep:false,cajaIdx:i}); }
   { const nombres=new Set(printers.map(p=>p.name)); (X.simple?[]:(v('P12x')||[])).forEach(z=>{ if(z&&!nombres.has(z)){ nombres.add(z); printers.push({name:z,prep:false,extra:true}); } }); }
   X.printers=printers; X.seg='192.168.1';
   const eqCajaName=i=>X.cajas>1?`Equipo de caja ${i}`:'Equipo de caja';
@@ -998,73 +998,27 @@ function build(a){
   X.libres=X.router&&X.router.libres!=null&&X.router.libres!==''?+X.router.libres:null;
   X.routerEtq=X.router?{marca:X.router.marca,modelo:X.router.modelo,sn:X.router.sn}:null;
 
-  /* D · cajas (las preguntas hablan del equipo de caja) */
-  X.cajasInfo=[];
-  if(cBlockReady) for(let i=1;i<=X.cajas;i++){
-    const k='#'+i,nm=X.cajas>1?`Caja ${i}`:'Caja', sfx=X.cajas>1?` (caja ${i})`:'', eqn=eqCajaName(i);
-    if(i>1&&!X.cajasInfo[i-2].done) break;
-    push(ch('P22'+k,'D',`¿Cuál es el equipo de caja${sfx}?`,[{v:'SI',l:'PC o laptop'},{v:'TABLET',l:'Tablet'},{v:'SUNMI',l:'Sunmi'},{v:'IMIN',l:'iMin'},{v:'NO',l:'No tiene'},{v:'NO_SE',l:'No sé'},{v:'OTRO',l:'Otro (escribir)',otro:true}],{def:'SI'}));
-    const e=v('P22'+k); const info={i,nm,eqName:eqn,eq:e,eqL:a['P22'+k]?a['P22'+k].label:null};
-    if(e==='SI'){
-      if(rub==='DISCOTECA_BAR') push(ch('P22g'+k,'D',`¿El equipo de caja${sfx} se queda en el local de forma permanente?`,YN,{def:'SI'}));
-      if(rub!=='DISCOTECA_BAR'||v('P22g'+k)!=null) push(ch('P23'+k,'D',`¿Cómo se conecta el equipo de caja${sfx} a la red?`,[{v:'CABLE',l:'Cable de red'},{v:'WIFI',l:'WiFi'}],{def:'CABLE'}));
-      if(v('P23'+k)==='WIFI') push(ch('P23w'+k,'D',`¿En el equipo de caja${sfx} está el sistema de impresiones (${sysImpN()})?`,YN,{def:'SI'})); info.sysImp=v('P23'+k)==='WIFI'?v('P23w'+k)!=='NO':true; info.pcCable=v('P23'+k)==='CABLE'; info.pcWifi=v('P23'+k)==='WIFI'; info.temporal=v('P22g'+k)==='NO';
-      if(info.temporal&&v('P23'+k)!=null) push({id:'A_R60'+k,kind:'alert',tone:'warn',tag:'R60',text:`El equipo de caja${sfx} no se queda en el local. Recomienda un Raspberry para el sistema de impresiones.`});
-    }
-    if(e==='TABLET') push({id:'A_TAB'+k,kind:'alert',tone:'warn',tag:'TABLET',text:`El equipo de caja${sfx} es una tablet. Es obligatorio un kit Raspberry para el controlador de impresiones y las impresoras deben ser de red.`});
-    if((e==='SUNMI'||e==='IMIN')&&X.anterior) push({id:'A_PROV'+k,kind:'alert',tone:'warn',tag:'PROVEEDOR',text:`El equipo de caja${sfx} es un ${e==='SUNMI'?'Sunmi':'iMin'}. Si no es de Desarrollo de Negocios, no se puede usar porque pertenece a otro proveedor. Tómalo en cuenta.`});
-    /* Sunmi o iMin: no se habla de Raspberry en Retail, ni cuando la comanda sale en la misma caja (sin otro lugar de preparación que el que comparte con caja) */
-    const soloCaja=!prep.length||(prep.length===1&&X.comparte===prep[0]);
-    if(e==='SUNMI'||e==='IMIN'){ push(ch('P22i'+k,'D',`¿El ${e==='SUNMI'?'Sunmi':'iMin'}${sfx} tiene impresora integrada?`,[{v:'SI',l:'Sí, tiene impresora'},{v:'NO',l:'No, solo es pantalla'},{v:'FOTO',l:'No sé el modelo (enviar foto)'}],{def:'SI'})); info.impInt=v('P22i'+k)!=='NO'; }
-    info.posPropio=(e==='SUNMI'||e==='IMIN')&&info.impInt!==false&&(X.simple||soloCaja);
-    const sinPC=!info.posPropio&&(['TABLET','SUNMI','IMIN','NO','NO_SE','OTRO'].includes(e)||(info.temporal&&v('P23'+k)!=null));
-    if(sinPC&&!X.simple){
-      push(ch('P22a'+k,'D',`¿El cliente ya cuenta con un Raspberry${sfx}?`,YN,{def:'NO'}));
-      if(v('P22a'+k)==='SI') push(ch('P22c'+k,'D','¿Cómo se conecta el Raspberry a la red?',[{v:'CABLE',l:'Cable de red'},{v:'WIFI',l:'WiFi'}],{def:'CABLE'}));
-      const adqR=v('P22b'+k)==='RASPBERRY';
-      if(a['P22c'+k]||adqR) push(ch('P22d'+k,'D',adqR?'¿A qué equipo de red principal irá conectado el Raspberry cuando se implemente?':'¿A qué equipo de red principal va conectado el Raspberry?',[{v:'ROUTER',l:'Al router'},{v:'SWITCH',l:'A un switch'},{v:'REPETIDOR',l:'A un repetidor'},{v:'AP',l:'A un access point'},{v:'OTRO',l:'Otro (escribir)',otro:true}],{def:'ROUTER'}));
-      if(a['P22d'+k]) push(v('P22c'+k)==='CABLE'||adqR
-        ?ch('P22e'+k,'D',adqR?'¿Hay toma de energía y punto de red disponibles para cuando se implemente el Raspberry?':'¿Hay toma de energía y punto de red disponibles para el Raspberry?',[{v:'AMBOS',l:'Sí, ambos'},{v:'ENERGIA',l:'Solo toma de energía'},{v:'RED',l:'Solo punto de red'},{v:'NINGUNO',l:'Ninguno'}],{def:'AMBOS'})
-        :ch('P22e'+k,'D','¿Hay toma de energía disponible para el Raspberry?',YN,{def:'SI'}));
-      if(v('P22a'+k)==='NO') push(ch('P22b'+k,'D','¿Qué adquirirá el cliente para el sistema de impresiones?',[{v:'RASPBERRY',l:'Raspberry'},{v:'LAPTOP',l:'Laptop'},{v:'PC',l:'PC'}],{def:'RASPBERRY'}));
-      info.rasp=v('P22a'+k)==='SI'; info.raspCable=v('P22c'+k)==='CABLE'||v('P22b'+k)==='RASPBERRY'; info.raspVia=v('P22d'+k); info.raspViaL=a['P22d'+k]?a['P22d'+k].label:null;
-      { const e2=v('P22e'+k); info.raspEnergia=e2==null?null:(e2==='AMBOS'||e2==='ENERGIA'||e2==='SI'); info.raspPunto=info.raspCable&&e2!=null?(e2==='AMBOS'||e2==='RED'):null; } info.adq=v('P22b'+k); info.adqL=a['P22b'+k]?a['P22b'+k].label:null;
-    }
-    const devOk=['SI','TABLET','SUNMI','IMIN'].includes(e);
-    const sinDone=!sinPC||X.simple||(info.rasp||info.adq==='RASPBERRY'?!!a['P22e'+k]:!!info.adq);
-    const pcDone=e!=='SI'||!!a['P23'+k];
-    if(rub==='RETAIL'&&e!=null&&pcDone&&sinDone) push({id:'P22h'+k,b:'D',kind:'multi',text:`¿Qué periféricos están conectados al equipo de caja${sfx}?`,opts:['Balanza','Escáner de códigos','Gaveta','Impresora de etiquetas','POS de pago (Niubiz, Izipay…)'],sel:[],none:'Ninguno',def:['Escáner de códigos','Gaveta'],min:1});
-    const perDone=rub!=='RETAIL'||!!a['P22h'+k];
-    /* AnyDesk: se instala en el equipo de caja (también si hay o habrá Raspberry) */
-    const anyQ=e!=null&&pcDone&&sinDone&&perDone&&!X.obra&&(devOk||info.rasp||info.adq==='RASPBERRY');
-    if(anyQ) push({id:'E7'+k,b:'D',kind:'ev',read:'anydesk',name:`el AnyDesk del equipo de caja${sfx}`,text:devOk?`Abre AnyDesk en el equipo de caja${sfx} y sube una foto de la pantalla donde se vea el código de AnyDesk.`:`Abre AnyDesk en el equipo desde donde se accederá al Raspberry${sfx} y sube una foto donde se vea el código de AnyDesk.`,def:{data:{codigo:`1 23${i} 456 789`,equipo:devOk?`${e==='SI'?'PC o laptop':info.eqL} de caja${sfx}`:`Raspberry${sfx}`}}});
-    info.anydesk=a['E7'+k]&&a['E7'+k].v==='OK'?a['E7'+k].data:null;
-    info.done=!!a['P22'+k]&&pcDone&&sinDone&&perDone&&(!anyQ||!!a['E7'+k]);
-    X.cajasInfo.push(info);
-  }
-  const cajasDone=cBlockReady&&X.cajasInfo.length===X.cajas&&X.cajasInfo.every(c=>c.done);
-
-  /* E · impresoras: etiqueta, conexiones y selftest; la conexión se completa sola si se lee */
-  let prevDone=cajasDone;
+  /* E · impresoras: etiqueta, conexiones y selftest; la conexión se completa sola si se lee.
+     Desde la 0.0.20 se preguntan por zona: la impresora de cada caja va justo después del equipo de esa caja (el técnico ya está parado ahí);
+     las de preparación y otros lugares siguen después de todas las cajas. */
   const usbHostOk=()=>X.cajasInfo.some(c=>(c.eq==='SI'&&!c.temporal)||c.adq==='LAPTOP'||c.adq==='PC');
-  printers.forEach((pr,ix)=>{
-    if(!prevDone){pr.skip=true;return;}
+  const procPrinter=(pr,ix)=>{
     const nm=`IMP. ${pr.name}`, K='#'+pr.name;
     let tiene=true;
     push({id:'E5a'+K,b:'E',kind:'ev',read:'label',name:`la etiqueta de ${nm}`,text:`${nm}: sube la foto de la etiqueta de la impresora donde se vean el número de serie (SN) y el modelo.`,def:{data:{marca:'Epson',modelo:'TM-T20III',sn:'X5RF0'+(12345+ix)}}});
     const dtxt=['E5a','E5b','E5'].map(k=>String((a[k+K]||{}).desc||'')).join(' ');
-    if(AJENA_RE.test(dtxt)){ pr.ajena=true; prevDone=true; return; }
+    if(AJENA_RE.test(dtxt)){ pr.ajena=true; return true; }
     const implDesc=IMPL_RE.test(dtxt);
     if(implDesc) tiene=false;
     if(X.obra&&!implDesc){
       /* En obra la impresora empieza «Por implementar» y pasa a «Existente» si la foto o su descripción lo muestran (0.0.19 · C3); solo si no hay ninguna de las dos se pregunta si el cliente ya la tiene. */
       const e0=a['E5a'+K];
-      if(!e0){prevDone=false;return;}
+      if(!e0){return false;}
       if(!(e0.v==='OK'||String(e0.desc||'').trim())){
-        push(ch('P28h'+K,'E',`¿El cliente ya tiene la impresora de ${pr.name}?`,YN,{def:'NO'})); tiene=v('P28h'+K)==='SI'; if(!a['P28h'+K]){prevDone=false;return;}
+        push(ch('P28h'+K,'E',`¿El cliente ya tiene la impresora de ${pr.name}?`,YN,{def:'NO'})); tiene=v('P28h'+K)==='SI'; if(!a['P28h'+K]){return false;}
       }
     }
-    if(!tiene){ pr.con='NO'; pr.estado=null; pr.marca=''; pr.modelo=''; pr.sn=''; prevDone=true; return; }
+    if(!tiene){ pr.con='NO'; pr.estado=null; pr.marca=''; pr.modelo=''; pr.sn=''; return true; }
     const lab=a['E5a'+K]&&a['E5a'+K].v==='OK'?a['E5a'+K].data:null;
     if(a['E5a'+K]) push({id:'E5b'+K,b:'E',kind:'ev',read:'conn',name:`las conexiones de ${nm}`,text:conToma(nm,`${nm}: sube la foto de la parte de atrás de la impresora donde se vean sus conexiones.`),def:{data:{ver:'RED'}}});
     const conn=a['E5b'+K]&&a['E5b'+K].v==='OK'?a['E5b'+K].data.ver:null;
@@ -1109,7 +1063,65 @@ function build(a){
     if(pr.usbTo&&pr.usbTo!=='PC') push({id:'A_USB'+pr.name,kind:'alert',tone:'warn',tag:'USB',text:pr.usbTo==='NINGUNO'?`${nm} es USB y no está conectada a ningún equipo. Una impresora USB solo se conecta a una PC o laptop${usbHostOk()?'':'; en el local no hay PC ni laptop fija: cambiar a impresora de red o adquirir una PC o laptop'}.`:`${nm} está conectada por USB a: ${pr.usbToL}. Una impresora USB solo se conecta a una PC o laptop (nunca a tablet, Raspberry, Sunmi, iMin, router ni repetidor). En el mapa la impresora queda sin flecha USB. ${usbHostOk()?'Conéctala a la PC o laptop.':'Cambiar a impresora de red o adquirir una PC o laptop.'}`});
     if(pr.prep&&pr.con&&pr.con!=='RED'&&pr.con!=='NONE') push({id:'A_R51'+pr.name,kind:'alert',tone:'warn',tag:'R51',text:`${nm}: las impresoras de preparación deben ser de red por cable. ${pr.con==='NO'?'Debe adquirir una impresora de red.':'Cambiar a una impresora de red por cable.'}`});
     if((pr.con==='RED'||pr.con==='WIFI')&&pr.ip&&!pr.ip.startsWith(X.seg+'.')) push({id:'A_R55'+pr.name,kind:'alert',tone:'warn',tag:'R55',text:`${nm} está en ${pr.ip.split('.').slice(0,3).join('.')}.x y el router en ${X.seg}.x. ${X.anterior?'Configúrala en la misma red y segmento que las otras impresoras antes de iniciar con el punto de venta.':'Cambia su IP a una del segmento del router y vuelve a subir el selftest.'}`});
-    prevDone=!!pr.con&&(pr.con!=='USB'||!!pr.usbTo)&&(!hasEst||!!pr.estado)&&(!viaQ||!!pr.via)&&(!ptoQ||!!pr.punto);
+    return !!pr.con&&(pr.con!=='USB'||!!pr.usbTo)&&(!hasEst||!!pr.estado)&&(!viaQ||!!pr.via)&&(!ptoQ||!!pr.punto);
+  };
+
+  /* D · cajas (las preguntas hablan del equipo de caja) */
+  X.cajasInfo=[]; const cajaPrnOk={};
+  if(cBlockReady) for(let i=1;i<=X.cajas;i++){
+    const k='#'+i,nm=X.cajas>1?`Caja ${i}`:'Caja', sfx=X.cajas>1?` (caja ${i})`:'', eqn=eqCajaName(i);
+    if(i>1&&!(X.cajasInfo[i-2].done&&cajaPrnOk[i-1]!==false)) break;
+    push(ch('P22'+k,'D',`¿Cuál es el equipo de caja${sfx}?`,[{v:'SI',l:'PC o laptop'},{v:'TABLET',l:'Tablet'},{v:'SUNMI',l:'Sunmi'},{v:'IMIN',l:'iMin'},{v:'NO',l:'No tiene'},{v:'NO_SE',l:'No sé'},{v:'OTRO',l:'Otro (escribir)',otro:true}],{def:'SI'}));
+    const e=v('P22'+k); const info={i,nm,eqName:eqn,eq:e,eqL:a['P22'+k]?a['P22'+k].label:null};
+    if(e==='SI'){
+      if(rub==='DISCOTECA_BAR') push(ch('P22g'+k,'D',`¿El equipo de caja${sfx} se queda en el local de forma permanente?`,YN,{def:'SI'}));
+      if(rub!=='DISCOTECA_BAR'||v('P22g'+k)!=null) push(ch('P23'+k,'D',`¿Cómo se conecta el equipo de caja${sfx} a la red?`,[{v:'CABLE',l:'Cable de red'},{v:'WIFI',l:'WiFi'}],{def:'CABLE'}));
+      if(v('P23'+k)==='WIFI') push(ch('P23w'+k,'D',`¿En el equipo de caja${sfx} está el sistema de impresiones (${sysImpN()})?`,YN,{def:'SI'})); info.sysImp=v('P23'+k)==='WIFI'?v('P23w'+k)!=='NO':true; info.pcCable=v('P23'+k)==='CABLE'; info.pcWifi=v('P23'+k)==='WIFI'; info.temporal=v('P22g'+k)==='NO';
+      if(info.temporal&&v('P23'+k)!=null) push({id:'A_R60'+k,kind:'alert',tone:'warn',tag:'R60',text:`El equipo de caja${sfx} no se queda en el local. Recomienda un Raspberry para el sistema de impresiones.`});
+    }
+    if(e==='TABLET') push({id:'A_TAB'+k,kind:'alert',tone:'warn',tag:'TABLET',text:`El equipo de caja${sfx} es una tablet. Es obligatorio un kit Raspberry para el controlador de impresiones y las impresoras deben ser de red.`});
+    if((e==='SUNMI'||e==='IMIN')&&X.anterior) push({id:'A_PROV'+k,kind:'alert',tone:'warn',tag:'PROVEEDOR',text:`El equipo de caja${sfx} es un ${e==='SUNMI'?'Sunmi':'iMin'}. Si no es de Desarrollo de Negocios, no se puede usar porque pertenece a otro proveedor. Tómalo en cuenta.`});
+    /* Sunmi o iMin: no se habla de Raspberry en Retail, ni cuando la comanda sale en la misma caja (sin otro lugar de preparación que el que comparte con caja) */
+    const soloCaja=!prep.length||(prep.length===1&&X.comparte===prep[0]);
+    if(e==='SUNMI'||e==='IMIN'){ push(ch('P22i'+k,'D',`¿El ${e==='SUNMI'?'Sunmi':'iMin'}${sfx} tiene impresora integrada?`,[{v:'SI',l:'Sí, tiene impresora'},{v:'NO',l:'No, solo es pantalla'},{v:'FOTO',l:'No sé el modelo (enviar foto)'}],{def:'SI'})); info.impInt=v('P22i'+k)!=='NO'; }
+    info.posPropio=(e==='SUNMI'||e==='IMIN')&&info.impInt!==false&&(X.simple||soloCaja);
+    const sinPC=!info.posPropio&&(['TABLET','SUNMI','IMIN','NO','NO_SE','OTRO'].includes(e)||(info.temporal&&v('P23'+k)!=null));
+    if(sinPC&&!X.simple){
+      push(ch('P22a'+k,'D',`¿El cliente ya cuenta con un Raspberry${sfx}?`,YN,{def:'NO'}));
+      if(v('P22a'+k)==='SI') push(ch('P22c'+k,'D','¿Cómo se conecta el Raspberry a la red?',[{v:'CABLE',l:'Cable de red'},{v:'WIFI',l:'WiFi'}],{def:'CABLE'}));
+      const adqR=v('P22b'+k)==='RASPBERRY';
+      if(a['P22c'+k]||adqR) push(ch('P22d'+k,'D',adqR?'¿A qué equipo de red principal irá conectado el Raspberry cuando se implemente?':'¿A qué equipo de red principal va conectado el Raspberry?',[{v:'ROUTER',l:'Al router'},{v:'SWITCH',l:'A un switch'},{v:'REPETIDOR',l:'A un repetidor'},{v:'AP',l:'A un access point'},{v:'OTRO',l:'Otro (escribir)',otro:true}],{def:'ROUTER'}));
+      if(a['P22d'+k]) push(v('P22c'+k)==='CABLE'||adqR
+        ?ch('P22e'+k,'D',adqR?'¿Hay toma de energía y punto de red disponibles para cuando se implemente el Raspberry?':'¿Hay toma de energía y punto de red disponibles para el Raspberry?',[{v:'AMBOS',l:'Sí, ambos'},{v:'ENERGIA',l:'Solo toma de energía'},{v:'RED',l:'Solo punto de red'},{v:'NINGUNO',l:'Ninguno'}],{def:'AMBOS'})
+        :ch('P22e'+k,'D','¿Hay toma de energía disponible para el Raspberry?',YN,{def:'SI'}));
+      if(v('P22a'+k)==='NO') push(ch('P22b'+k,'D','¿Qué adquirirá el cliente para el sistema de impresiones?',[{v:'RASPBERRY',l:'Raspberry'},{v:'LAPTOP',l:'Laptop'},{v:'PC',l:'PC'}],{def:'RASPBERRY'}));
+      info.rasp=v('P22a'+k)==='SI'; info.raspCable=v('P22c'+k)==='CABLE'||v('P22b'+k)==='RASPBERRY'; info.raspVia=v('P22d'+k); info.raspViaL=a['P22d'+k]?a['P22d'+k].label:null;
+      { const e2=v('P22e'+k); info.raspEnergia=e2==null?null:(e2==='AMBOS'||e2==='ENERGIA'||e2==='SI'); info.raspPunto=info.raspCable&&e2!=null?(e2==='AMBOS'||e2==='RED'):null; } info.adq=v('P22b'+k); info.adqL=a['P22b'+k]?a['P22b'+k].label:null;
+    }
+    const devOk=['SI','TABLET','SUNMI','IMIN'].includes(e);
+    const sinDone=!sinPC||X.simple||(info.rasp||info.adq==='RASPBERRY'?!!a['P22e'+k]:!!info.adq);
+    const pcDone=e!=='SI'||!!a['P23'+k];
+    if(rub==='RETAIL'&&e!=null&&pcDone&&sinDone) push({id:'P22h'+k,b:'D',kind:'multi',text:`¿Qué periféricos están conectados al equipo de caja${sfx}?`,opts:['Balanza','Escáner de códigos','Gaveta','Impresora de etiquetas','POS de pago (Niubiz, Izipay…)'],sel:[],none:'Ninguno',def:['Escáner de códigos','Gaveta'],min:1});
+    const perDone=rub!=='RETAIL'||!!a['P22h'+k];
+    /* AnyDesk: se instala en el equipo de caja (también si hay o habrá Raspberry) */
+    const anyQ=e!=null&&pcDone&&sinDone&&perDone&&!X.obra&&(devOk||info.rasp||info.adq==='RASPBERRY');
+    if(anyQ) push({id:'E7'+k,b:'D',kind:'ev',read:'anydesk',name:`el AnyDesk del equipo de caja${sfx}`,text:devOk?`Abre AnyDesk en el equipo de caja${sfx} y sube una foto de la pantalla donde se vea el código de AnyDesk.`:`Abre AnyDesk en el equipo desde donde se accederá al Raspberry${sfx} y sube una foto donde se vea el código de AnyDesk.`,def:{data:{codigo:`1 23${i} 456 789`,equipo:devOk?`${e==='SI'?'PC o laptop':info.eqL} de caja${sfx}`:`Raspberry${sfx}`}}});
+    info.anydesk=a['E7'+k]&&a['E7'+k].v==='OK'?a['E7'+k].data:null;
+    info.done=!!a['P22'+k]&&pcDone&&sinDone&&perDone&&(!anyQ||!!a['E7'+k]);
+    X.cajasInfo.push(info);
+    /* La impresora de esta caja se pregunta ahora, en el mismo lugar, antes de pasar a la caja siguiente. */
+    const pc_=printers.find(p=>p.cajaIdx===i);
+    if(pc_){ if(info.done) cajaPrnOk[i]=procPrinter(pc_,printers.indexOf(pc_)); else { pc_.skip=true; cajaPrnOk[i]=false; } }
+  }
+  printers.forEach(p=>{ if(p.cajaIdx!=null&&!(p.cajaIdx in cajaPrnOk)) p.skip=true; });
+  const cajasDone=cBlockReady&&X.cajasInfo.length===X.cajas&&X.cajasInfo.every(c=>c.done)&&printers.filter(p=>p.cajaIdx!=null).every(p=>cajaPrnOk[p.cajaIdx]);
+
+  /* E · impresoras que no son de una caja (preparación, otros lugares): después de todas las cajas. */
+  let prevDone=cajasDone;
+  printers.forEach((pr,ix)=>{
+    if(pr.cajaIdx!=null) return;
+    if(!prevDone){pr.skip=true;return;}
+    prevDone=procPrinter(pr,ix);
   });
   for(let i=printers.length-1;i>=0;i--) if(printers[i].ajena) printers.splice(i,1);
   const printersDone=cajasDone&&printers.every(p=>p.con!=null&&(p.con!=='USB'||p.usbTo)&&(!['RED','WIFI','USB'].includes(p.con)||p.estado)&&(!['RED','WIFI'].includes(p.con)||p.via)&&(!p.ptoQ||p.punto));
