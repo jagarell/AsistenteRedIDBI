@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.0.22] - 2026-11-16
+### Cambiado
+- **Nombre del PDF «Local_fecha»**: la minuta se genera, se comparte (WhatsApp, correo) y se guarda en Descargas como `Nombre_del_local_2026-11-16.pdf`, en lugar de `minuta_123.pdf`. La vista previa lleva `_vista_previa` al final.
+- **Editar una minuta que no se puede editar**: antes las opciones del menú (Editar propuesta técnica, Corregir una lectura de evidencia, Observaciones, Topología) mostraban un aviso corto que decía «solo el supervisor la edita», incluso al supervisor, y parecía que no funcionaban. Ahora, con la minuta Completa, el supervisor y el administrador ven un cuadro que explica que se corrige con «Pedir un cambio en el chat» o con «Rechazar minuta»; el técnico ve «espera la respuesta del supervisor»; y las validadas o en edición por otra persona tienen su propio mensaje.
+
 ## [0.0.21] - 2026-11-14
 ### Cambiado
 - **Dictado por voz más preciso** (Chat IA, Asistente IA y Ayuda): ya no usa el reconocimiento de voz del teléfono. Un toque en el micrófono graba (se pone en rojo), otro toque termina, y el servidor transcribe el audio con IA conociendo los términos del oficio (AnyDesk, switch, IP, nombres de áreas). El texto queda en la caja para revisarlo antes de enviar. Graba hasta 2 minutos. Pide el permiso del micrófono la primera vez; sin señal avisa que no se pudo transcribir.
