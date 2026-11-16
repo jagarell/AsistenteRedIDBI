@@ -28,8 +28,8 @@ android {
         applicationId = "com.upc.asistenteredidbi"
         minSdk = 24
         targetSdk = 35
-        versionCode = 21
-        versionName = "0.0.21"
+        versionCode = 22
+        versionName = "0.0.22"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -60,6 +60,7 @@ kapt {
 }
 
 dependencies {
+    testImplementation("junit:junit:4.13.1")
     implementation("androidx.core:core-ktx:1.13.1")
     implementation("androidx.appcompat:appcompat:1.7.0")
     implementation("com.google.android.material:material:1.12.0")

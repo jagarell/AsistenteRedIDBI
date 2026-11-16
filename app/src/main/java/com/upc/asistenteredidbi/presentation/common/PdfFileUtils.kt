@@ -12,6 +12,16 @@ import java.io.File
 /** Guarda y abre/descarga el PDF real de la propuesta técnica (bytes del gateway). */
 object PdfFileUtils {
 
+    /**
+     * Nombre del PDF: «Nombre del local_2026-11-16.pdf». Se quitan los caracteres que Android o WhatsApp no admiten en un nombre de
+     * archivo y los espacios pasan a «_». [prefijo] y [sufijo] se usan para la propuesta antigua y la vista previa.
+     */
+    fun nombreArchivo(local: String, prefijo: String = "", sufijo: String = "", fecha: String = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).format(java.util.Date())): String {
+        fun limpio(t: String) = t.replace(Regex("[\\\\/:*?\"<>|\\p{Cntrl}]"), " ").trim().replace(Regex("\\s+"), "_").take(60).trim('_', '.')
+        val base = limpio(local).ifBlank { "Minuta" }
+        return listOf(limpio(prefijo), base, fecha, limpio(sufijo)).filter { it.isNotBlank() }.joinToString("_") + ".pdf"
+    }
+
     /** Guarda los bytes en la caché de la app; se puede compartir vía FileProvider. */
     fun saveToCache(context: Context, bytes: ByteArray, fileName: String): File {
         val file = File(context.cacheDir, fileName)

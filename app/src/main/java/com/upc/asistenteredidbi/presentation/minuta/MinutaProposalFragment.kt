@@ -481,12 +481,33 @@ class MinutaProposalFragment : Fragment() {
             }.show()
     }
 
-    private fun cannotEdit() =
-        Toast.makeText(requireContext(), when {
-            lockedBy != null -> "En edición por $lockedBy: no puedes editarla hasta que aplique o cancele"
-            minutaStatus == "VALIDADA" -> "La minuta ya está validada"
-            else -> "La minuta está completa: solo el supervisor la edita"
-        }, Toast.LENGTH_SHORT).show()
+    /**
+     * Explica por qué no se puede editar. Antes decía «solo el supervisor la edita» incluso al supervisor, y parecía que las
+     * opciones del menú no funcionaban: ahora dice quién puede editar y qué hacer en su lugar.
+     */
+    private fun cannotEdit() {
+        val ctx = requireContext()
+        when {
+            lockedBy != null ->
+                Toast.makeText(ctx, "En edición por $lockedBy: no puedes editarla hasta que aplique o cancele", Toast.LENGTH_LONG).show()
+            minutaStatus == "VALIDADA" ->
+                Toast.makeText(ctx, "La minuta ya está validada: no se puede editar.", Toast.LENGTH_LONG).show()
+            esRevisor() && minutaStatus == "COMPLETA" ->
+                androidx.appcompat.app.AlertDialog.Builder(ctx)
+                    .setTitle("Esta minuta está en revisión")
+                    .setMessage("El supervisor y el administrador no editan una minuta completa directamente. Para corregirla puedes:\n\n" +
+                        "• Pedir el cambio en el chat: el Asistente IA la actualiza.\n" +
+                        "• Rechazarla con un motivo: vuelve al técnico para que la corrija.")
+                    .setPositiveButton("Pedir un cambio en el chat") { _, _ -> openChat(null) }
+                    .setNeutralButton("Rechazar minuta") { _, _ -> binding.btnRejectMinuta.performClick() }
+                    .setNegativeButton("Cerrar", null)
+                    .show()
+            esRevisor() ->
+                Toast.makeText(ctx, "El supervisor y el administrador no editan esta minuta: solo el técnico mientras está en Borrador.", Toast.LENGTH_LONG).show()
+            else ->
+                Toast.makeText(ctx, "La minuta está completa y en revisión: espera la respuesta del supervisor.", Toast.LENGTH_LONG).show()
+        }
+    }
 
     /** Lápiz: editar la propuesta, corregir una lectura o pedir un cambio en el chat. */
     private fun showEditMenu() {
@@ -764,9 +785,10 @@ class MinutaProposalFragment : Fragment() {
             val result = if (minuta != null) Result.success(minuta) else generateProposalPdfUseCase(data)
             result
                 .onSuccess { bytes ->
+                    // El PDF se llama «Nombre del local_fecha» (así llega a WhatsApp, al correo y a Descargas).
                     val file = PdfFileUtils.saveToCache(
                         requireContext(), bytes,
-                        (if (isMinuta) "minuta_" else "propuesta_") + (if (preview) "vista_" else "") + "$evaluationId.pdf"
+                        PdfFileUtils.nombreArchivo(binding.tvEstablishmentName.text.toString(), if (isMinuta) "" else "Propuesta", if (preview) "vista previa" else "")
                     )
                     if (!preview) {
                         generatedPdfFile = file
