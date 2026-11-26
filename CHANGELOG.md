@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.0.23] - 2026-11-26
+### Corregido
+- **PDF de una minuta validada (administrador y supervisor)**: el botón quedaba apagado con «Minuta validada» y no había cómo sacar el PDF. Ahora dice «Generar PDF» (después «Volver a generar el PDF») y abre la minuta final para compartirla o guardarla. Generarlo no cambia el estado de la minuta.
+
 ## [0.0.22] - 2026-11-16
 ### Cambiado
 - **Nombre del PDF «Local_fecha»**: la minuta se genera, se comparte (WhatsApp, correo) y se guarda en Descargas como `Nombre_del_local_2026-11-16.pdf`, en lugar de `minuta_123.pdf`. La vista previa lleva `_vista_previa` al final.
