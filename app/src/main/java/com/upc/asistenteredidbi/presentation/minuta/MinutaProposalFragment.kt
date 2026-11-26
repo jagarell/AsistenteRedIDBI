@@ -240,8 +240,10 @@ class MinutaProposalFragment : Fragment() {
         binding.tvValidatedBy.text = validatedBy ?: "—"
         val generated = generatedPdfFile != null
         if (esRevisor()) {
-            binding.btnGeneratePdf.text = if (minutaStatus == "VALIDADA") "Minuta validada" else "Validar minuta"
-            binding.btnGeneratePdf.isEnabled = minutaStatus == "COMPLETA"
+            // Validada: el botón dejaba de servir («Minuta validada», apagado) y nadie podía sacar el PDF. Ahora genera el PDF final
+            // (el servidor no cambia el estado de una minuta validada) para abrirlo, compartirlo o guardarlo.
+            binding.btnGeneratePdf.text = when (minutaStatus) { "VALIDADA" -> if (generated) "Volver a generar el PDF" else "Generar PDF"; else -> "Validar minuta" }
+            binding.btnGeneratePdf.isEnabled = minutaStatus == "COMPLETA" || minutaStatus == "VALIDADA"
         } else {
             binding.btnGeneratePdf.text = if (generated || minutaStatus != "BORRADOR") "Volver a generar" else "Generar PDF"
             binding.btnGeneratePdf.isEnabled = true
@@ -373,7 +375,7 @@ class MinutaProposalFragment : Fragment() {
         }
 
         binding.btnGeneratePdf.setOnClickListener {
-            if (esRevisor()) validate() else openPdf(preview = false)
+            if (esRevisor() && minutaStatus == "COMPLETA") validate() else openPdf(preview = false)
         }
 
         binding.btnWhatsapp.setOnClickListener { sharePdf("com.whatsapp") }
